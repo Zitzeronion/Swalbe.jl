@@ -17,5 +17,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/Ziteronion/Swalbe.jl",
+    repo="github.com/Ziteronion/Swalbe.jl.git",
 )
