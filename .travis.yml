@@ -19,6 +19,14 @@ jobs:
   fast_finish: true
   allow_failures:
     - julia: nightly
+  include:
+    - stage: "documentation"
+      julia: 1.4
+      os: linux
+      script:
+        - julia --project=docs/ docs/setup.jl
+        - julia --project=docs/ docs/make.jl
+      after_success: skip
 after_success:
   - |
     julia -e '
