@@ -2,5 +2,5 @@ using Swalbe
 using Test
 
 @testset "Swalbe.jl" begin
-    # Write your tests here.
+    include("differences.jl")
 end
