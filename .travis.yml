@@ -2,6 +2,7 @@
 language: julia
 notifications:
   email: false
+coveralls: true
 julia:
   - 1.5
   - nightly
