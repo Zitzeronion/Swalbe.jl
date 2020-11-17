@@ -1,11 +1,10 @@
-using Swalbe
-using Documenter
+using Documenter, Swalbe
 
 makedocs(;
     modules=[Swalbe],
     authors="Zitzeronion <physiknerd@gmail.com>",
     repo="https://github.com/Ziteronion/Swalbe.jl/blob/{commit}{path}#L{line}",
-    sitename="Swalbe.jl",
+    sitename="Swalbe",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://Ziteronion.github.io/Swalbe.jl",
@@ -17,5 +16,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/Ziteronion/Swalbe.jl.git",
+    repo = "github.com/Zitzeronion/Swalbe.jl.git",
 )
