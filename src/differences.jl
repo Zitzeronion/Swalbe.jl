@@ -1,5 +1,60 @@
 """
     ∇²f!(output, f, γ)
+
+Finite difference operator for a second derivative in two dimensions.
+
+Computes the laplacian of an input `f` times a scalar `γ` and stores the result in `output`.
+
+# Mathematics
+
+The laplacian operator in two dimensions can be written as
+
+`` \\nabla^2 f = \\frac{\\partial^2 f}{\\partial x^2} + \\frac{\\partial^2 f}{\\partial y}. ``
+
+For the discretization of this operator we use a nine point stencil, such the neighbors as well as the diagonal elements.
+In matrix form the discretization looks like this
+
+`` \\nabla^2 f = \\begin{pmatrix} 1 & 4 & 1 \\ 
+                                  4 & -20 & 4 \\ 
+                                  1 & 4 & 1 \\end{pmatrix} 
+                 \\begin{pmatrix} f_{i-1,j-1} & f_{i-1,j} & f_{i-1,j+1} \\ 
+                                  f_{i,j-1} & f_{i,j} & f_{i,j+1} \\ 
+                                  f_{i+1,j-1} & f_{i+1,j} & f_{i+1,j+1} \\end{pmatrix}  ,``
+
+where we have used Julia conventions, downwards (left) is positive. 
+The whole expression can be multiplied with a scalar `γ` if needed.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> arg = reshape(collect(1.0:25),5,5)
+5×5 Array{Float64,2}:
+ 1.0   6.0  11.0  16.0  21.0
+ 2.0   7.0  12.0  17.0  22.0
+ 3.0   8.0  13.0  18.0  23.0
+ 4.0   9.0  14.0  19.0  24.0
+ 5.0  10.0  15.0  20.0  25.0
+
+julia> res = zeros(5,5); Swalbe.∇²f!(res, arg, 1.0)
+
+julia> analytics = [-30.0 -5.0 -5.0 -5.0 20;
+                    -25.0 0.0 0.0 0.0 25.0;
+                    -25.0 0.0 0.0 0.0 25.0;
+                    -25.0 0.0 0.0 0.0 25.0;
+                    -20.0 5.0 5.0 5.0 30.0]
+
+julia> cleanedres = map(x -> abs.(x) < 1e-12 ? 0 : x, res) # Little polishing
+
+julia> @test all(analytics .== cleanedres)
+```
+
+# References
+
+- [Junk & Klar](https://epubs.siam.org/doi/10.1137/S1064827599357188)
+- [Succi et al.](https://doi.org/10.1016/j.jcp.2012.07.037)
+
+See also: [∇f!](@ref)
 """
 function ∇²f!(output, f, γ)
     # Straight elements j+1, i+1, i-1, j-1
