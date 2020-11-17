@@ -5,7 +5,7 @@ using Documenter, Swalbe
 makedocs(;
     modules=[Swalbe],
     authors="Zitzeronion <physiknerd@gmail.com>",
-    repo="https://github.com/Ziteronion/Swalbe.jl/blob/{commit}{path}#L{line}",
+    repo="https://github.com/Zitzeronion/Swalbe.jl",
     sitename="Swalbe",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", nothing) == "true",
