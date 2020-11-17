@@ -25,6 +25,7 @@ where we have used Julia conventions, downwards (left) is positive.
 The whole expression can be multiplied with a scalar `γ` if needed.
 
 # Examples
+
 ```jldoctest
 julia> using Swalbe, Test
 
@@ -42,11 +43,11 @@ julia> analytics = [-30.0 -5.0 -5.0 -5.0 20;
                     -25.0 0.0 0.0 0.0 25.0;
                     -25.0 0.0 0.0 0.0 25.0;
                     -25.0 0.0 0.0 0.0 25.0;
-                    -20.0 5.0 5.0 5.0 30.0]
+                    -20.0 5.0 5.0 5.0 30.0];
 
-julia> cleanedres = map(x -> abs.(x) < 1e-12 ? 0 : x, res) # Little polishing
-
-julia> @test all(analytics .== cleanedres)
+julia> for i in eachindex(analytics)
+           @test analytics[i] ≈ res[i] atol=1e-10
+       end
 ```
 
 # References
@@ -76,6 +77,14 @@ end
 
 """
     ∇f!(outputx, outputy, f)
+
+Gradient calculation with finite differences.
+
+Computes both spatial first derivatives from an input `f` and writes the result to `outputx` and `outputy`.
+
+# Mathematics
+
+
 """
 function ∇f!(outputx, outputy, f)
     # Straight elements j+1, i+1, i-1, j-1
