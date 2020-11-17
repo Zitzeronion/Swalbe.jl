@@ -9,6 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        allow_failures: 
+          - julia: nightly
         version:
           - '1.5'
           - 'nightly'
