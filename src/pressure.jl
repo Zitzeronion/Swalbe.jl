@@ -22,3 +22,27 @@ function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
     return nothing
     # This computation is correct, at least mathematically!
 end
+
+"""
+    power_broad(arg, n)
+
+Computes `arg` to the power `n`.
+
+
+See also: [`filmpressure`](@ref)
+"""
+function power_broad(arg::Float64, n::Int)
+    temp = 1.0
+    for i = 1:n
+        temp *= arg
+    end
+    return temp
+end
+
+function power_broad(arg::Float32, n::Int)
+    temp = 1.0f0
+    for i = 1:n
+        temp *= arg
+    end
+    return temp
+end
