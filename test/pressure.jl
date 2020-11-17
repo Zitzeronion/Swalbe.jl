@@ -1,5 +1,6 @@
 @testset "Capillary pressure" begin
     f = reshape(collect(1.0:25),5,5)
+    f_float = reshape(collect(1.0f0:25.0f0),5,5)
     res = zeros(5,5)
     @testset "No contact angle" begin
         Swalbe.filmpressure!(res, f, 1.0, 0.0, 3, 2, 0.1, 0.1)
@@ -32,6 +33,20 @@
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
             @test res[i] .≈ sol[i] - 20((0.1/f[i])^3-(0.1/f[i])^2) atol=1e-10
+        end
+    end
+    @testset "Gradient and contact angle Float32" begin
+        Swalbe.filmpressure!(res, f_float, 1.0f0, 0.5f0, 3, 2, 0.1f0, 0.0f0)
+        sol = [-30.0f0 -5.0f0 -5.0f0 -5.0f0 20f0;
+               -25.0f0 0.0f0 0.0f0 0.0f0 25.0f0;
+               -25.0f0 0.0f0 0.0f0 0.0f0 25.0f0;
+               -25.0f0 0.0f0 0.0f0 0.0f0 25.0f0;
+               -20.0f0 5.0f0 5.0f0 5.0f0 30.0f0;
+               ]
+        println()
+        for i in eachindex(res)
+            # Now the result comprisses of two components the disjoining potential and the laplace term.
+            @test res[i] .≈ sol[i] - 20((0.1f0/f_float[i])^3-(0.1f0/f_float[i])^2) atol=1e-6
         end
     end
 end
