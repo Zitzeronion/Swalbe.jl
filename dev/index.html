@@ -11,8 +11,25 @@ julia&gt; arg = reshape(collect(1.0:25),5,5)
 
 julia&gt; resx = zeros(5,5); resy = zeros(5,5); Swalbe.∇f!(resx, resy, arg)
 
-julia&gt; whatxshouldbe = []
-</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Zitzeronion/Swalbe.jl">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Swalbe.∇²f!-Tuple{Any,Any,Any}" href="#Swalbe.∇²f!-Tuple{Any,Any,Any}"><code>Swalbe.∇²f!</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia">∇²f!(output, f, γ)</code></pre><p>Finite difference operator for a second derivative in two dimensions.</p><p>Computes the laplacian of an input <code>f</code> times a scalar <code>γ</code> and stores the result in <code>output</code>.</p><p><strong>Mathematics</strong></p><p>The laplacian operator in two dimensions can be written as</p><p><span>$\nabla^2 f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y}.$</span></p><p>For the discretization of this operator we use a nine point stencil, such the neighbors as well as the diagonal elements. The concrete derivation can be found in the references below, we just show the final result</p><p><span>$\nabla^2 f = \frac{1}{6}\bigg[4(f_{i+1,j} + f_{i,j+1} + f_{i-1,j} + f_{i,j-1}) \newline                 \qquad\qquad +(f_{i+1,j+1} + f_{i-1,j+1} + f_{i-1,j-1} + f_{i+1,j-1}) \newline                 \qquad\qquad -20f_{i,j+1}\bigg]  ,$</span></p><p>where we have used Julia conventions, downwards (left) is positive.  The whole expression can be multiplied with a scalar <code>γ</code> if needed.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; using Swalbe, Test
+julia&gt; whatXshouldbe = [-1.5 -1.5 -1.5 -1.5 -1.5;
+                         1.0 1.0 1.0 1.0 1.0;
+                         1.0 1.0 1.0 1.0 1.0;
+                         1.0 1.0 1.0 1.0 1.0;
+                        -1.5 -1.5 -1.5 -1.5 -1.5];
+
+julia&gt; for i in eachindex(resx) # Test the x-component
+           @test resx[i] ≈ whatXshouldbe[i] atol=1e-10
+       end
+
+julia&gt; whatYshouldbe = [-7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5];
+
+julia&gt; for i in eachindex(resy) # Test the y-component
+           @test resy[i] ≈ whatYshouldbe[i] atol=1e-10
+       end</code></pre><p><strong>References</strong></p><ul><li><a href="https://epubs.siam.org/doi/10.1137/S1064827599357188">Junk &amp; Klar</a></li><li><a href="https://doi.org/10.1016/j.jcp.2012.07.037">Succi et al.</a></li></ul><p>See also: <a href="@ref">Swalbe.∇²f!</a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Zitzeronion/Swalbe.jl">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Swalbe.∇²f!-Tuple{Any,Any,Any}" href="#Swalbe.∇²f!-Tuple{Any,Any,Any}"><code>Swalbe.∇²f!</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia">∇²f!(output, f, γ)</code></pre><p>Finite difference operator for a second derivative in two dimensions.</p><p>Computes the laplacian of an input <code>f</code> times a scalar <code>γ</code> and stores the result in <code>output</code>.</p><p><strong>Mathematics</strong></p><p>The laplacian operator in two dimensions can be written as</p><p><span>$\nabla^2 f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y}.$</span></p><p>For the discretization of this operator we use a nine point stencil, such the neighbors as well as the diagonal elements. The concrete derivation can be found in the references below, we just show the final result</p><p><span>$\nabla^2 f = \frac{1}{6}\bigg[4(f_{i+1,j} + f_{i,j+1} + f_{i-1,j} + f_{i,j-1}) \newline                 \qquad\qquad +(f_{i+1,j+1} + f_{i-1,j+1} + f_{i-1,j-1} + f_{i+1,j-1}) \newline                 \qquad\qquad -20f_{i,j+1}\bigg]  ,$</span></p><p>where we have used Julia conventions, downwards (left) is positive.  The whole expression can be multiplied with a scalar <code>γ</code> if needed.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; using Swalbe, Test
 
 julia&gt; arg = reshape(collect(1.0:25),5,5)
 5×5 Array{Float64,2}:
@@ -22,7 +39,7 @@ julia&gt; arg = reshape(collect(1.0:25),5,5)
  4.0   9.0  14.0  19.0  24.0
  5.0  10.0  15.0  20.0  25.0
 
-julia&gt; res = zeros(5,5); Swalbe.∇²f!(res, arg, 1.0)
+julia&gt; res = zeros(5,5); Swalbe.∇²f!(res, arg, -1.0)
 
 julia&gt; analytics = [-30.0 -5.0 -5.0 -5.0 20;
                     -25.0 0.0 0.0 0.0 25.0;
@@ -32,4 +49,4 @@ julia&gt; analytics = [-30.0 -5.0 -5.0 -5.0 20;
 
 julia&gt; for i in eachindex(analytics)
            @test analytics[i] ≈ res[i] atol=1e-10
-       end</code></pre><p><strong>References</strong></p><ul><li><a href="https://epubs.siam.org/doi/10.1137/S1064827599357188">Junk &amp; Klar</a></li><li><a href="https://doi.org/10.1016/j.jcp.2012.07.037">Succi et al.</a></li></ul><p>See also: <a href="@ref">Swalbe.∇f!</a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Zitzeronion/Swalbe.jl">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 18 November 2020 11:10">Wednesday 18 November 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+       end</code></pre><p><strong>References</strong></p><ul><li><a href="https://epubs.siam.org/doi/10.1137/S1064827599357188">Junk &amp; Klar</a></li><li><a href="https://doi.org/10.1016/j.jcp.2012.07.037">Succi et al.</a></li></ul><p>See also: <a href="@ref">Swalbe.∇f!</a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Zitzeronion/Swalbe.jl">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 18 November 2020 15:20">Wednesday 18 November 2020</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
