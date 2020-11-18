@@ -40,17 +40,16 @@
 
     @testset "Laplacian" begin
         output = zeros(5,5)
-        γ = -1.0
+        γ = 1.0
         Swalbe.∇²f!(output, f, γ)
         @test isa(output, Array)
         # println(output)
-        sol = [-30.0 -5.0 -5.0 -5.0 20;
-               -25.0 0.0 0.0 0.0 25.0;
-               -25.0 0.0 0.0 0.0 25.0;
-               -25.0 0.0 0.0 0.0 25.0;
-               -20.0 5.0 5.0 5.0 30.0;
-               ]
-
+        sol = zeros(5,5)
+        Dxx = CenteredDifference{1}(2,2,1.0,5)
+        Dyy = CenteredDifference{2}(2,2,1.0,5)
+        A = Dxx + Dyy
+        mul!(sol, A, fpad)
+        println("This is correct", sol, "\nThis is what I have", output)
         for i in eachindex(sol)
             @test output[i] .≈ sol[i] atol=1e-10
         end
