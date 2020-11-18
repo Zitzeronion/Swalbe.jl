@@ -12,14 +12,11 @@ The laplacian operator in two dimensions can be written as
 `` \\nabla^2 f = \\frac{\\partial^2 f}{\\partial x^2} + \\frac{\\partial^2 f}{\\partial y}. ``
 
 For the discretization of this operator we use a nine point stencil, such the neighbors as well as the diagonal elements.
-In matrix form the discretization looks like this
+The concrete derivation can be found in the references below, we just show the final result
 
-`` \\nabla^2 f = \\begin{pmatrix} 1 & 4 & 1 \\ 
-                                  4 & -20 & 4 \\ 
-                                  1 & 4 & 1 \\end{pmatrix} 
-                 \\begin{pmatrix} f_{i-1,j-1} & f_{i-1,j} & f_{i-1,j+1} \\ 
-                                  f_{i,j-1} & f_{i,j} & f_{i,j+1} \\ 
-                                  f_{i+1,j-1} & f_{i+1,j} & f_{i+1,j+1} \\end{pmatrix}  ,``
+``\\nabla^2 f = \\frac{1}{6}\\bigg[4(f_{i+1,j} + f_{i,j+1} + f_{i-1,j} + f_{i,j-1}) \\newline
+                \\qquad\\qquad +(f_{i+1,j+1} + f_{i-1,j+1} + f_{i-1,j-1} + f_{i+1,j-1}) \\newline
+                \\qquad\\qquad -20f_{i,j+1}\\bigg]  ,``
 
 where we have used Julia conventions, downwards (left) is positive. 
 The whole expression can be multiplied with a scalar `γ` if needed.
@@ -55,7 +52,7 @@ julia> for i in eachindex(analytics)
 - [Junk & Klar](https://epubs.siam.org/doi/10.1137/S1064827599357188)
 - [Succi et al.](https://doi.org/10.1016/j.jcp.2012.07.037)
 
-See also: [∇f!](@ref)
+See also: [Swalbe.∇f!](@ref)
 """
 function ∇²f!(output, f, γ)
     # Straight elements j+1, i+1, i-1, j-1
@@ -69,7 +66,7 @@ function ∇²f!(output, f, γ)
     himjm = circshift(f, (-1,-1))
     hipjm = circshift(f, (1,-1))
     # In the end it is just a weighted sum...
-    output .= -γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
+    output .= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
                   .- 10/3 .* f)
     return nothing
@@ -80,10 +77,41 @@ end
 
 Gradient calculation with finite differences.
 
-Computes both spatial first derivatives from an input `f` and writes the result to `outputx` and `outputy`.
+Computes both spatial first derivatives with a nine point stencil from an input `f` and writes the result to `outputx` and `outputy`.
 
 # Mathematics
 
+The gardient in two dimensions is given as
+
+`` \\nabla f = \\big(\\frac{\\partial f}{\\partial x}, \\frac{\\partial f}{\\partial y}\\big)^T .``
+
+Again with the nine point stencil this reduces to 
+
+`` \\frac{\\partial f}{\\partial x} = \\frac{1}{3} (f_{i+1,j} - f_{i-1,j}) + \\frac{1}{12}(f_{i+1,j+1} - f_{i-1,j+1} - f_{i-1,j-1} + f_{i+1,j-1}) ,``
+
+and for the `y` component we get
+
+`` \\frac{\\partial f}{\\partial y} = \\frac{1}{3} (f_{i,j+1} - f_{i,j-1}) + \\frac{1}{12}(f_{i+1,j+1} + f_{i-1,j+1} - f_{i-1,j-1} - f_{i+1,j-1}) .``
+
+For the exact derivation feel free to read the reference by Junk and Klar.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> arg = reshape(collect(1.0:25),5,5)
+5×5 Array{Float64,2}:
+ 1.0   6.0  11.0  16.0  21.0
+ 2.0   7.0  12.0  17.0  22.0
+ 3.0   8.0  13.0  18.0  23.0
+ 4.0   9.0  14.0  19.0  24.0
+ 5.0  10.0  15.0  20.0  25.0
+
+julia> resx = zeros(5,5); resy = zeros(5,5); Swalbe.∇f!(resx, resy, arg)
+
+julia> whatxshouldbe = []
+
+```
 
 """
 function ∇f!(outputx, outputy, f)
@@ -98,8 +126,8 @@ function ∇f!(outputx, outputy, f)
     fimjm = circshift(f, (-1,-1))
     fipjm = circshift(f, (1,-1))
     # In the end it is just a weighted sum...
-    outputx .= 1/3 .* (fip .- fim) .+ 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm)
-    outputy .= 1/3 .* (fjp .- fjm) .+ 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm)
+    outputx .= -1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm)
+    outputy .= -1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm)
 
     return nothing
 end
@@ -116,8 +144,8 @@ function ∇f!(outputx, outputy, f, a)
     fimjm = circshift(f, (-1,-1))
     fipjm = circshift(f, (1,-1))
     # In the end it is just a weighted sum...
-    outputx .= a .* (1/3 .* (fip .- fim) .+ 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
-    outputy .= a .* (1/3 .* (fjp .- fjm) .+ 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
+    outputx .= a .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
+    outputy .= a .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
 
     return nothing
 end
