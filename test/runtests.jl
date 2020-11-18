@@ -1,4 +1,4 @@
-using Swalbe, Test, LinearAlgebra, DiffEqOperators, Images
+using Swalbe, Test
 
 @testset "Swalbe.jl" begin
     include("differences.jl")

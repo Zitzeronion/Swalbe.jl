@@ -4,9 +4,6 @@ authors = ["Zitzeronion <physiknerd@gmail.com>"]
 version = "0.1.0"
 
 [deps]
-DiffEqOperators = "9fdde737-9c7f-55bf-ade8-46b3f136cc48"
-Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [compat]
