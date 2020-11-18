@@ -34,7 +34,7 @@ julia> arg = reshape(collect(1.0:25),5,5)
  4.0   9.0  14.0  19.0  24.0
  5.0  10.0  15.0  20.0  25.0
 
-julia> res = zeros(5,5); Swalbe.∇²f!(res, arg, 1.0)
+julia> res = zeros(5,5); Swalbe.∇²f!(res, arg, -1.0)
 
 julia> analytics = [-30.0 -5.0 -5.0 -5.0 20;
                     -25.0 0.0 0.0 0.0 25.0;
@@ -109,7 +109,7 @@ julia> arg = reshape(collect(1.0:25),5,5)
 
 julia> resx = zeros(5,5); resy = zeros(5,5); Swalbe.∇f!(resx, resy, arg)
 
-julia> whatxshouldbe = []
+julia> whatXshouldbe = []
 
 ```
 
