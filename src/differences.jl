@@ -109,10 +109,33 @@ julia> arg = reshape(collect(1.0:25),5,5)
 
 julia> resx = zeros(5,5); resy = zeros(5,5); Swalbe.∇f!(resx, resy, arg)
 
-julia> whatXshouldbe = []
+julia> whatXshouldbe = [-1.5 -1.5 -1.5 -1.5 -1.5;
+                         1.0 1.0 1.0 1.0 1.0;
+                         1.0 1.0 1.0 1.0 1.0;
+                         1.0 1.0 1.0 1.0 1.0;
+                        -1.5 -1.5 -1.5 -1.5 -1.5];
 
+julia> for i in eachindex(resx) # Test the x-component
+           @test resx[i] ≈ whatXshouldbe[i] atol=1e-10
+       end
+
+julia> whatYshouldbe = [-7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5;
+                        -7.5 5.0 5.0 5.0 -7.5];
+
+julia> for i in eachindex(resy) # Test the y-component
+           @test resy[i] ≈ whatYshouldbe[i] atol=1e-10
+       end
 ```
 
+# References
+
+- [Junk & Klar](https://epubs.siam.org/doi/10.1137/S1064827599357188)
+- [Succi et al.](https://doi.org/10.1016/j.jcp.2012.07.037)
+
+See also: [Swalbe.∇²f!](@ref)
 """
 function ∇f!(outputx, outputy, f)
     # Straight elements j+1, i+1, i-1, j-1
