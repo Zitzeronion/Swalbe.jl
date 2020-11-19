@@ -14,16 +14,56 @@ Performs a BGK collision operation with a WFM forcecorrection and a subsequent s
 
 # Mathematics
 
-TBD
+The lattice Boltzmann equation in its discretized format is relatively simple to write down
+
+`` f_{\\alpha}(\\mathbf{x}+\\mathbf{e}_{\\alpha}\\Delta t, t+\\Delta t) - f_{\\alpha}(\\mathbf{x}, t) = -\\frac{1}{\\tau}(f_{\\alpha}(\\mathbf{x}, t) - f^{\\text{eq}}_{\\alpha}(\\mathbf{x}, t)) + \\Delta t \\mathcal{S}_{\\alpha}, ``
+
+where the collision kernel is approximated with a BKG single relaxation time (SRT) 
+
+`` \\Omega_{\\alpha} = \\frac{1}{\\tau}(f_{\\alpha}(\\mathbf{x}, t) - f^{\\text{eq}}_{\\alpha}(\\mathbf{x}, t), ``
+
+and a source term `` \\mathcal{S} `` which is given by
+
+`` \\mathcal{S}_{\\alpha} = \\frac{3 w_{\\alpha}}{e_{\\alpha x}e_{\\alpha x}+e_{\\alpha y}e_{\\alpha y}}\\mathbf{e_{\\alpha}}\\cdot\\mathbf{F}_{\\alpha} . ``
+
+The term `` e_{\\alpha x}e_{\\alpha x}+e_{\\alpha y}e_{\\alpha y} `` is either zero for the zeroth population, 1 for the first four populations or 2 for the remaining ones.
 
 # Examples
     
-TBD
+```jldoctest
+julia> using Swalbe
+
+julia> feq = ones(5,5,9); ftemp = zeros(5,5,9); fout = zeros(5,5,9);
+
+julia> feq[1,1,;] .= 2.0 # To check the streaming process 
+9-element view(::Array{Float64,3}, 1, 1, :) with eltype Float64:
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+
+julia> Swalbe.BGKandStream!(fout, feq, ftemp, zeros(5,5), zeros(5,5))
+
+julia> fout[:,:,6] # The value 2 should have moved one down and one to the right!
+5×5 Array{Float64,2}:
+ 1.0  1.0  1.0  1.0  1.0
+ 1.0  2.0  1.0  1.0  1.0
+ 1.0  1.0  1.0  1.0  1.0
+ 1.0  1.0  1.0  1.0  1.0
+ 1.0  1.0  1.0  1.0  1.0
+
+```
 
 # References
 
 - [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
 - [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
+- [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
 
 See also: [`Swalbe.equilibrium`](@ref)
 """
@@ -109,12 +149,14 @@ Generates a view for all nine populations of a **D2Q9** distribution function.
 ```jldoctest
 julia> ftest = reshape(collect(1.0:225.0),5,5,9);
 
-julia> f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(ftest);
+julia> f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(ftest);
 
 julia> @test all(f3 .== ftest[:,:,4])
 Test Passed
 
 ```
+
+See also: [`Swalbe.BGKandStream`](@ref)
 """
 function viewdists(f)
     f0 = view(f, :, :, 1)
