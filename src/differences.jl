@@ -16,7 +16,7 @@ The concrete derivation can be found in the references below, we just show the f
 
 ``\\nabla^2 f = \\frac{1}{6}\\bigg[4(f_{i+1,j} + f_{i,j+1} + f_{i-1,j} + f_{i,j-1}) \\newline
                 \\qquad\\qquad +(f_{i+1,j+1} + f_{i-1,j+1} + f_{i-1,j-1} + f_{i+1,j-1}) \\newline
-                \\qquad\\qquad -20f_{i,j+1}\\bigg]  ,``
+                \\qquad\\qquad -20f_{i,j}\\bigg]  ,``
 
 where we have used Julia conventions, downwards (left) is positive. 
 The whole expression can be multiplied with a scalar `γ` if needed.
@@ -52,7 +52,7 @@ julia> for i in eachindex(analytics)
 - [Junk & Klar](https://epubs.siam.org/doi/10.1137/S1064827599357188)
 - [Succi et al.](https://doi.org/10.1016/j.jcp.2012.07.037)
 
-See also: [Swalbe.∇f!](@ref)
+See also: [`Swalbe.∇f!`](@ref)
 """
 function ∇²f!(output, f, γ)
     # Straight elements j+1, i+1, i-1, j-1
@@ -135,7 +135,7 @@ julia> for i in eachindex(resy) # Test the y-component
 - [Junk & Klar](https://epubs.siam.org/doi/10.1137/S1064827599357188)
 - [Succi et al.](https://doi.org/10.1016/j.jcp.2012.07.037)
 
-See also: [Swalbe.∇²f!](@ref)
+See also: [`Swalbe.∇²f!`](@ref)
 """
 function ∇f!(outputx, outputy, f)
     # Straight elements j+1, i+1, i-1, j-1
