@@ -63,7 +63,7 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     fout .= ftemp
     return nothing
 end
-# Explicit version for the case \tau = 1
+# Explicit version for the case τ = 1, which simplifies the computation quite a lot.
 function BGKandStream!(fout, feq, ftemp, Fx, Fy)
     # All distribution functions
     fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdists(feq)
@@ -98,4 +98,34 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy)
     # Overwrite fout with ftemp
     fout .= ftemp
     return nothing
+end
+
+"""
+    viewdists(f)
+
+Generates a view for all nine populations of a **D2Q9** distribution function.
+
+# Examples
+```jldoctest
+julia> ftest = reshape(collect(1.0:225.0),5,5,9);
+
+julia> f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(ftest);
+
+julia> @test all(f3 .== ftest[:,:,4])
+Test Passed
+
+```
+"""
+function viewdists(f)
+    f0 = view(f, :, :, 1)
+    f1 = view(f, :, :, 2)
+    f2 = view(f, :, :, 3)
+    f3 = view(f, :, :, 4)
+    f4 = view(f, :, :, 5)
+    f5 = view(f, :, :, 6)
+    f6 = view(f, :, :, 7)
+    f7 = view(f, :, :, 8)
+    f8 = view(f, :, :, 9)
+    
+    return f0, f1, f2, f3, f4, f5, f6, f7, f8
 end
