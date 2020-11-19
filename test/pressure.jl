@@ -43,10 +43,23 @@
                -25.0f0 0.0f0 0.0f0 0.0f0 25.0f0;
                -20.0f0 5.0f0 5.0f0 5.0f0 30.0f0;
                ]
-        println()
+ 
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
             @test res[i] .≈ sol[i] - 20((0.1f0/f_float[i])^3-(0.1f0/f_float[i])^2) atol=1e-6
         end
     end
+end
+
+@testset "Power function" begin
+    argsimple = 5.0
+    argsimplefp32 = 5.0f0
+    argvec = [2.0 3.0 4.0]
+    n1 = 3
+    n2 = 6
+    
+    res0 = Swalbe.power_broad(argsimple, n1)
+    @test res0 == 125.0
+    res0 = Swalbe.power_broad(argsimple, n2)
+    @test res0 = 15625.0
 end

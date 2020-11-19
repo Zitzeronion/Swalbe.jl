@@ -13,14 +13,13 @@ function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
     himjm = circshift(f, (-1,-1))
     hipjm = circshift(f, (1,-1))
     # Disjoining pressure part
-    κ = γ * (1 - cospi(θ)) * (n-1) * (m-1) / ((n-m)*hmin) 
+    κ = (1 - cospi(θ)) * (n-1) * (m-1) / ((n-m)*hmin) 
 
-    output .= -γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                  .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                  .- 10/3 .* f) .- κ .* (power_broad.(hmin./(f .+ hcrit), n) .- 
-                                         power_broad.(hmin./(f .+ hcrit), m))
+    output .= -γ .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* f) .- κ .* (power_broad.(hmin./(f .+ hcrit), n)  
+                                       .- power_broad.(hmin./(f .+ hcrit), m)))
     return nothing
-    # This computation is correct, at least mathematically!
 end
 
 """
