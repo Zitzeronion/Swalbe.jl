@@ -35,7 +35,7 @@ julia> using Swalbe
 
 julia> feq = ones(5,5,9); ftemp = zeros(5,5,9); fout = zeros(5,5,9);
 
-julia> feq[1,1,;] .= 2.0 # To check the streaming process 
+julia> feq[1,1,:] .= 2.0 # To check the streaming process 
 9-element view(::Array{Float64,3}, 1, 1, :) with eltype Float64:
  2.0
  2.0
