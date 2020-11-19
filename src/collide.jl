@@ -147,6 +147,8 @@ Generates a view for all nine populations of a **D2Q9** distribution function.
 
 # Examples
 ```jldoctest
+julia: using Swalbe, Test
+
 julia> ftest = reshape(collect(1.0:225.0),5,5,9);
 
 julia> f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(ftest);
