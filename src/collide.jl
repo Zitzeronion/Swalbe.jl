@@ -103,6 +103,7 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     fout .= ftemp
     return nothing
 end
+
 # Explicit version for the case τ = 1, which simplifies the computation quite a lot.
 function BGKandStream!(fout, feq, ftemp, Fx, Fy)
     # All distribution functions
