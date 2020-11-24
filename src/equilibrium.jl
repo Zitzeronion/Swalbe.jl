@@ -1,7 +1,7 @@
 """
     Equilibrium!(feq, height,velocityx, velocityy, vsquare, gravity)
 
-Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann.
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
 
 # Mathematics
 
@@ -11,14 +11,14 @@ is an expansion to second order in velocity `u`.
 If you want it is an slow mode part of the shallow water theory and thus the equilibrium is given as
 
 `` f_i^{\\text{eq}} = h \\bigg(1 - \\frac{5}{6}g h - \\frac{2}{3}u^2\\bigg),\\quad i=0 \\newline
-   f_i^{\\text{eq}} = w_i h \\bigg(g h + 3 \\mathbf{c}_i\\cdot\\mathbf{u} + \\frac{9}{2}(\\mathbf{c}_i\\cdot\\mathbf{u})^2) + \\frac{3}{2}u^2,\\quad else ``
+   f_i^{\\text{eq}} = w_i h \\bigg(g h + 3 \\mathbf{c}_i\\cdot\\mathbf{u} + \\frac{9}{2}(\\mathbf{c}_i\\cdot\\mathbf{u})^2) + \\frac{3}{2}u^2\\bigg),\\quad else ``
 
 where ``g`` is the gravitational acceleration (in lattice units) and ``w_i, \\mathbf{c}_i`` are the weights and lattice velocities.
 
 It has been shown that it is possible to get rid of the gravity driven term in the equilibrium distribution, thus
 
 `` f_i^{\\text{eq}} = h \\bigg(1 - \\frac{2}{3}u^2\\bigg),\\quad i=0 \\newline
-f_i^{\\text{eq}} = w_i h \\bigg(3 \\mathbf{c}_i\\cdot\\mathbf{u} + \\frac{9}{2}(\\mathbf{c}_i\\cdot\\mathbf{u})^2) + \\frac{3}{2}u^2,\\quad else ``
+f_i^{\\text{eq}} = w_i h \\bigg(3 \\mathbf{c}_i\\cdot\\mathbf{u} + \\frac{9}{2}(\\mathbf{c}_i\\cdot\\mathbf{u})^2) + \\frac{3}{2}u^2\\bigg),\\quad else ``
 
 then of course the topography gradient has to be included as a force term.
 
