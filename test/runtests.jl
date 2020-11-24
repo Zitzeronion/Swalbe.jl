@@ -5,4 +5,5 @@ using Swalbe, Test
     include("pressure.jl")
     include("collide.jl")
     include("equilibrium.jl")
+    include("forcing.jl")
 end

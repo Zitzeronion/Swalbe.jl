@@ -5,14 +5,14 @@ Calculation of the capillary pressure which is given by `` p = - γ∇²h+ Π(h)
 
 # Arguments
 
-- `pressure`: Array that store the result of the compuation
-- `height`: Height field ``h(\\mathbf{x},t)``
-- `γ`: Forcing strenght due to surface tension
-- `θ`: Equilibrium contact angle
-- `n`: Larger power law exponent for `` Π(h) ``
-- `m`: Smaller power law exponent for `` Π(h) ``
-- `hmin`: Parameter of `` Π(h) ``, in fact `` Π(hmin) = 0 ``
-- `hcrit`: Numerical stabilizer for case `` h(\\mathbf{x},t) \\ll hmin ``
+- `pressure::Array{Number,2}`: Array that store the result of the compuation
+- `height::Array{Number,2}`: Height field ``h(\\mathbf{x},t)``
+- `γ<:Number`: Forcing strenght due to surface tension
+- `θ<:Number`: Equilibrium contact angle
+- `n<:Int`: Larger power law exponent for `` Π(h) ``
+- `m<:Int`: Smaller power law exponent for `` Π(h) ``
+- `hmin<:Number`: Parameter of `` Π(h) ``, in fact `` Π(hmin) = 0 ``
+- `hcrit<:Number`: Numerical stabilizer for case `` h(\\mathbf{x},t) \\ll hmin ``
 
 # Mathematics
 
@@ -64,9 +64,9 @@ julia> for i in eachindex(result)
 
 # References
 
-- (Peschka et al.)[https://www.pnas.org/content/116/19/9275]
-- (Craster and Matar)[https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.81.1131]
-- (Derjaguin and Churaev)[https://www.sciencedirect.com/science/article/abs/pii/0021979778900565]
+- [Peschka et al.](https://www.pnas.org/content/116/19/9275)
+- [Craster and Matar](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.81.1131)
+- [Derjaguin and Churaev](https://www.sciencedirect.com/science/article/abs/pii/0021979778900565)
 
 """
 function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
