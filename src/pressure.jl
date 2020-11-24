@@ -37,7 +37,7 @@ For `` f(h) `` one can use various forms, a very common however is the power law
 # Examples
 
 ```jldoctest
-julia> Swalbe, Test
+julia> using Swalbe, Test
 
 julia> h = reshape(collect(1.0:25.0),5,5) # A dummy height field
 5×5 Array{Float64,2}:
