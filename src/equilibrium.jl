@@ -13,7 +13,43 @@ If you want it is an slow mode part of the shallow water theory and thus the equ
 `` f_i^{\\text{eq}} = h \\bigg(1 - \\frac{5}{6}g h - \\frac{2}{3}u^2\\bigg),\\quad i=0 \\newline
    f_i^{\\text{eq}} = w_i h \\bigg(g h + 3 \\mathbf{c}_i\\cdot\\mathbf{u} + \\frac{9}{2}(\\mathbf{c}_i\\cdot\\mathbf{u})^2) + \\frac{3}{2}u^2,\\quad else ``
 
-where ``g`` is the strength of the gravitational acceleration and ``w_i, \\mathbf{c}_i`` are the weights and lattice velocities. 
+where ``g`` is the gravitational acceleration (in lattice units) and ``w_i, \\mathbf{c}_i`` are the weights and lattice velocities.
+
+It has been shown that it is possible to get rid of the gravity driven term in the equilibrium distribution, thus
+
+`` f_i^{\\text{eq}} = h \\bigg(1 - \\frac{2}{3}u^2\\bigg),\\quad i=0 \\newline
+f_i^{\\text{eq}} = w_i h \\bigg(3 \\mathbf{c}_i\\cdot\\mathbf{u} + \\frac{9}{2}(\\mathbf{c}_i\\cdot\\mathbf{u})^2) + \\frac{3}{2}u^2,\\quad else ``
+
+then of course the topography gradient has to be included as a force term.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> feq = zeros(5,5,9); ρ = ones(5,5); ux = fill(0.1,5,5); uy = zeros(5,5);
+
+julia> Swalbe.equilibrium!(feq, ρ, ux, uy, zeros(5,5), 0.1) # Supply dummy u^2 as well.
+
+julia> feq[:,:,1]
+5×5 Array{Float64,2}:
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+
+julia> Swalbe.equilibrium!(feq, ρ, ux, uy, zeros(5,5)) # Use the dispatch without g.
+
+julia> @test all(feq[:,:,1] .≈ 1 - 2/3 * 0.01)
+Test Passed
+```
+
+# References
+
+- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
+- [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
+- [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
+
 """
 function equilibrium!(feq, height, velocityx, velocityy, vsquare, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
