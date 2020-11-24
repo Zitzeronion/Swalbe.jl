@@ -5,12 +5,12 @@ Performs a BGK collision operation with a WFM forcecorrection and a subsequent s
 
 # Arguments
 
-- `fout`: Streamed distribution after the collision processes.
-- `feq`: Equilibrium distribution, computed with equilibrium!.
-- `ftemp`: Temporary distribution from the time step before, only useful if `` \\tau \\neq 1``.
-- `Fx`: Sum of forces acting on the fluid in x-direction.
-- `Fy`: Sum of forces acting on the fluid in y-direction.
-- `τ`: Relaxtion time.
+- `fout`: Streamed distribution after the collision processes
+- `feq`: Equilibrium distribution, computed with equilibrium!
+- `ftemp`: Temporary distribution from the time step before, only useful if `` \\tau \\neq 1``
+- `Fx`: Sum of forces acting on the fluid in x-direction
+- `Fy`: Sum of forces acting on the fluid in y-direction
+- `τ`: Relaxtion time, if not supplied `` \\tau = 1 `` assumed
 
 # Mathematics
 

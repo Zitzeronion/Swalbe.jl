@@ -5,14 +5,14 @@ Calculation of the capillary pressure which is given by `` p = - γ∇²h+ Π(h)
 
 # Arguments
 
-- `pressure`: Array that store the result of the compuation.
-- `height`: Height field ``h(\\mathbf{x},t)``. 
-- `γ`: Forcing strenght due to surface tension.
-- `θ`: Equilibrium contact angle.
-- `n`: Larger power law exponent for `` Π(h) ``.
-- `m`: Smaller power law exponent for `` Π(h) ``.
-- `hmin`: Parameter of `` Π(h) ``, in fact `` Π(hmin) = 0 ``.
-- `hcrit`: Numerical stabilizer for case `` h(\\mathbf{x},t) \\ll hmin ``.
+- `pressure`: Array that store the result of the compuation
+- `height`: Height field ``h(\\mathbf{x},t)``
+- `γ`: Forcing strenght due to surface tension
+- `θ`: Equilibrium contact angle
+- `n`: Larger power law exponent for `` Π(h) ``
+- `m`: Smaller power law exponent for `` Π(h) ``
+- `hmin`: Parameter of `` Π(h) ``, in fact `` Π(hmin) = 0 ``
+- `hcrit`: Numerical stabilizer for case `` h(\\mathbf{x},t) \\ll hmin ``
 
 # Mathematics
 
@@ -116,6 +116,21 @@ end
 
 Computes `arg` to the power `n`.
 
+Actually this is useful because the `^` operator is much slower.
+Same thing I learned about the `pow` function in **C**, * yes it does what you want, but it is slow as fuck *.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> Swalbe.power_broad(3, 3)
+27
+
+julia> Swalbe.power_broad.([2.0 5.0 6.0], 2) # Use the broadcasting operator `.`
+1×3 Array{Float64,2}:
+ 4.0  25.0  36.0
+
+```
 
 See also: [`filmpressure`](@ref)
 """
@@ -129,6 +144,14 @@ end
 
 function power_broad(arg::Float32, n::Int)
     temp = 1.0f0
+    for i = 1:n
+        temp *= arg
+    end
+    return temp
+end
+
+function power_broad(arg::Int, n::Int)
+    temp = 1
     for i = 1:n
         temp *= arg
     end

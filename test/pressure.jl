@@ -53,14 +53,18 @@
 end
 
 @testset "Power function" begin
+    arg = 2
     argsimple = 5.0
     argsimplefp32 = 5.0f0
     argvec = [2.0 3.0 4.0]
     n = [3 6]
+    r = [8 64]
     r1 = [125.0 15625.0]
     r2 = [125.0f0 15625.0f0]
     r3 = [8.0 27.0 64.0; 64.0 729.0 4096.0]
     for i in 1:2
+        res0 = Swalbe.power_broad(arg, n[i])
+        @test res0 == r[i] 
         res0 = Swalbe.power_broad(argsimple, n[i])
         @test res0 == r1[i]
         res1 = Swalbe.power_broad(argsimplefp32, n[i])

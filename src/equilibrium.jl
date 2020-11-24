@@ -3,6 +3,15 @@
 
 Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
 
+# Arguments
+
+- `feq`: Equilibrium distribution function, to be calculated
+- `height`: The height field `` h(\\mathbf{x},t)``
+- `velocityx`: x-component of the macroscopic velocity
+- `velocityy`: y-component of the macroscopic velocity
+- `vsquare`: Dummy array that is preallocated to be filled with the square of the velocity vector
+- `gravity`: Strength of the gravitational acceleration in lattice units
+
 # Mathematics
 
 The detailed motivation and derivation can be found in the article of Salmon.
