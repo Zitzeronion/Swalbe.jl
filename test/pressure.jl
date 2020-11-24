@@ -13,6 +13,10 @@
         for i in eachindex(sol)
             @test res[i] .≈ sol[i] atol=1e-10
         end
+        Swalbe.filmpressure!(res, f, 0.0)
+        for i in eachindex(sol)
+            @test res[i] .≈ 0.01 * sol[i] atol=1e-10
+        end
     end
     @testset "No height gradient" begin
         nograd = ones(5,5)
