@@ -68,7 +68,7 @@ Test Passed
 julia> @test mean(y) ≈ 0.0 atol=1e-2
 Test Passed
 
-julia> @test var(x) ≈ 0.0 atol=1e-2
+julia> @test var(x) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
 Test Passed
 
 ```
