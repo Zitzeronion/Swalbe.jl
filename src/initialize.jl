@@ -48,6 +48,7 @@ function Sys(sysc :: SysConst, device::String, exotic::Bool)
         h∇px = zeros(sysc.Lx, sysc.Ly)
         h∇py = zeros(sysc.Lx, sysc.Ly)
         if exotic
+            # Probably many more forces here in the future
             fthermalx = zeros(sysc.Lx, sysc.Ly)
             fthermaly = zeros(sysc.Lx, sysc.Ly)
             return fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
