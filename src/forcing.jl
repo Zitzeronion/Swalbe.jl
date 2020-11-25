@@ -36,5 +36,76 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     return nothing
 end
 
+"""
+    thermal!(fx, fy, height, kᵦT, μ, δ)
 
+Computations of force due to thermal fluctuations.
 
+# Arguments
+
+- `fx :: Array{<:Number,2}`: x-component of the force due to the fluctuations
+- `fy :: Array{<:Number,2}`: y-component of the force due to the fluctuations
+- `height :: Array{<:Number,2}`: Height field ``h(\\mathbf{x},t) ``
+- `kᵦT <: Number`: Strenght of thermal fluctuations in lattice units
+- `μ <: Number`: The kinetic viscosity
+- `δ <: Number`: Slip length, needed to normalize
+
+# Mathematics
+
+TBD
+
+# Examples
+```jldoctest
+julia> using Swalbe, Statistics, Test
+
+julia> x = ones(50,50); y = ones(50,50); h = ones(50,50);
+
+julia> Swalbe.thermal!(x, y, h, 0.1, 1/6, 1)
+
+julia> @test mean(x) ≈ 0.0 atol=1e-2
+Test Passed
+
+julia> @test mean(y) ≈ 0.0 atol=1e-2
+Test Passed
+
+julia> @test var(x) ≈ 0.0 atol=1e-2
+Test Passed
+
+```
+
+# References
+
+- [Grün, Mecke and Rauscher](https://link.springer.com/article/10.1007/s10955-006-9028-8)
+- [Mecke, Rauscher](https://iopscience.iop.org/article/10.1088/0953-8984/17/45/042/meta)
+- [Davidovitch, Moro and Stone](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.95.244505)
+
+""" 
+function thermal!(fluc_x::CuArray, fluc_y::CuArray, height, kᵦT , μ, δ)
+    len, wid = size(height)
+    fluc_x .= CUDA.randn(len, wid)
+    fluc_y .= CUDA.randn(len, wid)
+    fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
+                    (2 .* height.^2 .+
+                     6 .* height .* δ .+
+                     3 .* δ^2))
+    fluc_y .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
+                    (2 .* height.^2 .+
+                     6 .* height .* δ .+
+                     3 .* δ^2))
+    return nothing
+end
+# Apparently one can not use map(rand, array) with CuArrays
+function thermal!(fluc_x::Array, fluc_y::Array, height, kᵦT , μ, δ)
+    len, wid = size(height)
+    fluc_x .= randn(len, wid)
+    fluc_y .= randn(len, wid)
+    fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
+                    (2 .* height.^2 .+
+                     6 .* height .* δ .+
+                     3 .* δ^2))
+    fluc_y .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
+                    (2 .* height.^2 .+
+                     6 .* height .* δ .+
+                     3 .* δ^2))
+    return nothing
+end

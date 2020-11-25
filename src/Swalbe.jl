@@ -1,6 +1,6 @@
 module Swalbe
 
-using Revise
+using Revise, CUDA, Statistics
 
 include("differences.jl")
 include("pressure.jl")

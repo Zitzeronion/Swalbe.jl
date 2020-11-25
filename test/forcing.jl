@@ -23,4 +23,20 @@
         @test all(fx .== -0.1/2)
         @test all(fy .== 0.1/2)
     end
+    @testset "Thermal" begin
+        f1 = ones(50,50)
+        f2 = ones(50,50)
+        vartest = 2*0.01/11
+        Swalbe.thermal!(f1, f2, ones(50,50), 0.01, 1/6, 1.0)
+        @test mean(f1) ≈ 0.0 atol=1e-2
+        @test mean(f2) ≈ 0.0 atol=1e-2
+        @test var(f1) ≈ vartest atol=vartest/10
+        @test var(f1) ≈ vartest atol=vartest/10
+        vartest = 0.2/11
+        Swalbe.thermal!(f1, f2, ones(50,50), 0.1, 1/6, 1.0)
+        @test mean(f1) ≈ 0.0 atol=1e-2
+        @test mean(f2) ≈ 0.0 atol=1e-2
+        @test var(f1) ≈ vartest atol=vartest/10
+        @test var(f1) ≈ vartest atol=vartest/10
+    end
 end

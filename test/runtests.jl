@@ -1,4 +1,4 @@
-using Swalbe, Test
+using Swalbe, Test, Statistics
 
 @testset "Swalbe.jl" begin
     include("differences.jl")
