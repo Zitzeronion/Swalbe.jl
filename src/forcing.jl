@@ -109,3 +109,4 @@ function thermal!(fluc_x::Array, fluc_y::Array, height, kᵦT , μ, δ)
                      3 .* δ^2))
     return nothing
 end
+
