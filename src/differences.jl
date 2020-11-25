@@ -78,6 +78,7 @@ end
 Gradient calculation with finite differences.
 
 Computes both spatial first derivatives with a nine point stencil from an input `f` and writes the result to `outputx` and `outputy`.
+Since broadcasting is simple on the **GPU** we make use of `circshift` for the neighbors.
 
 # Mathematics
 

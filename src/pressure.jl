@@ -5,14 +5,14 @@ Calculation of the capillary pressure which is given by `` p = - γ∇²h+ Π(h)
 
 # Arguments
 
-- `pressure::Array{Number,2}`: Array that store the result of the compuation
-- `height::Array{Number,2}`: Height field ``h(\\mathbf{x},t)``
-- `γ<:Number`: Forcing strenght due to surface tension
-- `θ<:Number`: Equilibrium contact angle
-- `n<:Int`: Larger power law exponent for `` Π(h) ``
-- `m<:Int`: Smaller power law exponent for `` Π(h) ``
-- `hmin<:Number`: Parameter of `` Π(h) ``, in fact `` Π(hmin) = 0 ``
-- `hcrit<:Number`: Numerical stabilizer for case `` h(\\mathbf{x},t) \\ll hmin ``
+- `pressure :: Array{Number,2}`: Array that store the result of the compuation
+- `height :: Array{Number,2}`: Height field ``h(\\mathbf{x},t)``
+- `γ <: Number`: Forcing strenght due to surface tension
+- `θ <: Number`: Equilibrium contact angle
+- `n :: Int`: Larger power law exponent for `` Π(h) ``
+- `m :: Int`: Smaller power law exponent for `` Π(h) ``
+- `hmin <: Number`: Parameter of `` Π(h) ``, in fact `` Π(hmin) = 0 ``
+- `hcrit <: Number`: Numerical stabilizer for case `` h(\\mathbf{x},t) \\ll hmin ``
 
 # Mathematics
 

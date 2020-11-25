@@ -5,13 +5,13 @@ Fluid substrate interaction that effectively mimics a velocity boundary conditio
 
 # Arguments
 
-- `slipx::Array{Number,2}`: The x-component of the force due the velocity boundary condition
-- `slipy::Array{Number,2}`: The y-component of the force due the velocity boundary condition
-- `height::Array{Number,2}`: Height field `` h(\\mathbf{x},t)``
-- `velx::Array{Number,2}`: x-component of the macroscopic velocity vector
-- `vely::Array{Number,2}`: y-component of the macroscopic velocity vector
-- `δ<:Number`: Extrapolation length into the substrate where the **no-slip** is met
-- `μ<:Number`: Kinematic viscosity of the simulation, dependent on the value of **τ**
+- `slipx :: Array{<:Number,2}`: The x-component of the force due the velocity boundary condition
+- `slipy :: Array{<:Number,2}`: The y-component of the force due the velocity boundary condition
+- `height::Array{<:Number,2}`: Height field `` h(\\mathbf{x},t)``
+- `velx::Array{<:Number,2}`: x-component of the macroscopic velocity vector
+- `vely::Array{<:Number,2}`: y-component of the macroscopic velocity vector
+- `δ <: Number`: Extrapolation length into the substrate where the **no-slip** is met
+- `μ <: Number`: Kinematic viscosity of the simulation, dependent on the value of **τ**
 
 # Mathematics
 

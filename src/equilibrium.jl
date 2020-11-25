@@ -5,12 +5,12 @@ Calculation of the equilibrium distribution `feq` for the shallow water lattice 
 
 # Arguments
 
-- `feq`: Equilibrium distribution function, to be calculated
-- `height`: The height field `` h(\\mathbf{x},t)``
-- `velocityx`: x-component of the macroscopic velocity
-- `velocityy`: y-component of the macroscopic velocity
-- `vsquare`: Dummy array that is preallocated to be filled with the square of the velocity vector
-- `gravity`: Strength of the gravitational acceleration in lattice units
+- `feq :: Array{<:Number,3}`: Equilibrium distribution function, to be calculated
+- `height :: Array{<:Number,2}`: The height field `` h(\\mathbf{x},t)``
+- `velocityx :: Array{<:Number,2}`: x-component of the macroscopic velocity
+- `velocityy :: Array{<:Number,2}`: y-component of the macroscopic velocity
+- `vsquare :: Array{<:Number,2}`: Dummy array that is preallocated to be filled with the square of the velocity vector
+- `gravity <: Number`: Strength of the gravitational acceleration in lattice units
 
 # Mathematics
 
