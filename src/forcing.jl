@@ -80,25 +80,9 @@ Test Passed
 - [Davidovitch, Moro and Stone](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.95.244505)
 
 """ 
-function thermal!(fluc_x::CuArray, fluc_y::CuArray, height, kᵦT , μ, δ)
-    len, wid = size(height)
-    fluc_x .= CUDA.randn(len, wid)
-    fluc_y .= CUDA.randn(len, wid)
-    fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                    (2 .* height.^2 .+
-                     6 .* height .* δ .+
-                     3 .* δ^2))
-    fluc_y .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                    (2 .* height.^2 .+
-                     6 .* height .* δ .+
-                     3 .* δ^2))
-    return nothing
-end
-# Apparently one can not use map(rand, array) with CuArrays
-function thermal!(fluc_x::Array, fluc_y::Array, height, kᵦT , μ, δ)
-    len, wid = size(height)
-    fluc_x .= randn(len, wid)
-    fluc_y .= randn(len, wid)
+function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
+    randn!(fluc_x)
+    randn!(fluc_y)
     fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
                     (2 .* height.^2 .+
                      6 .* height .* δ .+
