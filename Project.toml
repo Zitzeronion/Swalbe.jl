@@ -6,12 +6,13 @@ version = "0.1.0"
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
-Parameters = "0.12"
 CUDA = "2.3"
+Parameters = "0.12"
 Revise = "3.1"
 julia = "1.5"
 

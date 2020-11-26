@@ -1,6 +1,6 @@
 module Swalbe
 
-using Revise, CUDA, Statistics, Parameters
+using Revise, CUDA, Statistics, Parameters, Random
 
 include("initialize.jl")
 include("differences.jl")
