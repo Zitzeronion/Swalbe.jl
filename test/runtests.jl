@@ -1,4 +1,4 @@
-using Swalbe, Test, Statistics, Parameters, Random
+using Swalbe, Test, Statistics, Parameters, Random, LazySets
 
 @testset "Swalbe.jl" begin
     include("initialize.jl")

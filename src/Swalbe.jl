@@ -1,6 +1,6 @@
 module Swalbe
 
-using Revise, CUDA, Statistics, Parameters, Random
+using Revise, CUDA, Statistics, Parameters, Random, LazySets
 
 include("initialize.jl")
 include("initialvalues.jl")
