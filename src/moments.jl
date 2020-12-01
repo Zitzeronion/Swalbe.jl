@@ -11,7 +11,7 @@ The macroscopic quantities such as the height and the velocity are the moments o
 
 and 
 
-`` \\mathbf{v} = \\frac{1}{h}\\sum_{i=0}^8 \\mathbf{c}_i f_i . ``
+`` \\mathbf{v}(\\mathbf{x},t) = \\frac{1}{h}\\sum_{i=0}^8 \\mathbf{c}_i f_i . ``
 
 # Examples
 
