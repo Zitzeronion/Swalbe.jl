@@ -9,6 +9,7 @@
 Performs a simulation of an flat interface without forces
 """
 function run_flat(sys::SysConst, device::String)
+    println("Simulating a flat interface without driving forces (nothing should happen)")
     fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
     height .= 1.0
     vsq = zeros(size(height))
