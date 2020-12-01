@@ -9,8 +9,8 @@
     @testset "Random interface" begin
         h = ones(10,10)
         Swalbe.randinterface!(h, 2.0, 0.1)
-        @test maximum(h) <= 2.2
-        @test minimum(h) >= 1.8
+        @test maximum(h) <= 3.0
+        @test minimum(h) >= 1.0
     end
 
     @testset "Single droplet" begin
