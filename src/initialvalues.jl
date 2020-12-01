@@ -112,10 +112,10 @@ julia> using Swalbe
 
 julia> θ₀ = 1/9;
 
-julia> pattern, posize(θ,2)gon = boxpattern(ones(100,100), θ₀);
+julia> pattern, polygon = Swalbe.boxpattern(ones(100,100), θ₀);
 
-julia> posize(θ,2)gon # Some cool thing we use to create the posize(θ,2)gones, a LazySet
-LazySets.VPosize(θ,2)gon{Float64,Array{Float64,1}}([[40.0, 40.0], [60.0, 40.0], [60.0, 60.0], [40.0, 60.0]])
+julia> polygon # Some cool thing we use to create the posize(θ,2)gones, a LazySet
+LazySets.VPolygon{Float64,Array{Float64,1}}([[40.0, 40.0], [60.0, 40.0], [60.0, 60.0], [40.0, 60.0]])
 
 julia> pattern[50,50] == pattern[1,1] # In the center there is a different contact angle!
 false
@@ -177,7 +177,7 @@ julia> using Swalbe, Test
 
 julia> θ₀ = 1/9;
 
-julia> θ, P = ellipsepattern(ones(100,100), θ₀); # per default the center is in the middle!
+julia> θ, P = Swalbe.ellipsepattern(ones(100,100), θ₀); # per default the center is in the middle!
 
 julia> @test θ[1,1] == θ₀
 Test Passed
@@ -226,11 +226,11 @@ Generates an equilateral triangle centered around `center` with contact angle co
 ```jldoctest
 julia> using Swalbe
 
-julia> θ, P = Swalbe.trianglepattern(ones(50,50), 1/9, side=20) # Returns a posize(θ,2)gon and the contact angle field
+julia> θ, P = Swalbe.trianglepattern(ones(50,50), 1/9, side=20) # Returns a polygon and the contact angle field
 ([0.1111111111111111 0.1111111111111111 … 0.1111111111111111 0.1111111111111111; 0.1111111111111111 0.1111111111111111 … 0.1111111111111111 0.1111111111111111; … ; 0.1111111111111111 0.1111111111111111 … 0.1111111111111111 0.1111111111111111; 0.1111111111111111 0.1111111111111111 … 0.1111111111111111 0.1111111111111111], LazySets.VPosize(θ,2)gon{Float64,Array{Float64,1}}([[15.0, 19.226497308103742], [35.0, 19.226497308103742], [25.0, 36.547005383792516]]))
 
 julia> P
-LazySets.VPosize(θ,2)gon{Float64,Array{Float64,1}}([[15.0, 19.226497308103742], [35.0, 19.226497308103742], [25.0, 36.547005383792516]])
+LazySets.VPolygon{Float64,Array{Float64,1}}([[15.0, 19.226497308103742], [35.0, 19.226497308103742], [25.0, 36.547005383792516]])
 
 julia> θ[25,25]
 0.1388888888888889
