@@ -27,5 +27,7 @@ function run_flat(sys::SysConst, device::String)
         Fy .= h∇py .+ slipy
         Swalbe.equilibrium!(feq, height, velx, vely, vsq)
         Swalbe.BGKandStream!(fout, feq, ftemp, Fx, Fy)
-        Swalbe.momen
+        Swalbe.moments!(height, velx, vely, fout)
+    end
+    return height
 end

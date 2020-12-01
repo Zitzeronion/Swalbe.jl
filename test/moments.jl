@@ -24,5 +24,15 @@
         @test all(height .== 1.1)
         @test all(velx .≈ 0.3/1.1)
         @test all(vely .== 0.2/1.1)
+        f[:,:,5] .= -0.1
+        Swalbe.moments!(height, velx, vely, f)
+        @test all(height .== 1.0)
+        @test all(velx .≈ 0.3/1.0)
+        @test all(vely .≈ 0.3/1.0)
+        f[:,:,6] .= 0.1
+        Swalbe.moments!(height, velx, vely, f)
+        @test all(height .== 1.1)
+        @test all(velx .≈ 0.4/1.1)
+        @test all(vely .≈ 0.4/1.1)
     end 
 end

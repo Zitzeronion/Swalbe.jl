@@ -10,5 +10,6 @@ include("collide.jl")
 include("equilibrium.jl")
 include("forcing.jl")
 include("moments.jl")
+include("simulate.jl")
 
 end
