@@ -9,5 +9,6 @@ include("pressure.jl")
 include("collide.jl")
 include("equilibrium.jl")
 include("forcing.jl")
+include("moments.jl")
 
 end
