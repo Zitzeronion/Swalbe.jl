@@ -85,7 +85,7 @@ function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
 
     output .= -γ .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
                    .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* f) .- κ .* (power_broad.(hmin./(f .+ hcrit), n)  
+                   .- 10/3 .* f) .+ κ .* (power_broad.(hmin./(f .+ hcrit), n)  
                                        .- power_broad.(hmin./(f .+ hcrit), m)))
     return nothing
 end
@@ -106,7 +106,7 @@ function filmpressure!(output, f, θ)
 
     output .= -0.01 .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
                    .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* f) .- κ .* (power_broad.(0.1./(f .+ 0.05), 9)  
+                   .- 10/3 .* f) .+ κ .* (power_broad.(0.1./(f .+ 0.05), 9)  
                                        .- power_broad.(0.1./(f .+ 0.05), 3)))
     return nothing
 end

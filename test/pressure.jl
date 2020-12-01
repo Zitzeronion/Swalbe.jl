@@ -22,7 +22,7 @@
         nograd = ones(5,5)
         Swalbe.filmpressure!(res, nograd, 1.0, 1/2, 3, 2, 0.1, 0.0)
         for i in eachindex(res)
-            @test res[i] .≈ 2(0.1^2-0.1) atol=1e-10
+            @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
         end
     end
     @testset "Gradient and contact angle" begin
@@ -34,7 +34,7 @@
                20.0 -5.0 -5.0 -5.0 -30.0]
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
-            @test res[i] .≈ -1(sol[i] - 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+            @test res[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
         end
     end
     @testset "Gradient and contact angle Float32" begin
@@ -47,7 +47,7 @@
  
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
-            @test res[i] .≈ -1(sol[i] - 20((0.1f0/f_float[i])^3-(0.1f0/f_float[i])^2)) atol=1e-6
+            @test res[i] .≈ -1(sol[i] + 20((0.1f0/f_float[i])^3-(0.1f0/f_float[i])^2)) atol=1e-6
         end
     end
 end
