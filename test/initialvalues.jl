@@ -60,7 +60,10 @@ end
             θₙ, P = Swalbe.trianglepattern(ones(100, 100), 1/9, center=(lx/3, 2*ly/3))
             @test θₙ[1,1] == 1/9 # the default value
             @test θₙ[Int(round(lx/3)), Int(round(2*ly/3))] == 1/9 # Because the side became to large
-            @test θₙ[30, 20] == 1/9 + 1/36 # If too large stick to origin!
+            θₙ, P = Swalbe.trianglepattern(ones(100, 100), 1/9, center=(0, 2*ly/3))
+            @test θₙ[1,1] == 1/9 # the default value
+            @test θₙ[Int(round(lx/3)), Int(round(2*ly/3))] == 1/9 # Because the side became to large
+            @test θₙ[60, 1] == 1/9 + 1/36 # If too large stick to origin!
             θₙ, P = Swalbe.trianglepattern(ones(100, 100), 1/9, δₐ = -1/36)
             @test θₙ[1,1] == 1/9 # the default value
             @test θₙ[Int(lx/2), Int(ly/2)] == 1/9 - 1/36 
@@ -78,6 +81,9 @@ end
             θₙ, P = Swalbe.boxpattern(ones(100, 100), 1/9, center=(lx/3, 2*ly/3))
             @test θₙ[1,1] == 1/9 # the default value
             @test θₙ[Int(round(2*ly/3)), Int(round(lx/3))] == 1/9 + 1/36
+            θₙ, P = Swalbe.boxpattern(ones(100, 100), 1/9, center=(0, 2*ly/3))
+            @test θₙ[20,1] == 1/9 # the default value
+            @test θₙ[60,1] == 1/9 + 1/36
             θₙ, P = Swalbe.boxpattern(ones(100, 100), 1/9, δₐ = -1/36)
             @test θₙ[1,1] == 1/9 # the default value
             @test θₙ[Int(lx/2), Int(ly/2)] == 1/9 - 1/36 
