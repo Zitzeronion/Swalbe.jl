@@ -124,7 +124,7 @@ false
 
 # References
 
-Realsize(θ,2) not much to say here, check out [LazySets.jl](https://github.com/JuliaReach/LazySets.jl).
+Really not much to say here, check out [LazySets.jl](https://github.com/JuliaReach/LazySets.jl).
 
 """
 function boxpattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36, side=20)

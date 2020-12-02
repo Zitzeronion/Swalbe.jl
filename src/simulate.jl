@@ -126,3 +126,38 @@ function run_dropletpatterned(sys::SysConst, device::String; radius=20, θ₀=1/
     return height
 
 end
+
+"""
+    run_dropletforced()
+
+Simulates an droplet on a patterned substrate
+"""
+function run_dropletforced(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), θₛ=fill(1/9, sys.Lx, sys.Ly), fx=0.0, fy=0.0, verbos=true)
+    println("Simulating a sliding droplet")
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    Swalbe.singledroplet(height, radius, θ₀, center)
+    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+    ftemp .= feq
+    for t in 1:sys.Tmax
+        if t % 1000 == 0
+            mass = 0.0
+            mass = sum(height)
+            maxU = maximum(abs.(velx))
+            maxV = maximum(abs.(vely))
+            if verbos
+                println("Time step $t mass is $(round(mass, digits=3)) and max vel ($maxU $maxV)")
+            end
+        end
+        Swalbe.filmpressure!(pressure, height, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
+        Swalbe.∇f!(h∇px, h∇py, pressure, height)
+        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+        # Here we a force that is like pull of an inclined plane
+        Fx .= h∇px .+ slipx .+ fx .* height 
+        Fy .= h∇py .+ slipy .+ fy .* height
+        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
+        Swalbe.moments!(height, velx, vely, fout)
+    end
+    return height, velx, velx, vely
+
+end

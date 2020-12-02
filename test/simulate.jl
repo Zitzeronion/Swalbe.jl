@@ -54,4 +54,17 @@
         sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0)
         h = Swalbe.run_dropletpatterned(sys, "CPU", radius=35, θₛ = fill(1/9,sys.Lx, sys.Ly))
     end
+    @testset "Sliding droplet" begin
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=5000, δ=2.0)
+        # This will return the hydrodynamic moments: h, u, v
+        mom = Swalbe.run_dropletforced(sys, "CPU", radius=35, fx=1e-4, verbos=false)
+        # Now check that the center has moved 
+        @test findmax(mom[1])[2][1] ≠ 75
+        @test findmax(mom[1])[2][2] == 75
+        # Further test that the velocity is not too large
+        @test all(mom[2] .< 0.1) 
+        @test all(mom[3] .< 0.1) 
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0)
+        h = Swalbe.run_dropletforced(sys, "CPU", radius=35, fx=1e-4)
+    end
 end
