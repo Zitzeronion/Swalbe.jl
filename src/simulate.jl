@@ -5,9 +5,8 @@ Performs a simulation of an flat interface without forces
 """
 function run_flat(sys::SysConst, device::String; verbos=true)
     println("Simulating a flat interface without driving forces (nothing should happen)")
-    fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
     height .= 1.0
-    vsq = zeros(size(height))
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax
@@ -37,9 +36,8 @@ Simulation of an random undulated interface
 """
 function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=true)
     println("Simulating a random undulated interface")
-    fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
     Swalbe.randinterface!(height, h₀, ϵ)
-    vsq = zeros(size(height))
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax
@@ -70,9 +68,8 @@ Simulates an out of equilibrium droplet
 """
 function run_dropletrelax(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true)
     println("Simulating an ouf equilibrium droplet")
-    fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
     Swalbe.singledroplet(height, radius, θ₀, center)
-    vsq = zeros(size(height))
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax

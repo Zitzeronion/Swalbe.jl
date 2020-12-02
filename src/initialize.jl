@@ -39,6 +39,7 @@ function Sys(sysc :: SysConst, device::String, exotic::Bool)
         height = ones(sysc.Lx, sysc.Ly)
         velx = zeros(sysc.Lx, sysc.Ly)
         vely = zeros(sysc.Lx, sysc.Ly)
+        vsq = zeros(sysc.Lx, sysc.Ly)
         pressure = zeros(sysc.Lx, sysc.Ly)
 
         # Forces
@@ -52,9 +53,9 @@ function Sys(sysc :: SysConst, device::String, exotic::Bool)
             # Probably many more forces here in the future
             fthermalx = zeros(sysc.Lx, sysc.Ly)
             fthermaly = zeros(sysc.Lx, sysc.Ly)
-            return fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
+            return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
         end
-        return fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py
+        return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py
     elseif device == "GPU"
         # Meso
         fout = CUDA.zeros(sysc.Lx, sysc.Ly, 9)
@@ -65,7 +66,8 @@ function Sys(sysc :: SysConst, device::String, exotic::Bool)
         height = CUDA.ones(sysc.Lx, sysc.Ly)
         velx = CUDA.zeros(sysc.Lx, sysc.Ly)
         vely = CUDA.zeros(sysc.Lx, sysc.Ly)
-        pressure = zeros(sysc.Lx, sysc.Ly)
+        vsq = CUDA.zeros(sysc.Lx, sysc.Ly)
+        pressure = CUDA.zeros(sysc.Lx, sysc.Ly)
 
         # Forces
         Fx = CUDA.zeros(sysc.Lx, sysc.Ly)
@@ -77,8 +79,8 @@ function Sys(sysc :: SysConst, device::String, exotic::Bool)
         if exotic
             fthermalx = CUDA.zeros(sysc.Lx, sysc.Ly)
             fthermaly = CUDA.zeros(sysc.Lx, sysc.Ly)
-            return fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
+            return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
         end
-        return fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py
+        return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py
     end
 end
