@@ -99,7 +99,7 @@ end
 Simulates an droplet on a patterned substrate
 """
 function run_dropletpatterned(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), θₛ=ones(sys.Lx, sys.Ly), verbos=true)
-    println("Simulating an out of equilibrium droplet")
+    println("Simulating a droplet on a patterned substrate")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
     Swalbe.singledroplet(height, radius, θ₀, center)
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
