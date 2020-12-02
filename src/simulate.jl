@@ -68,10 +68,10 @@ end
 
 Simulates an out of equilibrium droplet
 """
-function run_dropletrelax(sys::SysConst, device::String; radius=20, θ=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true)
+function run_dropletrelax(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true)
     println("Simulating an ouf equilibrium droplet")
     fout, ftemp, feq, height, velx, vely, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
-    Swalbe.singledroplet(height, radius, θ, center)
+    Swalbe.singledroplet(height, radius, θ₀, center)
     vsq = zeros(size(height))
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
