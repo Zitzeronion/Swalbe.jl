@@ -81,7 +81,7 @@ function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
     himjm = circshift(f, (-1,-1))
     hipjm = circshift(f, (1,-1))
     # Disjoining pressure part
-    κ = (1 .- cospi.(θ)) * (n-1) * (m-1) / ((n-m)*hmin) 
+    κ = (1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
 
     output .= -γ .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
                    .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 

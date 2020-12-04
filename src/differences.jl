@@ -67,8 +67,8 @@ function ∇²f!(output, f, γ)
     hipjm = circshift(f, (1,-1))
     # In the end it is just a weighted sum...
     output .= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                  .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                  .- 10/3 .* f)
+                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                 .- 10/3 .* f)
     return nothing
 end
 
