@@ -1,9 +1,12 @@
 @testset "Allocations" begin
-    sys = Swalbe.SysConst{Float64}(Lx=25, Ly=26)
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly = Swalbe.Sys(sys, "CPU", true)
+    T = Float64
+    sys = Swalbe.SysConst{T}(Lx=25, Ly=26)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly = Swalbe.Sys(sys, "CPU", true, T)
     # Struct should do what I expect, hopefully
     @test sys.Lx == 25
     @test sys.Ly == 26
+    @test sys.Tmax == 1000
+    @test sys.tdump == 100
     @test isa(fout, Array{Float64, 3})
     @test isa(ftemp, Array{Float64, 3})
     @test isa(feq, Array{Float64, 3})
@@ -20,7 +23,7 @@
     @test isa(h∇py, Array{Float64, 2})
     @test isa(fthermalx, Array{Float64, 2})
     @test isa(fthermaly, Array{Float64, 2})
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, = Swalbe.Sys(sys, "CPU", false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, = Swalbe.Sys(sys, "CPU", false, T)
     # Struct should do what I expect, hopefully
     @test sys.Lx == 25
     @test sys.Ly == 26

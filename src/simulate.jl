@@ -3,14 +3,14 @@
 
 Performs a simulation of an flat interface without forces
 """
-function run_flat(sys::SysConst, device::String; verbos=true)
+function run_flat(sys::SysConst, device::String; verbos=true, T=Float64)
     println("Simulating a flat interface without driving forces (nothing should happen)")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     height .= 1.0
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax
-        if t % 100 == 0
+        if t % sys.tdump == 0
             mass = 0.0
             mass = sum(height)
             if verbos
@@ -34,14 +34,14 @@ end
 
 Simulation of an random undulated interface
 """
-function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=true)
+function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=true, T=Float64)
     println("Simulating a random undulated interface")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     Swalbe.randinterface!(height, h₀, ϵ)
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax
-        if t % 500 == 0
+        if t % sys.tdump == 0
             mass = 0.0
             mass = sum(height)
             difference = maximum(height) - minimum(height)
@@ -99,14 +99,14 @@ end
 
 Simulates an out of equilibrium droplet
 """
-function run_dropletrelax(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true)
+function run_dropletrelax(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true, T=Float64)
     println("Simulating an out of equilibrium droplet")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     Swalbe.singledroplet(height, radius, θ₀, center)
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax
-        if t % 500 == 0
+        if t % sys.tdump == 0
             mass = 0.0
             mass = sum(height)
             difference = maximum(height) - minimum(height)
@@ -131,14 +131,23 @@ end
 
 Simulates an droplet on a patterned substrate
 """
-function run_dropletpatterned(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), θₛ=ones(sys.Lx, sys.Ly), verbos=true)
+function run_dropletpatterned(
+    sys::SysConst, 
+    device::String; 
+    radius=20, 
+    θ₀=1/6, 
+    center=(sys.Lx÷2, sys.Ly÷2), 
+    θₛ=ones(sys.Lx, sys.Ly), 
+    verbos=true, 
+    T=Float64
+)
     println("Simulating a droplet on a patterned substrate")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     Swalbe.singledroplet(height, radius, θ₀, center)
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     for t in 1:sys.Tmax
-        if t % 5000 == 0
+        if t % sys.tdump == 0
             mass = 0.0
             mass = sum(height)
             maxU = maximum(abs.(velx))
@@ -165,15 +174,26 @@ end
 
 Simulates an droplet on a patterned substrate
 """
-function run_dropletforced(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), θₛ=fill(1/9, sys.Lx, sys.Ly), fx=0.0, fy=0.0, verbos=true)
+function run_dropletforced(
+    sys::SysConst, 
+    device::String; 
+    radius=20, 
+    θ₀=1/6, 
+    center=(sys.Lx÷2, sys.Ly÷2), 
+    θₛ=fill(1/9, sys.Lx, sys.Ly), 
+    fx=0.0, 
+    fy=0.0, 
+    verbos=true, 
+    T=Float64
+)
     println("Simulating a sliding droplet")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     Swalbe.singledroplet(height, radius, θ₀, center)
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     ftemp .= feq
     println("Starting the lattice Boltzmann time loop")
     for t in 1:sys.Tmax
-        if t % 1000 == 0
+        if t % sys.tdump == 0
             mass = 0.0
             mass = sum(height)
             maxU = maximum(abs.(velx))

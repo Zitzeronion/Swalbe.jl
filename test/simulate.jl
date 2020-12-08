@@ -1,17 +1,18 @@
 @testset "Simulations" begin
+    T = Float64
     @testset "Flat Interface" begin
-        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=200)
+        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=200, tdump=500)
         h = Swalbe.run_flat(sys, "CPU", verbos=false)
         @test all(h .== 1.0)
         @test sum(h) == 25*25
         h = Swalbe.run_flat(sys, "CPU", verbos=true)
     end
     @testset "Random Interface" begin
-        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=10000)
+        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=10000, tdump=50000)
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=false)
         difference = maximum(h) - minimum(h)
         @test difference < 0.02
-        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=100)
+        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=100, tdump=500)
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=true)
     end
     @testset "Relaxing droplet" begin
@@ -31,7 +32,7 @@
         # Test that the droplet volume has not changed too much
         @test vol ≈ vnum atol = vol/100*10
         @test r1 ≈ droprad atol = r1/100*10
-        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0)
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0, tdump=500)
         h = Swalbe.run_dropletrelax(sys, "CPU", radius=35, verbos=true)
     end
     @testset "Patterned droplet" begin

@@ -8,6 +8,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
     Lx :: Int = 256
     Ly :: Int = 256
     Tmax :: Int = 1000
+    tdump :: Int = Tmax÷10
     # Collision related
     τ :: T = 1.0
     cₛ :: T = 1/sqrt(3.0)
@@ -28,7 +29,7 @@ end
 
 Mostly allocations of arrays used to run a simulation, but all within one function :)
 """
-function Sys(sysc :: SysConst, device::String, exotic::Bool)
+function Sys(sysc::SysConst, device::String, exotic::Bool, T)
     if device == "CPU"
         # Meso
         fout = zeros(sysc.Lx, sysc.Ly, 9)
@@ -58,27 +59,27 @@ function Sys(sysc :: SysConst, device::String, exotic::Bool)
         return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py
     elseif device == "GPU"
         # Meso
-        fout = CUDA.zeros(sysc.Lx, sysc.Ly, 9)
-        ftemp = CUDA.zeros(sysc.Lx, sysc.Ly, 9)
-        feq = CUDA.zeros(sysc.Lx, sysc.Ly, 9)
+        fout = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9)
+        ftemp = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9)
+        feq = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9)
         
         # Macro
-        height = CUDA.ones(sysc.Lx, sysc.Ly)
-        velx = CUDA.zeros(sysc.Lx, sysc.Ly)
-        vely = CUDA.zeros(sysc.Lx, sysc.Ly)
-        vsq = CUDA.zeros(sysc.Lx, sysc.Ly)
-        pressure = CUDA.zeros(sysc.Lx, sysc.Ly)
+        height = CUDA.ones(T, sysc.Lx, sysc.Ly)
+        velx = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        vely = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        vsq = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        pressure = CUDA.zeros(T, sysc.Lx, sysc.Ly)
 
         # Forces
-        Fx = CUDA.zeros(sysc.Lx, sysc.Ly)
-        Fy = CUDA.zeros(sysc.Lx, sysc.Ly)
-        slipx = CUDA.zeros(sysc.Lx, sysc.Ly)
-        slipy = CUDA.zeros(sysc.Lx, sysc.Ly)
-        h∇px = CUDA.zeros(sysc.Lx, sysc.Ly)
-        h∇py = CUDA.zeros(sysc.Lx, sysc.Ly)
+        Fx = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        Fy = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        slipx = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        slipy = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        h∇px = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        h∇py = CUDA.zeros(T, sysc.Lx, sysc.Ly)
         if exotic
-            fthermalx = CUDA.zeros(sysc.Lx, sysc.Ly)
-            fthermaly = CUDA.zeros(sysc.Lx, sysc.Ly)
+            fthermalx = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+            fthermaly = CUDA.zeros(T, sysc.Lx, sysc.Ly)
             return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
         end
         return fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py
