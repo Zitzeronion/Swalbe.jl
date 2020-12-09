@@ -40,7 +40,7 @@ Generates a fluid configuration of a single droplet in the shape of spherical ca
 # Arguments
 
 - `height::Array{undef, 2}`: numerical formate, either `Float64` or `Float32`
-- `radius::AbstractFloat`: radius of the undersize(θ,2)ing sphere from which the spherical cap is cut off
+- `radius::AbstractFloat`: radius of the underlying sphere from which the spherical cap is cut off
 - `θ::AbstractFloat`: contact angle in multiples of `π`
 - `center::Tuple{Int,Int}`: x and y coordinates of the center of the droplet
 
