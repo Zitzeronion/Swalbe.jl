@@ -15,6 +15,12 @@
         sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=100, tdump=500)
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=true)
     end
+    @testset "Rayleigh Taylor" begin
+        sys = Swalbe.SysConst(Lx=100, Ly=100, Tmax=1000, tdump=500, g=-0.002)
+        _, diff = Swalbe.run_rayleightaylor(sys, "CPU", kx=4, ky=5, ϵ=0.01, verbos=true)
+        @test diff[1] < diff[end]
+        # TODO: Write a test to check the growthrate 
+    end
     @testset "Relaxing droplet" begin
         sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=10000, δ=3.0)
         h = Swalbe.run_dropletrelax(sys, "CPU", radius=35, verbos=false)
@@ -52,7 +58,7 @@
         # Test that the droplet volume has not changed too much
         @test vol ≈ vnum atol = vol/100*10
         @test r1 ≈ droprad atol = r1/100*10
-        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0)
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, tdump=50, δ=3.0)
         h = Swalbe.run_dropletpatterned(sys, "CPU", radius=35, θₛ = fill(1/9,sys.Lx, sys.Ly))
     end
     @testset "Sliding droplet" begin
@@ -65,7 +71,7 @@
         # Further test that the velocity is not too large
         @test all(mom[2] .< 0.1) 
         @test all(mom[3] .< 0.1) 
-        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0)
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, tdump=50, δ=3.0)
         h = Swalbe.run_dropletforced(sys, "CPU", radius=35, fx=1e-4)
     end
 end

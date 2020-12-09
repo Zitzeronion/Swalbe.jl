@@ -61,38 +61,42 @@ function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=tru
     return height
 end
 
-# """
-#     run_rayleightaylor(sys::SysConst, device::String)
+"""
+    run_rayleightaylor(sys::SysConst, device::String)
 
-# Simulation of an random undulated interface
-# """
-# function run_rayleightaylor(sys::SysConst, device::String; hinitial=ones(sys.Lx, sys.Ly), verbos=true)
-#     println("Simulating the Rayleigh Taylor instability")
-#     fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false)
-#     # Swalbe.randinterface!(height, h₀, ϵ)
-#     height .= hinitial
-#     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-#     ftemp .= feq
-#     for t in 1:sys.Tmax
-#         if t % 500 == 0
-#             mass = 0.0
-#             mass = sum(height)
-#             difference = maximum(height) - minimum(height)
-#             if verbos
-#                 println("Time step $t mass is $(round(mass, digits=3))\nAbsolute difference is $difference")
-#             end
-#         end
-#         Swalbe.filmpressure!(pressure, height, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-#         Swalbe.∇f!(h∇px, h∇py, pressure, height)
-#         Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-#         Fx .= h∇px .+ slipx
-#         Fy .= h∇py .+ slipy
-#         Swalbe.equilibrium!(feq, height, velx, vely, vsq, sys.g)
-#         Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-#         Swalbe.moments!(height, velx, vely, fout)
-#     end
-#     return height
-# end
+Simulation of an random undulated interface
+"""
+function run_rayleightaylor(sys::SysConst, device::String; kx=15, ky=18, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
+    println("Simulating the Rayleigh Taylor instability")
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+    Swalbe.randinterface!(height, h₀, ϵ)
+    for i in 1:sys.Lx, j in 1:sys.Ly
+        height[i,j] = h₀ * (1 + ϵ * sin(2π*kx*i/(sys.Lx-1)) * sin(2π*ky*j/(sys.Ly-1)))
+    end
+    diff = []
+    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+    ftemp .= feq
+    for t in 1:sys.Tmax
+        difference = maximum(height) - minimum(height)
+        push!(diff, difference)
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(height)
+            if verbos
+                println("Time step $t mass is $(round(mass, digits=3))\nAbsolute difference is $difference")
+            end
+        end
+        Swalbe.filmpressure!(pressure, height, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
+        Swalbe.∇f!(h∇px, h∇py, pressure, height)
+        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+        Fx .= h∇px .+ slipx
+        Fy .= h∇py .+ slipy
+        Swalbe.equilibrium!(feq, height, velx, vely, vsq, sys.g)
+        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
+        Swalbe.moments!(height, velx, vely, fout)
+    end
+    return height, diff
+end
 
 """
     run_dropletrelax()
