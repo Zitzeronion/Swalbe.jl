@@ -37,7 +37,7 @@
     end
     @testset "Patterned droplet" begin
         sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=10000, δ=3.0)
-        h = Swalbe.run_dropletpatterned(sys, "CPU", radius=35, θₛ = fill(1/9,sys.Lx, sys.Ly))
+        h = Swalbe.run_dropletpatterned(sys, "CPU", radius=35, θₛ = fill(1/9,sys.Lx, sys.Ly), verbos=false)
         # Initial droplet volume
         vol = π/3 * 35^3 * (2+cospi(1/6)) * (1-cospi(1/6))^2
         R1 = cbrt((35^3*(2+cospi(1/6))*(1-cospi(1/6))^2)/((2+cospi(1/9))*(1-cospi(1/9))^2))
