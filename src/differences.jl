@@ -211,7 +211,7 @@ Test Passed
 
 ```
 
-See also: [`Swalbe.BGKandStream`](@ref)
+See also: [`Swalbe.∇f!`](@ref), [`Swalbe.filmpressure!`](@ref)
 """
 function viewneighbors(f)
     f1 = view(f, :, :, 1)
