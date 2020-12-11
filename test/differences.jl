@@ -98,5 +98,14 @@
             @test output[i] .≈ sol[i] atol=1e-10
         end
     end
+    @testset "Viewneighbors" begin
+        f = reshape(collect(1.0:5*5*8),5,5,8)
+        f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewneighbors(f)
+        allviews = [f1, f2, f3, f4, f5, f6, f7, f8]
+        for (index, value) in enumerate(allviews)
+            @test all(value .== f[:,:,index])
+        end
+    end
 end
+
 
