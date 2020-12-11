@@ -51,6 +51,28 @@
             @test all(outputx .== 0.1 .* solx)
             @test all(outputy .== 0.1 .* soly)
         end
+        @testset "Five Arguments" begin
+            a = fill(0.1, 5,5)
+            b = zeros(5,5,8)
+            Swalbe.∇f!(outputx, outputy, f, b, a)
+            @test isa(outputx, Array)
+            @test isa(outputy, Array)
+            # Analytical results
+            solx = [-1.5 -1.5 -1.5 -1.5 -1.5;
+                     1.0 1.0 1.0 1.0 1.0;
+                     1.0 1.0 1.0 1.0 1.0;
+                     1.0 1.0 1.0 1.0 1.0;
+                    -1.5 -1.5 -1.5 -1.5 -1.5]
+
+            soly = [-7.5 5.0 5.0 5.0 -7.5;
+                    -7.5 5.0 5.0 5.0 -7.5;
+                    -7.5 5.0 5.0 5.0 -7.5;
+                    -7.5 5.0 5.0 5.0 -7.5;
+                    -7.5 5.0 5.0 5.0 -7.5]
+            # Test them
+            @test all(outputx .== 0.1 .* solx)
+            @test all(outputy .== 0.1 .* soly)
+        end
     end
 
     @testset "Laplacian" begin

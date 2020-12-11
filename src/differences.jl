@@ -173,3 +173,55 @@ function ∇f!(outputx, outputy, f, a)
 
     return nothing
 end
+
+function ∇f!(outputx, outputy, f, dgrad, a)
+    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(fip, f, (1,0))
+    circshift!(fjp, f, (0,1))
+    circshift!(fim, f, (-1,0))
+    circshift!(fjm, f, (0,-1))
+    # Diagonal elements  
+    circshift!(fipjp, f, (1,1))
+    circshift!(fimjp, f, (-1,1))
+    circshift!(fimjm, f, (-1,-1))
+    circshift!(fipjm, f, (1,-1))
+    # In the end it is just a weighted sum...
+    outputx .= a .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
+    outputy .= a .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
+
+    return nothing
+end
+
+"""
+    viewneighbors(f)
+
+Generates a view for all nine populations of a **D2Q9** distribution function.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> ftest = reshape(collect(1.0:5*5*8),5,5,8);
+
+julia> f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewneighbors(ftest);
+
+julia> @test all(f3 .== ftest[:,:,3])
+Test Passed
+
+```
+
+See also: [`Swalbe.BGKandStream`](@ref)
+"""
+function viewneighbors(f)
+    f1 = view(f, :, :, 1)
+    f2 = view(f, :, :, 2)
+    f3 = view(f, :, :, 3)
+    f4 = view(f, :, :, 4)
+    f5 = view(f, :, :, 5)
+    f6 = view(f, :, :, 6)
+    f7 = view(f, :, :, 7)
+    f8 = view(f, :, :, 8)
+    
+    return f1, f2, f3, f4, f5, f6, f7, f8
+end
