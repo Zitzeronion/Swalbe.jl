@@ -89,15 +89,15 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     fo8 .= omeg .* ft8 .+ 1/τ .* fe8 .+ 1/24 .* (Fx .- Fy)
 
     # This is the streaming step with implicite periodic boundarys
-    ft0 .= circshift(fo0, (0, 0))
-    ft1 .= circshift(fo1, (1, 0))
-    ft2 .= circshift(fo2, (0, 1))
-    ft3 .= circshift(fo3, (-1, 0))
-    ft4 .= circshift(fo4, (0, -1))
-    ft5 .= circshift(fo5, (1, 1))
-    ft6 .= circshift(fo6, (-1, 1))
-    ft7 .= circshift(fo7, (-1, -1))
-    ft8 .= circshift(fo8, (1, -1))
+    circshift!(ft0, fo0, (0, 0))
+    circshift!(ft1, fo1, (1, 0))
+    circshift!(ft2, fo2, (0, 1))
+    circshift!(ft3, fo3, (-1, 0))
+    circshift!(ft4, fo4, (0, -1))
+    circshift!(ft5, fo5, (1, 1))
+    circshift!(ft6, fo6, (-1, 1))
+    circshift!(ft7, fo7, (-1, -1))
+    circshift!(ft8, fo8, (1, -1))
     
     # Overwrite fout with ftemp
     fout .= ftemp
@@ -126,15 +126,15 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy)
     fo8 .= fe8 .+ 1/24 .* (Fx .- Fy)
 
     # This is the streaming step with implicite periodic boundarys
-    ft0 .= circshift(fo0, (0, 0))
-    ft1 .= circshift(fo1, (1, 0))
-    ft2 .= circshift(fo2, (0, 1))
-    ft3 .= circshift(fo3, (-1, 0))
-    ft4 .= circshift(fo4, (0, -1))
-    ft5 .= circshift(fo5, (1, 1))
-    ft6 .= circshift(fo6, (-1, 1))
-    ft7 .= circshift(fo7, (-1, -1))
-    ft8 .= circshift(fo8, (1, -1))
+    circshift!(ft0, fo0, (0, 0))
+    circshift!(ft1, fo1, (1, 0))
+    circshift!(ft2, fo2, (0, 1))
+    circshift!(ft3, fo3, (-1, 0))
+    circshift!(ft4, fo4, (0, -1))
+    circshift!(ft5, fo5, (1, 1))
+    circshift!(ft6, fo6, (-1, 1))
+    circshift!(ft7, fo7, (-1, -1))
+    circshift!(ft8, fo8, (1, -1))
     
     # Overwrite fout with ftemp
     fout .= ftemp
