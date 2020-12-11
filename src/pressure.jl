@@ -89,6 +89,28 @@ function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
                                        .- power_broad.(hmin./(f .+ hcrit), m)))
     return nothing
 end
+
+function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
+    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, f, (1,0))
+    circshift!(hjp, f, (0,1))
+    circshift!(him, f, (-1,0))
+    circshift!(hjm, f, (0,-1))
+    # Diagonal elements  
+    circshift!(hipjp, f, (1,1))
+    circshift!(himjp, f, (-1,1))
+    circshift!(himjm, f, (-1,-1))
+    circshift!(hipjm, f, (1,-1))
+    # Disjoining pressure part
+    κ = (1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+
+    output .= -γ .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* f) .+ κ .* (power_broad.(hmin./(f .+ hcrit), n)  
+                                       .- power_broad.(hmin./(f .+ hcrit), m)))
+    return nothing
+end
 # Standard usage parameters
 function filmpressure!(output, f, θ)
     # Straight elements j+1, i+1, i-1, j-1

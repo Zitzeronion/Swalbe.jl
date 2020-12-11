@@ -50,6 +50,19 @@
             @test res[i] .≈ -1(sol[i] + 20((0.1f0/f_float[i])^3-(0.1f0/f_float[i])^2)) atol=1e-6
         end
     end
+    dgrad = zeros(5,5,8)
+    @testset "No contact angle circshift!" begin
+        Swalbe.filmpressure!(res, f, dgrad, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        sol = [-30.0 -5.0 -5.0 -5.0 20;
+               -25.0 0.0 0.0 0.0 25.0;
+               -25.0 0.0 0.0 0.0 25.0;
+               -25.0 0.0 0.0 0.0 25.0;
+               -20.0 5.0 5.0 5.0 30.0;
+               ]
+        for i in eachindex(sol)
+            @test res[i] .≈ sol[i] atol=1e-10
+        end
+    end
 end
 
 @testset "Power function" begin
