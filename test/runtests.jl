@@ -17,6 +17,8 @@ using Swalbe, Test, Statistics, Parameters, Random, LazySets
     include("forcing.jl")
     println("Testing moment calculation")
     include("moments.jl")
-    println("Testing with relevant simulations")
-    include("simulate.jl")
+    println("Testing measurements")
+    include("measures.jl")
+    # println("Testing with relevant simulations")
+    # include("simulate.jl")
 end
