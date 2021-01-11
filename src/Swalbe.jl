@@ -11,5 +11,6 @@ include("equilibrium.jl")
 include("forcing.jl")
 include("moments.jl")
 include("simulate.jl")
+include("experiments.jl")
 
 end

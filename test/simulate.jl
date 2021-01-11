@@ -23,7 +23,7 @@
     end
     @testset "Relaxing droplet" begin
         sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=10000, δ=3.0)
-        h = Swalbe.run_dropletrelax(sys, "CPU", radius=35, verbos=false)
+        h, A = Swalbe.run_dropletrelax(sys, "CPU", radius=35, verbos=false)
         # Initial droplet volume
         vol = π/3 * 35^3 * (2+cospi(1/6)) * (1-cospi(1/6))^2
         R1 = cbrt((35^3*(2+cospi(1/6))*(1-cospi(1/6))^2)/((2+cospi(1/9))*(1-cospi(1/9))^2))
@@ -38,8 +38,9 @@
         # Test that the droplet volume has not changed too much
         @test vol ≈ vnum atol = vol/100*10
         @test r1 ≈ droprad atol = r1/100*10
+        @test A[1] < A[end]
         sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0, tdump=50)
-        h = Swalbe.run_dropletrelax(sys, "CPU", radius=35, verbos=true)
+        h, A = Swalbe.run_dropletrelax(sys, "CPU", radius=35, verbos=true)
     end
     @testset "Patterned droplet" begin
         sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=10000, δ=3.0)

@@ -113,7 +113,7 @@ function run_dropletrelax(
     T=Float64
 )
     println("Simulating an out of equilibrium droplet")
-    # area = []
+    area = []
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
         Swalbe.singledroplet(height, radius, θ₀, center)
@@ -133,7 +133,7 @@ function run_dropletrelax(
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        # push!(area, length(findall(height .> 0.055)))
+        push!(area, length(findall(height .> 0.055)))
         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
         Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
         Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
@@ -143,7 +143,7 @@ function run_dropletrelax(
         Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
         Swalbe.moments!(height, velx, vely, fout)
     end
-    return height
+    return height, area
 end
 
 """
