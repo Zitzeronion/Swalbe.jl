@@ -63,7 +63,7 @@ end
 
 function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface)
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
-    surface .=  sqrt.((∇hx).^2 .+ (∇hy).^2 .+ 1)
+    surface .=  sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
     surface[height .< 0.055] .= 0.0
     push!(area_lv, sum(surface))
     push!(red_energy, sum(surface) - sum(θ[height .> 0.055]))
