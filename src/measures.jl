@@ -31,9 +31,11 @@ Measures the surface area of the liquid vapor interface and the reduced surface 
 function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
     surf = 0.0
-    surface .=  sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
-    surf = sum(surface[height .< htresh])
+    surface .= sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
+    surf = sum(surface[height .> htresh])
+    println("surf is $surf")
     area_lv[t] = surf
+    println("Area is $(area_lv[t])")
     red_energy[t] = surf - sum(cospi.(θ[height .> htresh]))
 
     return nothing
