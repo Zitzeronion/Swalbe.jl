@@ -28,12 +28,14 @@ end
 
 Measures the surface area of the liquid vapor interface and the reduced surface energy.
 """
-function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface)
+function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
+    surf = 0.0
     surface .=  sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
-    surface[height .< 0.055] .= 0.0
-    push!(area_lv, sum(surface))
-    push!(red_energy, sum(surface) - sum(θ[height .> 0.055]))
+    surface[height .< htresh] .= 0.0
+    surf = sum(surface)
+    area_lv[t] = surf
+    red_energy[t] = surf - sum(cospi.(θ[height .> 0.055]))
 
     return nothing
 end
