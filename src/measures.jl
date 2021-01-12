@@ -32,8 +32,7 @@ function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surf
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
     surf = 0.0
     surface .=  sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
-    surface[height .< htresh] .= 0.0
-    surf = sum(surface)
+    surf = sum(surface[height .< htresh])
     area_lv[t] = surf
     red_energy[t] = surf - sum(cospi.(θ[height .> htresh]))
 
