@@ -35,7 +35,7 @@ function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surf
     surface[height .< htresh] .= 0.0
     surf = sum(surface)
     area_lv[t] = surf
-    red_energy[t] = surf - sum(cospi.(θ[height .> 0.055]))
+    red_energy[t] = surf - sum(cospi.(θ[height .> htresh]))
 
     return nothing
 end
