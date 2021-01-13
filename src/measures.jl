@@ -33,9 +33,7 @@ function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surf
     surf = 0.0
     surface .= sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
     surf = sum(surface[height .> htresh])
-    println("surf is $surf")
     area_lv[t] = surf
-    println("Area is $(area_lv[t])")
     red_energy[t] = surf - sum(cospi.(θ[height .> htresh]))
 
     return nothing
