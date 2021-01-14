@@ -19,12 +19,12 @@ function measure_dropletpatterned(
     T=Float64
 )
     println("Simulating a droplet on a patterned substrate")
+    df_drop = zeros(sys.Tmax÷sys.tdump, sys.Lx*sys.Ly) 
     area_lv = zeros(sys.Tmax)
     area_ls = zeros(sys.Tmax)
     drop_dummy = falses(sys.Lx, sys.Ly)
     red_e = zeros(sys.Tmax)
     h_evo = zeros(sys.Tmax)
-    drop_pos = falses(sys.Tmax, sys.Lx*sys.Ly)
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
         Swalbe.singledroplet(height, radius, θ₀, center)
@@ -53,41 +53,63 @@ function measure_dropletpatterned(
         Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
         Swalbe.moments!(height, velx, vely, fout)
         Swalbe.wetted!(area_ls, h_evo, height, t)
-        Swalbe.fluid_dry!(drop_pos, drop_dummy, height, t)
         # Far from clean but good enough for now, one should use dedicated arrays in principle.
         Swalbe.surfacearea!(area_lv, red_e, height, θₛ, h∇px, h∇py, dgrad, pressure, t)
-      
+        Swalbe.snapshot!(df_drop, height, t, dumping = sys.tdump)
     end
-    return height, area_lv, area_ls, red_e, h_evo, drop_pos
+    return height, area_lv, area_ls, red_e, h_evo, df_drop
 end
 
 
-println("Starting iteration through surface tensions and sliplengths")
+println("Drop relaxation experiments on patterned substrates")
 device = "GPU"
-θₚ = ones(300,300)
-df_measures = DataFrame()
-df_drop = DataFrame()
-for γ1 in [0.01]
-    for δ1 in [0.5]
-        println("Simulating with γ: $γ1 and δ: $δ1")
-        sys = Swalbe.SysConst(Lx=300, Ly=300, γ=γ1, δ=δ1, n=3, m=2, hmin=0.07, Tmax=1000, tdump=100)
-        Swalbe.boxpattern(θₚ, 1/6, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-1/12, side=40)
-        θ_in = CUDA.adapt(CuArray, θₚ)
-        height, area_lv, area_ls, red_e, h_evo, drop_position = measure_dropletpatterned(sys, device, radius=85, θₛ=θ_in)
-        println("Writing measurements to dataframes")
-        df_measures[!, Symbol("A_lv")] = area_lv
-        df_measures[!, Symbol("A_sl")] = area_ls
-        df_measures[!, Symbol("E_red")] = red_e
-        df_measures[!, Symbol("H_max")] = h_evo
-        for t in 1:sys.Tmax
-            df_drop[!, Symbol("time_step_$t")] = drop_position[t,:]
+# Different substrate patches
+for shape in ["box" "triangle" "ellipse" "circle"]
+    # Different initial volumes
+    for R in [80 85 90]
+        boxside = 87
+        triside = 132
+        ella = 73
+        ellb = 33
+        rcirc = 49
+        # Different contact angle mismatch
+        for contrast in [1/36 1/18 1/12 1/9 -1/18]
+            println("Simulating shape $shape R0 $R contrast $(Int(round(rad2deg(contrast*pi), digits=0)))")
+            sys = Swalbe.SysConst(Lx=300, Ly=300, γ=0.01, δ=0.5, n=3, m=2, hmin=0.07, Tmax=10000)
+            df_measures = DataFrame()
+            df_drop = DataFrame()
+            θₚ = ones(sys.Lx,sys.Ly)
+            # Substrate patterning
+            if shape == "box"
+                Swalbe.boxpattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=boxside)
+            elseif shape == "triangle"
+                Swalbe.trianglepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=triside)
+            elseif shape == "ellipse"
+                Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=ella, b=ellb)
+            elseif shape == "ellipse"
+                Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=rcirc, b=rcirc)
+            end
+            # Make a cuarray with the substrate pattern
+            θ_in = CUDA.adapt(CuArray, θₚ)
+            # Actual simulation
+            height, area_lv, area_ls, red_e, h_evo, drop_position = measure_dropletpatterned(sys, device, radius=R, θₛ=θ_in)
+            println("Writing measurements to dataframes")
+            # Filling the dataframes
+            df_measures[!, Symbol("A_lv")] = area_lv
+            df_measures[!, Symbol("A_sl")] = area_ls
+            df_measures[!, Symbol("E_red")] = red_e
+            df_measures[!, Symbol("H_max")] = h_evo
+            for t in 1:sys.Tmax÷sys.tdump
+                df_drop[!, Symbol("time_step_$(t*sys.tdump)")] = drop_position[t,:]
+            end
+            df_drop[!, Symbol("Film")] = vec(Array(height))
+            # Get the HBM2 memory back
+            CUDA.reclaim()
+            println("Saving dataframe shape $shape R0 $R contrast $(round(contrast, digits=3)) to disk")
+            file1 = JDF.save("data/Pattern_substrate/measures_shape_$(shape)_R0_$(R)_contrast_$(Int(round(rad2deg(contrast*pi), digits=0))).jdf", df_measures)
+            file2 = JDF.save("data/Pattern_substrate/drop_pos_shape_$(shape)_R0_$(R)_contrast_$(Int(round(rad2deg(contrast*pi), digits=0))).jdf", df_drop)
         end
-        df_drop[!, Symbol("Film")] = vec(Array(height))
-        CUDA.reclaim()
     end
 end
-println("Saving dataframe to disk")
-file1 = JDF.save("data/Pattern_substrate/measures.jdf", df_measures)
-file2 = JDF.save("data/Pattern_substrate/drop_pos.jdf", df_drop)
-
+println("Script done, let's have a look at the data :)")
 

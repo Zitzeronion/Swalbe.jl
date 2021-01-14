@@ -23,6 +23,16 @@ function fluid_dry!(fluid, dummy, height, t; hthresh = 0.055)
     return nothing
 end
 
+
+function snapshot!(fluid, height, t; dumping = 1000)
+    if t % dumping == 0
+        fluid[t÷dumping, :] .= vec(Array(height))
+        # println("Hello")
+    end
+    
+    return nothing
+end
+
 """
     surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface)
 
