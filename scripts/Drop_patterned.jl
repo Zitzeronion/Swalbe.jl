@@ -15,17 +15,16 @@ function measure_dropletpatterned(
     θ₀=1/6, 
     center=(sys.Lx÷2, sys.Ly÷2), 
     θₛ=ones(sys.Lx, sys.Ly), 
+    height_dump=1000,
+    df_drop = zeros(sys.Tmax÷height_dump, sys.Lx*sys.Ly),
+    area_lv = zeros(sys.Tmax),
+    area_ls = zeros(sys.Tmax),
+    red_e = zeros(sys.Tmax),
+    h_evo = zeros(sys.Tmax),
     verbos=true, 
     T=Float64
 )
     println("Simulating a droplet on a patterned substrate")
-    height_dump = 1000
-    df_drop = zeros(sys.Tmax÷height_dump, sys.Lx*sys.Ly) 
-    area_lv = zeros(sys.Tmax)
-    area_ls = zeros(sys.Tmax)
-    drop_dummy = falses(sys.Lx, sys.Ly)
-    red_e = zeros(sys.Tmax)
-    h_evo = zeros(sys.Tmax)
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
         Swalbe.singledroplet(height, radius, θ₀, center)
@@ -70,7 +69,7 @@ for shape in ["box" "triangle" "ellipse" "circle"]
         # Different contact angle mismatch
         for contrast in [1/36 1/18 1/12 1/9 -1/18]
             println("Simulating shape $shape R0 $R contrast $(Int(round(rad2deg(contrast*pi), digits=0)))")
-            sys = Swalbe.SysConst(Lx=350, Ly=350, γ=0.01, δ=0.5, n=3, m=2, hmin=0.07, Tmax=1000000)
+            sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=0.5, n=3, m=2, hmin=0.07, Tmax=1000000)
             df_measures = DataFrame()
             df_drop = DataFrame()
             θₚ = ones(sys.Lx,sys.Ly)
@@ -82,16 +81,16 @@ for shape in ["box" "triangle" "ellipse" "circle"]
             rcirc = 49
             # Substrate patterning
             if shape == "box"
-                Swalbe.boxpattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=boxside)
+                theta, P = Swalbe.boxpattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=boxside)
             elseif shape == "triangle"
-                Swalbe.trianglepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=triside)
+                theta, P = Swalbe.trianglepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=triside)
             elseif shape == "ellipse"
-                Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=ella, b=ellb)
+                theta, P = Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=ella, b=ellb)
             elseif shape == "ellipse"
-                Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=rcirc, b=rcirc)
+                theta, P = Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=rcirc, b=rcirc)
             end
             # Make a cuarray with the substrate pattern
-            θ_in = CUDA.adapt(CuArray, θₚ)
+            θ_in = CUDA.adapt(CuArray, theta)
             # Actual simulation
             height, area_lv, area_ls, red_e, h_evo, drop_position = measure_dropletpatterned(sys, "GPU", radius=R, θₛ=θ_in)
             println("Writing measurements to dataframes")
@@ -103,14 +102,13 @@ for shape in ["box" "triangle" "ellipse" "circle"]
             for t in 1:sys.Tmax÷height_dump
                 df_drop[!, Symbol("time_step_$(t*height_dump)")] = drop_position[t,:]
             end
-            println("Saving dataframe shape $shape R0 $R contrast $(round(contrast, digits=3)) to disk")
+            println("Saving dataframe shape $shape R0 $R contrast $(Int(round(rad2deg(contrast*pi), digits=0))) to disk")
             file1 = JDF.save("data/Pattern_substrate/measures_shape_$(shape)_R0_$(R)_contrast_$(Int(round(rad2deg(contrast*pi), digits=0))).jdf", df_measures)
             file2 = JDF.save("data/Pattern_substrate/drop_pos_shape_$(shape)_R0_$(R)_contrast_$(Int(round(rad2deg(contrast*pi), digits=0))).jdf", df_drop)
             # Get back the memory of dataframes
             df_measures = DataFrame()
             df_drop = DataFrame()
             CUDA.reclaim()
-            gc()
         end
     end
 end

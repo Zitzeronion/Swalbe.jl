@@ -27,7 +27,6 @@ end
 function snapshot!(fluid, height, t; dumping = 1000)
     if t % dumping == 0
         fluid[t÷dumping, :] .= vec(Array(height))
-        # println("Hello")
     end
     
     return nothing
