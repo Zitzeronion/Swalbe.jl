@@ -103,8 +103,15 @@ for direction in ["x" "diagonal"]
             df_sub = DataFrame()
             θₚ = ones(sys.Lx,sys.Ly)
             # Substrate patterning
-            for i in 1:sys.Lx, j in 1:sys.Ly
-                θₚ[i,j] = 1/9 + 1/18 * sin(2π*waves*(i-1)/sys.Lx) * sin(2π*waves*(j-1)/sys.Ly)
+            pattern = "linear"
+            if pattern == "sine" 
+                for i in 1:sys.Lx, j in 1:sys.Ly
+                    θₚ[i,j] = 1/9 + 1/18 * sin(2π*waves*(i-1)/sys.Lx) * sin(2π*waves*(j-1)/sys.Ly)
+                end
+            elseif pattern == "linear"
+                for i in 1:sys.Lx, j in 1:sys.Ly
+                    θₚ[i,j] = 1/6 - (i/sys.Lx)/(1/9) 
+                end
             end
             # Make a cuarray with the substrate pattern
             θ_in = CUDA.adapt(CuArray, θₚ)
@@ -119,10 +126,14 @@ for direction in ["x" "diagonal"]
                 df_sub[!, Symbol("theta_$(t*sys.tdump)")] = substrate[t,:]
             end
             println("Saving dataframe subdirection $direction subvel $speed and sines $waves to disk")
-            file1 = JDF.save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_fluid)
-            file2 = JDF.save("data/Moving_wettability/velx_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_velx)
-            file3 = JDF.save("data/Moving_wettability/vely_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_vely)
-            file4 = JDF.save("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_sub)
+            # file1 = JDF.save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_fluid)
+            # file2 = JDF.save("data/Moving_wettability/velx_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_velx)
+            # file3 = JDF.save("data/Moving_wettability/vely_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_vely)
+            # file4 = JDF.save("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_sub)
+            file1 = JDF.save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_linear.jdf", df_fluid)
+            file2 = JDF.save("data/Moving_wettability/velx_direc_$(direction)_sp_$(speed)_linear.jdf", df_velx)
+            file3 = JDF.save("data/Moving_wettability/vely_direc_$(direction)_sp_$(speed)_linear.jdf", df_vely)
+            file4 = JDF.save("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_linear.jdf", df_sub)
 
             CUDA.reclaim()
         end
