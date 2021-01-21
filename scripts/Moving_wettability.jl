@@ -1,6 +1,7 @@
 using DrWatson
 @quickactivate :Swalbe
-using Plots, CUDA, DataFrames, JDF
+using Plots, CUDA, DataFrames, BSON
+CUDA.device!(1)
 
 # Fluid dynamics we need for the experiment
 """
@@ -73,6 +74,74 @@ function measure_substratewave(
     CUDA.reclaim()
 end
 
+function measure_substratewave(
+    sys::Swalbe.SysConst, 
+    device::String,
+    move_sub::String;
+    h₀ = 1.0, 
+    ϵ = 0.1,
+    wave_x=1,
+    wave_y=1, 
+    sub_speed=100,
+    dump=1000,  
+    θₛ=ones(sys.Lx, sys.Ly),
+    fluid=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
+    Svelx=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
+    Svely=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
+    theta=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
+    dire = "x",
+    verbos=true, 
+    T=Float64
+)
+    println("Simulating a droplet on a patterned substrate")
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+    if device == "CPU"
+        for i in 1:sys.Lx, j in 1:sys.Ly
+            height[i,j] = h₀ + ϵ * sin(2π*wave_x*(i-1)/sys.Lx) * sin(2π*wave_y*(j-1)/sys.Ly)
+        end
+    elseif device == "GPU"
+        h = zeros(size(height))
+        for i in 1:sys.Lx, j in 1:sys.Ly
+            h[i,j] = h₀ + ϵ * sin(2π*wave_x*(i-1)/sys.Lx) * sin(2π*wave_y*(j-1)/sys.Ly)
+        end
+        # theta = CUDA.zeros(Float64, sys.Lx, sys.Ly)
+        height = CUDA.adapt(CuArray, h)
+    end
+    Swalbe.equilibrium!(fout, height, velx, vely, vsq)
+    ftemp .= fout
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(height)
+            if verbos
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        
+        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
+        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
+        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+        # Forces are the pressure gradient and the slippage due to substrate liquid boundary conditions
+        Fx .= h∇px .+ slipx
+        Fy .= h∇py .+ slipy
+        # New equilibrium
+        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
+        # New moments
+        Swalbe.moments!(height, velx, vely, fout)
+        # Measurements, in this case only snapshots of simulational arrays
+        Swalbe.snapshot!(fluid, height, t, dumping = dump)
+        Swalbe.snapshot!(Svelx, velx, t, dumping = dump)
+        Swalbe.snapshot!(Svelx, vely, t, dumping = dump)
+        Swalbe.snapshot!(theta, θₛ, t, dumping = dump)
+        if move_sub == "yes"
+            # move_substrate!(slipx, θₛ, t, sub_speed, direction=dire)
+        end
+    end
+    return fluid, Svelx, Svely, theta
+    CUDA.reclaim()
+end
+
 function move_substrate!(θ, input, t, tmove; direction="diagonal")
     if (t % tmove == 0) & (t > 0)
         if direction == "diagonal"
@@ -91,9 +160,9 @@ end
 
 println("Moving Wettability and possible resonaces")
 # Different substrate patches
-for direction in ["x" "diagonal"]
+for direction in ["x"] #  "diagonal"
     # Different initial volumes
-    for speed in [10 100 1000 10000]
+    for speed in [0] # 10 100 1000 10000
         for waves in [1 2 3]
             println("Simulating moving substrate wettability with moving direction $(direction) and speed $(speed)")
             sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=1000000, tdump=1000)
@@ -103,7 +172,7 @@ for direction in ["x" "diagonal"]
             df_sub = DataFrame()
             θₚ = ones(sys.Lx,sys.Ly)
             # Substrate patterning
-            pattern = "linear"
+            pattern = "sine"
             if pattern == "sine" 
                 for i in 1:sys.Lx, j in 1:sys.Ly
                     θₚ[i,j] = 1/9 + 1/18 * sin(2π*waves*(i-1)/sys.Lx) * sin(2π*waves*(j-1)/sys.Ly)
@@ -116,27 +185,25 @@ for direction in ["x" "diagonal"]
             # Make a cuarray with the substrate pattern
             θ_in = CUDA.adapt(CuArray, θₚ)
             # Actual simulation
-            fluid, velx, vely, substrate = measure_substratewave(sys, "GPU", sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.tdump)
+            fluid, velx, vely, substrate = measure_substratewave(sys, "GPU", "no", sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.tdump)
             println("Writing measurements to dataframes")
             # Filling the dataframes
             for t in 1:sys.Tmax÷sys.tdump
                 df_fluid[!, Symbol("h_$(t*sys.tdump)")] = fluid[t,:]
-                # df_velx[!, Symbol("vx_$(t*sys.tdump)")] = velx[t,:]
-                # df_vely[!, Symbol("vy_$(t*sys.tdump)")] = vely[t,:]
+                df_velx[!, Symbol("vx_$(t*sys.tdump)")] = velx[t,:]
+                df_vely[!, Symbol("vy_$(t*sys.tdump)")] = vely[t,:]
                 df_sub[!, Symbol("theta_$(t*sys.tdump)")] = substrate[t,:]
             end
             println("Saving dataframe subdirection $direction subvel $speed and sines $waves to disk")
-            # file1 = JDF.save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_fluid)
-            # file2 = JDF.save("data/Moving_wettability/velx_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_velx)
-            # file3 = JDF.save("data/Moving_wettability/vely_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_vely)
-            # file4 = JDF.save("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_sines_$(waves).jdf", df_sub)
-            file1 = JDF.save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_linear.jdf", df_fluid)
-            file2 = JDF.save("data/Moving_wettability/velx_direc_$(direction)_sp_$(speed)_linear.jdf", df_velx)
-            file3 = JDF.save("data/Moving_wettability/vely_direc_$(direction)_sp_$(speed)_linear.jdf", df_vely)
-            file4 = JDF.save("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_linear.jdf", df_sub)
-
+            bson("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_sines_$(waves).bson", Dict(:f => df_fluid))
+            bson("data/Moving_wettability/velx_direc_$(direction)_sp_$(speed)_sines_$(waves).bson", Dict(:v => df_velx))
+            bson("data/Moving_wettability/vely_direc_$(direction)_sp_$(speed)_sines_$(waves).bson", Dict(:u => df_vely))
+            bson("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_sines_$(waves).bson", Dict(:t => df_sub))
+        
             CUDA.reclaim()
         end
     end
 end
+
+
 println("Script done, let's have a look at the data :)")

@@ -63,7 +63,7 @@ end
 
 println("Drop relaxation experiments on patterned substrates")
 # Different substrate patches
-for shape in ["box" "triangle" "ellipse" "circle"]
+for shape in ["circle"] # "box" "triangle" "ellipse" 
     # Different initial volumes
     for R in [80 85 90]
         # Different contact angle mismatch
@@ -86,7 +86,7 @@ for shape in ["box" "triangle" "ellipse" "circle"]
                 theta, P = Swalbe.trianglepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, side=triside)
             elseif shape == "ellipse"
                 theta, P = Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=ella, b=ellb)
-            elseif shape == "ellipse"
+            elseif shape == "circle"
                 theta, P = Swalbe.ellipsepattern(θₚ, 1/9, center=(sys.Lx÷2, sys.Ly÷2), δₐ=-contrast, a=rcirc, b=rcirc)
             end
             # Make a cuarray with the substrate pattern
