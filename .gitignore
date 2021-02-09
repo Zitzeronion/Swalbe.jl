@@ -4,5 +4,7 @@
 /docs/build/
 /images/*
 /data/*
+/data_cleaned
 /analyze
+/videos
 
