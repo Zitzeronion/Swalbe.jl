@@ -86,6 +86,8 @@ function measure_substratewave(
     dump=1000,  
     θₛ=ones(sys.Lx, sys.Ly),
     fluid=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
+    Svelx=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
+    Svely=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
     theta=zeros(sys.Tmax÷dump, sys.Lx*sys.Ly),
     dire = "x",
     verbos=true, 
@@ -136,7 +138,7 @@ function measure_substratewave(
             # move_substrate!(slipx, θₛ, t, sub_speed, direction=dire)
         end
     end
-    return fluid, theta
+    return fluid, Svelx, Svely, theta
     CUDA.reclaim()
 end
 
