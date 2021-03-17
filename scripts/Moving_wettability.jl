@@ -215,7 +215,7 @@ v_lam2_dia = [0, 9802, 980, 98]
 v_lam3_dia = [0, 14702, 1470, 147] 
 for direction in ["diagonal"] #  "diagonal"
     # Different initial volumes
-    for waves in [1 2 3]
+    for waves in [3] # 1 2 
         speeds = zeros(Int, 4)
         if waves == 1
             speeds .= v_lam1_dia
@@ -224,7 +224,7 @@ for direction in ["diagonal"] #  "diagonal"
         elseif waves == 3
             speeds .= v_lam3_dia
         end
-        for speed in speeds # 1 2 3
+        for speed in [147] # speeds # 1 2 3
             pattern = "sine"
             println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
             sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000)
