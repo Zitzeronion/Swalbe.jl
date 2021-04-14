@@ -27,7 +27,7 @@ The whole expression can be multiplied with a scalar `γ` if needed.
 julia> using Swalbe, Test
 
 julia> arg = reshape(collect(1.0:25),5,5)
-5×5 Array{Float64,2}:
+5×5 Matrix{Float64}:
  1.0   6.0  11.0  16.0  21.0
  2.0   7.0  12.0  17.0  22.0
  3.0   8.0  13.0  18.0  23.0
@@ -101,7 +101,7 @@ For the exact derivation feel free to read the reference by Junk and Klar.
 julia> using Swalbe, Test
 
 julia> arg = reshape(collect(1.0:25),5,5)
-5×5 Array{Float64,2}:
+5×5 Matrix{Float64}:
  1.0   6.0  11.0  16.0  21.0
  2.0   7.0  12.0  17.0  22.0
  3.0   8.0  13.0  18.0  23.0

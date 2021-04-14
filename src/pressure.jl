@@ -40,7 +40,7 @@ For `` f(h) `` one can use various forms, a very common however is the power law
 julia> using Swalbe, Test
 
 julia> h = reshape(collect(1.0:25.0),5,5) # A dummy height field
-5×5 Array{Float64,2}:
+5×5 Matrix{Float64}:
  1.0   6.0  11.0  16.0  21.0
  2.0   7.0  12.0  17.0  22.0
  3.0   8.0  13.0  18.0  23.0
@@ -154,7 +154,7 @@ julia> Swalbe.power_broad(3, 3)
 27
 
 julia> Swalbe.power_broad.([2.0 5.0 6.0], 2) # Use the broadcasting operator `.`
-1×3 Array{Float64,2}:
+1×3 Matrix{Float64}:
  4.0  25.0  36.0
 
 ```

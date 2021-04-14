@@ -40,7 +40,7 @@ julia> feq = zeros(5,5,9); ρ = ones(5,5); ux = fill(0.1,5,5); uy = zeros(5,5);
 julia> Swalbe.equilibrium!(feq, ρ, ux, uy, zeros(5,5), 0.1) # Supply dummy u^2 as well.
 
 julia> feq[:,:,1]
-5×5 Array{Float64,2}:
+5×5 Matrix{Float64}:
  0.91  0.91  0.91  0.91  0.91
  0.91  0.91  0.91  0.91  0.91
  0.91  0.91  0.91  0.91  0.91
