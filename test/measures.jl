@@ -106,4 +106,9 @@
         @test all(area_lv .== surf_cal)
         @test all(red_energy .== ener_cal)
     end
+
+    @testset "Characteristic time scale" begin
+        t_0 = t0()
+        @test t_0 == 177428.32340802532
+    end
 end

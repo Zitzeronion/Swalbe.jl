@@ -89,6 +89,41 @@ function singledroplet(height, radius, θ, center)
     return height
 end
 
+"""
+    restart_from_height(data)
+
+Restarts a simulation from already generated height data.
+
+# Arguments
+
+- `data::file`: Some file with computed data
+- `kind::String`: File format, `.bson` or `.jld2` are valid options
+- `timestep::Int`: The time step the height is read from file
+- `size::Tuple{Int,Int}`: x and y limits of the computational domain
+
+```jldoctest
+julia> using Swalbe
+
+```
+"""
+function restart_from_height(data; kind="jld2", timestep=1000, size=(512,512))
+    # Allocate the height
+    height = zeros(size)
+    # Use the correct file format
+    if kind == "jld2"
+        # Pipe the data to a dataframe
+        df = load(data) |> DataFrame 
+    elseif kind == "bson"
+        df = DataFrame(BSON.load(data))
+    end
+    # Now choose only the timestep that is needed
+    height .= reshape(df[!, Symbol("h_$(timestep)")])
+
+    return height
+    
+end
+
+
 # ---------------------------------------------------------------- #
 # ---------------------- Substrate patterns ---------------------- #
 # ---------------------------------------------------------------- #

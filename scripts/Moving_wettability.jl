@@ -1,6 +1,6 @@
 using DrWatson
 @quickactivate :Swalbe
-using CUDA, DataFrames, JLD2
+using CUDA, DataFrames, FileIO
 # CUDA.device!(1)
 
 # Fluid dynamics we need for the experiment
@@ -255,8 +255,8 @@ for direction in ["diagonal"] #  "diagonal"
                 df_sub["theta_$(t*sys.tdump)"] = substrate[t,:]
             end
             println("Saving Dict subdirection $direction subvel $speed and $(pattern) $waves to disk")
-            bson("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_tmax_$(sys.Tmax)_v2.bson", df_fluid)
-            bson("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_tmax_$(sys.Tmax)_v2.bson", df_sub)
+            save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_tmax_$(sys.Tmax)_v2.jld2", df_fluid)
+            # bson("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_tmax_$(sys.Tmax)_v2.bson", df_sub)
         
             CUDA.reclaim()
         end
