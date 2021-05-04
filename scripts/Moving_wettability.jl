@@ -1,6 +1,6 @@
 using DrWatson
 @quickactivate :Swalbe
-using CUDA, DataFrames, BSON
+using CUDA, DataFrames, JLD2
 # CUDA.device!(1)
 
 # Fluid dynamics we need for the experiment
@@ -224,10 +224,11 @@ for direction in ["diagonal"] #  "diagonal"
         elseif waves == 3
             speeds .= v_lam3_dia
         end
-        for speed in [147] # speeds # 1 2 3
+        for speed in [0] # speeds # 1 2 3
             pattern = "sine"
             println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-            sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000)
+            # sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000)
+            sys = Swalbe.SysConst(Lx=1024, Ly=1024, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=500000, tdump=1000)
             df_fluid = Dict()
             df_sub = Dict()
             θₚ = ones(sys.Lx,sys.Ly)
