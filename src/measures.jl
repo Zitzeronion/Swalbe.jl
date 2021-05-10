@@ -35,10 +35,48 @@ function t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
     return charT
 end
 
+"""
+    snapshot!(snap, field, t; dumping)
 
-function snapshot!(fluid, height, t; dumping = 1000)
+Makes a copy of the current state of an input array `in` and saves the vectorized values as a column to `out`.
+
+Function that fills a preallocated array out with a time series of system snap shots of e.g. the height field `h`.
+
+# Arguments
+
+- `snap :: Array{Number,2}`: Array that stores the snap shots as columns
+- `field :: Array{Number,2}`: Input argument, e.g. ``h(\\mathbf{x},t)``
+- `t :: Int`: The current time step
+- `dumping :: Int`: Sampling frequency
+
+# Examples
+
+```jldoctest
+julia> using Swalbe, Test
+
+julia> h1 = reshape(collect(1:25),5,5); h2 = reshape(collect(5:5:125),5,5);
+
+julia> snapshot = zeros(2, 25);
+
+julia> Swalbe.snapshot!(snapshot,h1,10,dumping=10)
+
+julia> Swalbe.snapshot!(snapshot,h2,20,dumping=10)
+
+julia> @test all(h1 .== reshape(snapshot[1,:],5,5))
+Test Passed
+
+julia> @test all(h2 .== reshape(snapshot[2,:],5,5))
+Test Passed
+
+```
+
+# References
+
+See also: The [scripts folder](https://github.com/Zitzeronion/Swalbe.jl/tree/master/scripts) 
+"""
+function snapshot!(snap, field, t; dumping = 1000)
     if t % dumping == 0
-        fluid[t÷dumping, :] .= vec(Array(height))
+        snap[t÷dumping, :] .= vec(Array(field))
     end
     
     return nothing
