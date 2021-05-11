@@ -118,6 +118,7 @@ julia> h = Swalbe.restart_from_height("file.jld2", timestep=1, size=(10,10));
 julia> @test all(h .== h1)
 Test Passed
 
+julia> rm("file.jld2") # Clean up
 ```
 """
 function restart_from_height(data; kind="jld2", timestep=0, size=(512,512))
