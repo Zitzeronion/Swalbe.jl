@@ -101,7 +101,7 @@ Restarts a simulation from already generated height data.
 - `timestep::Int`: The time step the height is read from file
 - `size::Tuple{Int,Int}`: x and y limits of the computational domain
 
-```jldoctest
+```julia
 julia> using Swalbe, FileIO, Test
 
 julia> h1 = rand(10,10); h2 = rand(10,10);
@@ -117,6 +117,8 @@ julia> h = Swalbe.restart_from_height("file.jld2", timestep=1, size=(10,10));
 
 julia> @test all(h .== h1)
 Test Passed
+
+julia> rm("file.jld2")
 
 ```
 """
