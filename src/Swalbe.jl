@@ -1,6 +1,8 @@
 module Swalbe
-
-using Revise, CUDA, Statistics, Parameters, Random, LazySets
+# Coding
+using Revise, CUDA, Statistics, Parameters, Random, LazySets 
+# Datatypes and output
+using FileIO, JLD2, BSON, DataFrames
 
 include("initialize.jl")
 include("initialvalues.jl")

@@ -23,6 +23,27 @@
         @test findmax(height)[1] == rad * (1 - cospi(θ))
         @test findmax(height)[2] == CartesianIndex(center[1],center[2])
     end
+
+    @testset "Restart height" begin
+        h1 = rand(10,10)
+        h2 = rand(10,10)
+        f = zeros(2, 100)
+        f = Dict()
+        f["h_1"] = vec(h1)
+        f["h_2"] = vec(h2)
+        bson("file.bson", f)
+        save("file.jld2", f)
+        h = Swalbe.restart_from_height("file.bson", kind="bson", timestep=0, size=(10,10))
+        @test all(h2 .== h)
+        h = Swalbe.restart_from_height("file.bson", kind="bson", timestep=1, size=(10,10))
+        @test all(h1 .== h)
+        h = Swalbe.restart_from_height("file.jld2", size=(10,10))
+        @test all(h2 .== h)
+        h = Swalbe.restart_from_height("file.jld2", kind="jld2", timestep=1, size=(10,10))
+        @test all(h1 .== h)
+        rm("file.bson")
+        rm("file.jld2")
+    end
 end
 @testset "Contact angle patterns" begin
     @testset "Default elliptical patch" begin
