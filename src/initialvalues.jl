@@ -102,7 +102,7 @@ Restarts a simulation from already generated height data.
 - `size::Tuple{Int,Int}`: x and y limits of the computational domain
 
 ```jldoctest
-julia> using Swalbe, JLD2, Test
+julia> using Swalbe, FileIO, Test
 
 julia> h1 = rand(10,10); h2 = rand(10,10);
 
