@@ -69,7 +69,6 @@ julia> @test all(h2 .== reshape(snapshot[2,:],5,5))
 Test Passed
 
 ```
-
 # References
 
 See also: The [scripts folder](https://github.com/Zitzeronion/Swalbe.jl/tree/master/scripts) 
