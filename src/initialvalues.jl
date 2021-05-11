@@ -89,6 +89,66 @@ function singledroplet(height, radius, θ, center)
     return height
 end
 
+"""
+    restart_from_height(data)
+
+Restarts a simulation from already generated height data.
+
+# Arguments
+
+- `data::file`: Some file with computed data
+- `kind::String`: File format, `.bson` or `.jld2` are valid options
+- `timestep::Int`: The time step the height is read from file
+- `size::Tuple{Int,Int}`: x and y limits of the computational domain
+
+```julia
+julia> using Swalbe, FileIO, Test
+
+julia> h1 = rand(10,10); h2 = rand(10,10);
+
+julia> f = Dict() # For storage
+Dict{Any, Any}()
+
+julia> f["h_1"] = vec(h1); f["h_2"] = vec(h2);
+
+julia> save("file.jld2", f)
+
+julia> h = Swalbe.restart_from_height("file.jld2", timestep=1, size=(10,10));
+
+julia> @test all(h .== h1)
+Test Passed
+
+julia> rm("file.jld2")
+
+```
+"""
+function restart_from_height(data; kind="jld2", timestep=0, size=(512,512))
+    # Allocate the height
+    height = zeros(size)
+    # Use the correct file format
+    if kind == "jld2"
+        # Pipe the data to a dataframe
+        df = load(data) |> DataFrame 
+        if timestep == 0
+            height .= reshape(df[:,end], size[1], size[2])
+        else
+            height .= reshape(df[!, Symbol("h_$(timestep)")], size[1], size[2])
+        end
+    elseif kind == "bson"
+        df = DataFrame(BSON.load(data))
+        # Now choose only the timestep that is needed
+        if timestep == 0
+            height .= reshape(df[:,end], size[1], size[2])
+        else
+            height .= reshape(df[!, Symbol("h_$(timestep)")], size[1], size[2])
+        end
+    end
+
+    return height
+    
+end
+
+
 # ---------------------------------------------------------------- #
 # ---------------------- Substrate patterns ---------------------- #
 # ---------------------------------------------------------------- #

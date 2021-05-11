@@ -106,4 +106,19 @@
         @test all(area_lv .== surf_cal)
         @test all(red_energy .== ener_cal)
     end
+
+    @testset "Characteristic time scale" begin
+        t_0 = Swalbe.t0()
+        @test t_0 == 177428.32340802532
+    end
+
+    @testset "Field snapshots" begin
+        h1 = reshape(collect(1:25),5,5)
+        h2 = reshape(collect(5:5:125),5,5)
+        snapshot = zeros(2, 25);
+        Swalbe.snapshot!(snapshot,h1,10,dumping=10)
+        Swalbe.snapshot!(snapshot,h2,20,dumping=10)
+        @test all(h1 .== reshape(snapshot[1,:],5,5))
+        @test all(h2 .== reshape(snapshot[2,:],5,5))
+    end
 end

@@ -1,4 +1,4 @@
-using Swalbe, Test, Statistics, Parameters, Random, LazySets
+using Swalbe, Test, Statistics, Parameters, Random, LazySets, BSON, FileIO, DataFrames
 
 @testset "Swalbe.jl" begin
     println("Testing allocations")
