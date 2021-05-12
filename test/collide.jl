@@ -67,6 +67,51 @@
         @test all(fout[:,:,8] .== circshift(omega .* 1.0 .+ onebytau * feq[:,:,1],(-1,-1)))
         @test all(fout[:,:,9] .== circshift(omega .* 1.0 .+ onebytau * feq[:,:,1] .+ 1/24 .* 0.2,(1,-1)))
     end
+
+    @testset "Dummy dists τ=1 no forces 1D" begin
+        feq = ones(30,3)
+        ftemp = ones(30,3)
+        fout = ones(30,3)
+        feq[1,:] .= 2.0
+        Swalbe.BGKandStream!(fout, feq, ftemp, zeros(30))
+        @test all(fout[:,1] .== feq[:,1])
+        @test all(fout[:,2] .== circshift(feq[:,1],1))
+        @test all(fout[:,3] .== circshift(feq[:,1],-1))
+    end
+    @testset "Dummy dists τ=0.75 no forces 1D" begin
+        feq = ones(30,3)
+        ftemp = ones(30,3)
+        fout = ones(30,3)
+        feq[1,:] .= 2.0
+        onebytau = 1.0/0.75
+        omega = 1.0 - 1.0/0.75
+        Swalbe.BGKandStream!(fout, feq, ftemp, zeros(30), 0.75)
+        @test all(fout[:,1] .== omega .* 1.0 .+ onebytau .* feq[:,1])
+        @test all(fout[:,2] .== circshift(omega .* 1.0 .+ onebytau * feq[:,1],1))
+        @test all(fout[:,3] .== circshift(omega .* 1.0 .+ onebytau * feq[:,1],-1))
+    end
+    @testset "Dummy dists τ=1 with forces 1D" begin
+        feq = ones(30,3)
+        ftemp = ones(30,3)
+        fout = ones(30,3)
+        feq[1,:] .= 2.0
+        Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,30))
+        @test all(fout[:,1] .== feq[:,1])
+        @test all(fout[:,2] .== circshift(feq[:,1] .+ 1/20,1))
+        @test all(fout[:,3] .== circshift(feq[:,1] .- 1/20,-1))
+    end
+    @testset "Dummy dists τ=0.75 with forces 1D" begin
+        feq = ones(30,3)
+        ftemp = ones(30,3)
+        fout = ones(30,3)
+        feq[1,:] .= 2.0
+        onebytau = 1.0/0.75
+        omega = 1.0 - 1.0/0.75
+        Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,30), 0.75)
+        @test all(fout[:,1] .== omega .* 1.0 .+ onebytau .* feq[:,1])
+        @test all(fout[:,2] .== circshift(omega .* 1.0 .+ onebytau * feq[:,1].+ 1/20,1))
+        @test all(fout[:,3] .== circshift(omega .* 1.0 .+ onebytau * feq[:,1].- 1/20,-1))
+    end
 end
 
 @testset "viewdists" begin
@@ -75,5 +120,14 @@ end
     allviews = [f0, f1, f2, f3, f4, f5, f6, f7, f8]
     for (index, value) in enumerate(allviews)
         @test all(value .== f[:,:,index])
+    end
+end
+
+@testset "viewdists_1D" begin
+    f = reshape(collect(1.0:30.0),10,3)
+    f0, f1, f2 = Swalbe.viewdists_1D(f)
+    allviews = [f0, f1, f2]
+    for (index, value) in enumerate(allviews)
+        @test all(value .== f[:,index])
     end
 end
