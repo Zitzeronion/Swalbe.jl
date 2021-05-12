@@ -36,6 +36,11 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     return nothing
 end
 
+function slippage!(slip, height, vel, δ, μ)
+    slip .= (6μ .* height .* vel) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
+    return nothing
+end
+
 """
     thermal!(fx, fy, height, kᵦT, μ, δ)
 
@@ -91,6 +96,16 @@ function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
                     (2 .* height.^2 .+
                      6 .* height .* δ .+
                      3 .* δ^2))
+    return nothing
+end
+
+function thermal!(fluc, height, kᵦT, μ, δ)
+    randn!(fluc)
+    fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
+                  (2 .* height.^2 .+
+                   6 .* height .* δ .+
+                   3 .* δ^2))
+    
     return nothing
 end
 
