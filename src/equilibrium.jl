@@ -129,3 +129,30 @@ function equilibrium!(feq, height, velocityx, velocityy, vsquare)
                          4.5 .* (velocityx .- velocityy).^2 .- 1.5 .* vsquare)
     return nothing
 end
+
+function equilibrium!(feq, height, velocity, gravity)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2 = viewdists_1D(feq) 
+    
+    # Zeroth dist
+    f0 .= height .* (1 .- 0.5 .* gravity .* height .- velocity.^2)
+    # First
+    f1 .= height .* (0.25 .* gravity .* height .+ 0.5 .* velocity .+ 0.5 .* velocity.^2)
+    # Second
+    f2 .= height .* (0.25 .* gravity .* height .- 0.5 .* velocity .+ 0.5 .* velocity.^2)
+    
+    return nothing
+end
+
+function equilibrium!(feq, height, velocity)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2 = viewdists_1D(feq) 
+    
+    # Zeroth dist
+    f0 .= height .* (1 .- velocity.^2)
+    # First
+    f1 .= height .* (0.5 .* velocity .+ 0.5 .* velocity.^2)
+    # Second
+    f2 .= height .* (-0.5 .* velocity .+ 0.5 .* velocity.^2)
+    return nothing
+end
