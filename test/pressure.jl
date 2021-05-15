@@ -65,6 +65,38 @@
     end
 end
 
+@testset "Capillary pressure 1D" begin
+    f = collect(1.0:30)
+    f_float = collect(1.0f0:30.0f0)
+    res = zeros(30)
+    dummy = zeros(30,3)
+    @testset "No contact angle" begin
+        Swalbe.filmpressure!(res, f, dummy, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        # println("My result: $res")
+        sol = zeros(30)
+        sol[1] = 30
+        sol[end] = -30
+        @test all(res .== -sol)
+    end
+    @testset "No height gradient" begin
+        nograd = ones(30)
+        Swalbe.filmpressure!(res, nograd, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        for i in eachindex(res)
+            @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
+        end
+    end
+    @testset "Gradient and contact angle" begin
+        Swalbe.filmpressure!(res, f, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        sol = zeros(30)
+        sol[1] = 30
+        sol[end] = -30
+        for i in eachindex(res)
+            # Now the result comprisses of two components the disjoining potential and the laplace term.
+            @test res[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+        end
+    end
+end
+
 @testset "Power function" begin
     arg = 2
     argsimple = 5.0
