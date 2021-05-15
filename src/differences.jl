@@ -225,3 +225,30 @@ function viewneighbors(f)
     
     return f1, f2, f3, f4, f5, f6, f7, f8
 end
+
+"""
+    viewneighbors_1D(f)
+
+Generates a view for the two neighbors of a **D1Q3** distribution function.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> ftest = reshape(collect(1.0:30),10,3);
+
+julia> f1, f2 = Swalbe.viewneighbors_1D(ftest);
+
+julia> @test all(f2 .== ftest[:,2])
+Test Passed
+
+```
+
+See also: [`Swalbe.∇f!`](@ref), [`Swalbe.filmpressure!`](@ref)
+"""
+function viewneighbors_1D(f)
+    f1 = view(f, :, 1)
+    f2 = view(f, :, 2)
+    
+    return f1, f2
+end

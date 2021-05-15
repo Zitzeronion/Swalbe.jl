@@ -106,6 +106,15 @@
             @test all(value .== f[:,:,index])
         end
     end
+
+    @testset "Viewneighbors 1D" begin
+        f = reshape(collect(1.0:20),10,2)
+        f1, f2 = Swalbe.viewneighbors_1D(f)
+        allviews = [f1, f2]
+        for (index, value) in enumerate(allviews)
+            @test all(value .== f[:,index])
+        end
+    end
 end
 
 
