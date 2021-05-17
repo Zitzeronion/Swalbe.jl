@@ -43,4 +43,37 @@
     @test isa(slipy, Array{Float64, 2})
     @test isa(h∇px, Array{Float64, 2})
     @test isa(h∇py, Array{Float64, 2})
+    # 1D case
+    sys1d = Swalbe.SysConst_1D{T}(L=25)
+    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p, fthermal = Swalbe.Sys(sys1d, true, T)
+    # Struct should do what I expect, hopefully
+    @test sys1d.L == 25
+    @test sys1d.Tmax == 1000
+    @test sys1d.tdump == 100
+    @test isa(fout, Matrix{Float64})
+    @test isa(ftemp, Matrix{Float64})
+    @test isa(feq, Matrix{Float64})
+    @test isa(height, Vector{Float64})
+    @test isa(vel, Vector{Float64})
+    @test isa(pressure, Vector{Float64})
+    @test isa(dgrad, Matrix{Float64})
+    @test isa(F, Vector{Float64})
+    @test isa(slip, Vector{Float64})
+    @test isa(h∇p, Vector{Float64})
+    @test isa(fthermal, Vector{Float64})
+    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys1d, false, T)
+    # Struct should do what I expect, hopefully
+    @test sys1d.L == 25
+    @test sys1d.Tmax == 1000
+    @test sys1d.tdump == 100
+    @test isa(fout, Matrix{Float64})
+    @test isa(ftemp, Matrix{Float64})
+    @test isa(feq, Matrix{Float64})
+    @test isa(height, Vector{Float64})
+    @test isa(vel, Vector{Float64})
+    @test isa(pressure, Vector{Float64})
+    @test isa(dgrad, Matrix{Float64})
+    @test isa(F, Vector{Float64})
+    @test isa(slip, Vector{Float64})
+    @test isa(h∇p, Vector{Float64})
 end
