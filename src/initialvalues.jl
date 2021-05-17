@@ -67,8 +67,7 @@ See also:
 """
 function singledroplet(height, radius, θ, center)
     lx, ly = size(height)
-    area = 2π * radius^2 * (1- cospi(θ))
-    drop = 1 + 0im
+    # area = 2π * radius^2 * (1- cospi(θ))
     @inbounds for i in 1:lx
         for j in 1:ly
             circ = sqrt((i-center[1])^2 + (j-center[2])^2)
@@ -84,6 +83,25 @@ function singledroplet(height, radius, θ, center)
             if height[i,j] < 0
                 height[i,j] = 0.05
             end
+        end
+    end
+    return height
+end
+# For a one dimensional droplet
+function singledroplet(height::Vector, radius, θ, center)
+    L = size(height)[1]
+    # area = 2π * radius^2 * (1- cospi(θ))
+    @inbounds for i in 1:L
+        circ = sqrt((i-center)^2)
+        if circ <= radius
+            height[i] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+        else
+            height[i] = 0.05
+        end
+    end
+    @inbounds for i in 1:L
+        if height[i] < 0
+            height[i] = 0.05
         end
     end
     return height
