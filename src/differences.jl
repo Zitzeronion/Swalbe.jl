@@ -193,6 +193,18 @@ function ∇f!(outputx, outputy, f, dgrad, a)
     return nothing
 end
 
+function ∇f!(output::Vector, f, dgrad, a)
+    fip, fim = viewneighbors_1D(dgrad)
+    # One dim case, central differences
+    circshift!(fip, f, 1)
+    circshift!(fim, f, -1)
+    
+    # In the end it is just a weighted sum...
+    output .= a .* -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
 """
     viewneighbors(f)
 

@@ -75,6 +75,30 @@
         end
     end
 
+    f1 = collect(1.0:25)
+    @testset "Gradients 1D" begin
+        output = zeros(25)
+        dummy = zeros(25,2)
+        @testset "Simple" begin    
+            Swalbe.∇f!(output, f1, dummy, ones(25))
+            @test isa(output, Vector)
+            #= 
+            Analytical results, tested with DiffEqOperators
+            Dx = CenteredDifference{1}(1,2,1.0,5)
+            Dy = CenteredDifference{2}(1,2,1.0,5)
+            fpad = padarray(f, Pad(:circular, 1, 1))
+            mul!(solx, Dx, fpad)
+            mul!(soly, Dy, fpad)
+            =#
+            sol = ones(25)
+            sol[1] = -11.5 
+            sol[end] = -11.5 
+            # Test them
+            @test all(output .== sol)
+        end
+        
+    end
+
     @testset "Laplacian" begin
         output = zeros(5,5)
         γ = -1.0
