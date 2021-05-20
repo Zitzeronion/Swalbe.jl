@@ -156,6 +156,24 @@ function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
     return nothing
 end
 
+function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit; Gamma=0.0)
+    hip, him = viewneighbors_1D(dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, f, 1)
+    circshift!(him, f, -1)
+    #= 
+    Disjoining pressure part:
+    1. Constant part due to angle, n, m, hmin
+    2. Part due to the powerlaw
+    =#
+    output .= .- (γ .+ Gamma .* rho) .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+                 .* (power_broad.(hmin./(f .+ hcrit), n)
+                  .- power_broad.(hmin./(f .+ hcrit), m)) )
+
+    output .-= (γ .+ Gamma .* rho) .* (hip .- 2 .* f .+ him)
+    return nothing
+end
+
 """
     power_broad(arg, n)
 

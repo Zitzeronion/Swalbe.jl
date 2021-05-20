@@ -97,6 +97,47 @@ end
     end
 end
 
+@testset "Capillary pressure 1D with Gamma" begin
+    f = collect(1.0:30)
+    res = zeros(30)
+    rho = fill(0.1, 30)
+    dummy = zeros(30,2)
+    @testset "No Gamma no theta" begin
+        Swalbe.filmpressure!(res, f, dummy, rho, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        # println("My result: $res")
+        sol = zeros(30)
+        sol[1] = 30
+        sol[end] = -30
+        @test all(res .== -sol)
+    end
+    @testset "No Gamma no laplacian" begin
+        nograd = ones(30)
+        Swalbe.filmpressure!(res, nograd, dummy, rho, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        for i in eachindex(res)
+            @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
+        end
+    end
+    @testset "Gamma but rho=0 no laplacian" begin
+        nograd = ones(30)
+        Swalbe.filmpressure!(res, nograd, dummy, zeros(30), 1.0, 1/2, 3, 2, 0.1, 0.0)
+        for i in eachindex(res)
+            @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
+        end
+    end
+    @testset "Gamma, rho, gradient and contact angle" begin
+        rho = fill(0.1, 30)
+        Swalbe.filmpressure!(res, f, dummy, rho, 1.0, 1/2, 3, 2, 0.1, 0.0, Gamma=0.1)
+        sol = zeros(30)
+        sol[1] = 30
+        sol[end] = -30
+        for i in eachindex(res)
+            # Now the result comprisses of two components the disjoining potential and the laplace term.
+            # The prefactor (1 + 0.01) -> (gamma + Gamma * rho)
+            @test res[i] .≈ -(1 + 0.01) * (sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+        end
+    end
+end
+
 @testset "Power function" begin
     arg = 2
     argsimple = 5.0
