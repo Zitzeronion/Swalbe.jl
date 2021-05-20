@@ -72,6 +72,16 @@ function ∇²f!(output, f, γ)
     return nothing
 end
 
+function ∇²f!(output::Vector, f, dgrad)
+    hip, him = viewneighbors_1D(dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, f, 1)
+    circshift!(him, f, -1)
+    # In the end it is just a weighted sum...
+    output .= hip .- 2 .* f .+ him
+    return nothing
+end
+
 """
     ∇f!(outputx, outputy, f)
 
@@ -201,6 +211,18 @@ function ∇f!(output::Vector, f, dgrad, a)
     
     # In the end it is just a weighted sum...
     output .= a .* -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+function ∇f!(output::Vector, f, dgrad)
+    fip, fim = viewneighbors_1D(dgrad)
+    # One dim case, central differences
+    circshift!(fip, f, 1)
+    circshift!(fim, f, -1)
+    
+    # In the end it is just a weighted sum...
+    output .= -0.5 .* (fip .- fim)
 
     return nothing
 end

@@ -82,14 +82,16 @@
         @testset "Simple" begin    
             Swalbe.∇f!(output, f1, dummy, ones(25))
             @test isa(output, Vector)
-            #= 
-            Analytical results, tested with DiffEqOperators
-            Dx = CenteredDifference{1}(1,2,1.0,5)
-            Dy = CenteredDifference{2}(1,2,1.0,5)
-            fpad = padarray(f, Pad(:circular, 1, 1))
-            mul!(solx, Dx, fpad)
-            mul!(soly, Dy, fpad)
-            =#
+
+            sol = ones(25)
+            sol[1] = -11.5 
+            sol[end] = -11.5 
+            # Test them
+            @test all(output .== sol)
+
+            Swalbe.∇f!(output, f1, dummy)
+            @test isa(output, Vector)
+
             sol = ones(25)
             sol[1] = -11.5 
             sol[end] = -11.5 
@@ -122,6 +124,22 @@
             @test output[i] .≈ sol[i] atol=1e-10
         end
     end
+
+    @testset "Laplacian 1D" begin
+    output = zeros(25)
+    dummy = zeros(25,2)
+    input = collect(1:25.0)
+    Swalbe.∇²f!(output, input, dummy)
+    @test isa(output, Vector)
+    
+    sol = zeros(25)
+    sol[1] = 25;
+    sol[end] = -25;
+    
+    @test all(output .== sol)
+    
+end
+
     @testset "Viewneighbors" begin
         f = reshape(collect(1.0:5*5*8),5,5,8)
         f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewneighbors(f)
