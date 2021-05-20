@@ -72,7 +72,7 @@ function ∇²f!(output, f, γ)
     return nothing
 end
 
-function ∇²f!(output::Vector, f, dgrad)
+function ∇²f!(output, f::Vector, dgrad)
     hip, him = viewneighbors_1D(dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, f, 1)
@@ -215,7 +215,7 @@ function ∇f!(output::Vector, f, dgrad, a)
     return nothing
 end
 
-function ∇f!(output::Vector, f, dgrad)
+function ∇f!(output, f::Vector, dgrad)
     fip, fim = viewneighbors_1D(dgrad)
     # One dim case, central differences
     circshift!(fip, f, 1)
