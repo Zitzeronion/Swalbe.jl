@@ -701,3 +701,53 @@ end
 #        h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
 #     =#
 # end
+
+# function run_active_thin_film(
+#     sys::SysConst_1D;
+#     h₀=1,
+#     ϵ=0.001, 
+#     θ₀=1/9,  
+#     verbos=true, 
+#     rho = zeros(sys.L),
+#     lap_rho = zeros(sys.L), 
+#     grad_rho = zeros(sys.L), 
+#     grad_h = zeros(sys.L), 
+#     lap_h = zeros(sys.L),
+#     Gam = 0.5,
+#     mobl = 1.0, 
+#     difu = 0.1,
+#     T=Float64
+# )
+#     println("Simulating a active thin film")
+#     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p, fluc = Swalbe.Sys(sys, true, T)
+#     Swalbe.randinterface!(height, h₀, ϵ)
+#     # Swalbe.sinewave1D!(height, h₀, 1, ϵ, 1)
+#     rho .= 0.1
+#     Swalbe.equilibrium!(feq, height, vel)
+#     ftemp .= feq
+#     println("Starting the lattice Boltzmann time loop")
+#     for t in 1:sys.Tmax
+#         if t % sys.tdump == 0
+#             mass = 0.0
+#             mass = sum(height)
+#             if verbos
+#                 println("Time step $t mass is $(round(mass, digits=3))")
+#             end
+#         end
+#         Swalbe.update_rho(fluc, rho, dgrad, height, lap_rho, grad_rho, grad_h, lap_h, M=mobl, D=difu)
+#         # Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
+#         Swalbe.filmpressure!(pressure, height, dgrad, rho, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit, Gamma=Gam)
+#         Swalbe.∇f!(h∇p, pressure, dgrad, height)
+#         Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
+#         # HereSwalbe.thermal!(fluc, height, sys.kbt, sys.μ, sys.δ)
+#         # Here we a force that is like pull of an inclined plane
+#         F .= h∇p .+ slip # .+ fluc 
+#         Swalbe.equilibrium!(feq, height, vel)
+#         Swalbe.BGKandStream!(fout, feq, ftemp, -F)
+#         Swalbe.moments!(height, vel, fout)
+#     end
+    
+
+#     return height, vel, rho
+#
+# end
