@@ -22,6 +22,15 @@
         @test size(height) == (100, 100)
         @test findmax(height)[1] == rad * (1 - cospi(θ))
         @test findmax(height)[2] == CartesianIndex(center[1],center[2])
+        # 1D case
+        rad = 50
+        θ = 1/3
+        center = 100
+        height = Swalbe.singledroplet(ones(200), rad, θ, center)
+        @test isa(height, Vector{Float64})
+        @test size(height) == (200,)
+        @test findmax(height)[1] == rad * (1 - cospi(θ))
+        @test findmax(height)[2] == center
     end
 
     @testset "Restart height" begin

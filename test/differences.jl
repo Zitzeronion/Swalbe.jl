@@ -75,6 +75,32 @@
         end
     end
 
+    f1 = collect(1.0:25)
+    @testset "Gradients 1D" begin
+        output = zeros(25)
+        dummy = zeros(25,2)
+        @testset "Simple" begin    
+            Swalbe.∇f!(output, f1, dummy, ones(25))
+            @test isa(output, Vector)
+
+            sol = ones(25)
+            sol[1] = -11.5 
+            sol[end] = -11.5 
+            # Test them
+            @test all(output .== sol)
+
+            Swalbe.∇f!(output, f1, dummy)
+            @test isa(output, Vector)
+
+            sol = ones(25)
+            sol[1] = -11.5 
+            sol[end] = -11.5 
+            # Test them
+            @test all(output .== sol)
+        end
+        
+    end
+
     @testset "Laplacian" begin
         output = zeros(5,5)
         γ = -1.0
@@ -98,12 +124,37 @@
             @test output[i] .≈ sol[i] atol=1e-10
         end
     end
+
+    @testset "Laplacian 1D" begin
+    output = zeros(25)
+    dummy = zeros(25,2)
+    input = collect(1:25.0)
+    Swalbe.∇²f!(output, input, dummy)
+    @test isa(output, Vector)
+    
+    sol = zeros(25)
+    sol[1] = 25;
+    sol[end] = -25;
+    
+    @test all(output .== sol)
+    
+end
+
     @testset "Viewneighbors" begin
         f = reshape(collect(1.0:5*5*8),5,5,8)
         f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewneighbors(f)
         allviews = [f1, f2, f3, f4, f5, f6, f7, f8]
         for (index, value) in enumerate(allviews)
             @test all(value .== f[:,:,index])
+        end
+    end
+
+    @testset "Viewneighbors 1D" begin
+        f = reshape(collect(1.0:20),10,2)
+        f1, f2 = Swalbe.viewneighbors_1D(f)
+        allviews = [f1, f2]
+        for (index, value) in enumerate(allviews)
+            @test all(value .== f[:,index])
         end
     end
 end

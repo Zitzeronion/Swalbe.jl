@@ -36,6 +36,11 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     return nothing
 end
 
+function slippage!(slip, height, vel, δ, μ)
+    slip .= (6μ .* height .* vel) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
+    return nothing
+end
+
 """
     thermal!(fx, fy, height, kᵦT, μ, δ)
 
@@ -94,3 +99,46 @@ function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     return nothing
 end
 
+function thermal!(fluc, height, kᵦT, μ, δ)
+    randn!(fluc)
+    fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
+                  (2 .* height.^2 .+
+                   6 .* height .* δ .+
+                   3 .* δ^2))
+    
+    return nothing
+end
+
+"""
+    update_rho()
+
+Time evolution of the `active` field rho.
+"""
+function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
+    lap_rho, grad_rho, lap_h, grad_h = view_four(differentials)
+    ∇²f!(lap_rho, rho, dgrad)
+    ∇f!(grad_rho, rho, dgrad)
+    ∇²f!(lap_h, height, dgrad)
+    ∇f!(grad_h, height, dgrad)
+    rho_int .= (D .* lap_rho .- 
+               M .* (grad_rho.^2 .+ rho .* lap_rho) .- 
+               D .* (grad_rho .* grad_h ./ height + rho .* (lap_h ./ height .- (grad_h ./ height).^2 )))
+
+    rho .+= rho_int
+
+    return nothing
+end
+
+"""
+    view_four()
+
+Splits a chuck of memory in four equivalent chucks
+"""
+function view_four(f)
+    f1 = view(f, :, 1)
+    f2 = view(f, :, 2)
+    f3 = view(f, :, 3)
+    f4 = view(f, :, 4)
+    
+    return f1, f2, f3, f4
+end

@@ -72,6 +72,16 @@ function ∇²f!(output, f, γ)
     return nothing
 end
 
+function ∇²f!(output, f::Vector, dgrad)
+    hip, him = viewneighbors_1D(dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, f, 1)
+    circshift!(him, f, -1)
+    # In the end it is just a weighted sum...
+    output .= hip .- 2 .* f .+ him
+    return nothing
+end
+
 """
     ∇f!(outputx, outputy, f)
 
@@ -193,6 +203,30 @@ function ∇f!(outputx, outputy, f, dgrad, a)
     return nothing
 end
 
+function ∇f!(output::Vector, f, dgrad, a)
+    fip, fim = viewneighbors_1D(dgrad)
+    # One dim case, central differences
+    circshift!(fip, f, 1)
+    circshift!(fim, f, -1)
+    
+    # In the end it is just a weighted sum...
+    output .= a .* -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+function ∇f!(output, f::Vector, dgrad)
+    fip, fim = viewneighbors_1D(dgrad)
+    # One dim case, central differences
+    circshift!(fip, f, 1)
+    circshift!(fim, f, -1)
+    
+    # In the end it is just a weighted sum...
+    output .= -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
 """
     viewneighbors(f)
 
@@ -224,4 +258,31 @@ function viewneighbors(f)
     f8 = view(f, :, :, 8)
     
     return f1, f2, f3, f4, f5, f6, f7, f8
+end
+
+"""
+    viewneighbors_1D(f)
+
+Generates a view for the two neighbors of a **D1Q3** distribution function.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> ftest = reshape(collect(1.0:30),10,3);
+
+julia> f1, f2 = Swalbe.viewneighbors_1D(ftest);
+
+julia> @test all(f2 .== ftest[:,2])
+Test Passed
+
+```
+
+See also: [`Swalbe.∇f!`](@ref), [`Swalbe.filmpressure!`](@ref)
+"""
+function viewneighbors_1D(f)
+    f1 = view(f, :, 1)
+    f2 = view(f, :, 2)
+    
+    return f1, f2
 end

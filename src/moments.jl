@@ -50,3 +50,13 @@ function moments!(height, velx, vely, fout)
     vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
     return nothing
 end
+
+function moments!(height, vel, fout)
+    # Get views of the populations
+    f0, f1, f2 = Swalbe.viewdists_1D(fout) 
+    # Compute the height
+    sum!(height, fout)
+    # and the velocities (as simple as possible)
+    vel .= (f1 .- f2) ./ height
+    return nothing
+end

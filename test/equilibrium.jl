@@ -61,3 +61,49 @@
         @test all(feq[:,:,9] .≈  1/36 * (1.5 * 0.1 + 3 * 0.2 + 4.5 * 0.2^2 - 3/2 * 0.02))
     end
 end
+
+@testset "Equilibria 1D" begin
+    @testset "Nothing" begin
+        feq = zeros(30,3)
+        Swalbe.equilibrium!(feq, zeros(30), zeros(30), 0.0)
+        @test all(feq[:,:] .== 0.0)
+        Swalbe.equilibrium!(feq, zeros(30), zeros(30))
+        @test all(feq[:,:] .== 0.0)
+    end
+    @testset "Density only" begin
+        feq = zeros(30,3)
+        Swalbe.equilibrium!(feq, ones(30), zeros(30), 0.0)
+        @test all(feq[:,1] .== 1.0)
+        @test all(feq[:,2:3] .== 0.0)
+        Swalbe.equilibrium!(feq, ones(30), zeros(30))
+        @test all(feq[:,1] .== 1.0)
+        @test all(feq[:,2:3] .== 0.0)
+    end
+    @testset "Density and gravity" begin
+        feq = zeros(30,3)
+        Swalbe.equilibrium!(feq, ones(30), zeros(30), 0.1)
+        @test all(feq[:,1] .== 1.0 - 0.05)
+        @test all(feq[:,2:3] .== 0.025)
+        
+    end
+    @testset "Density and velocity" begin
+        feq = zeros(30,3)
+        Swalbe.equilibrium!(feq, ones(30), fill(0.1,30), 0.0)
+        @test all(feq[:,1] .== 1.0 - 0.01)
+        @test all(feq[:,2] .≈  0.5 * 0.1 + 0.5 * 0.01)
+        @test all(feq[:,3] .≈  -0.5 * 0.1 + 0.5 * 0.01)
+        
+        Swalbe.equilibrium!(feq, ones(30), fill(0.1,30))
+        @test all(feq[:,1] .== 1.0 - 0.01)
+        @test all(feq[:,2] .≈  0.5 * 0.1 + 0.5 * 0.01)
+        @test all(feq[:,3] .≈  -0.5 * 0.1 + 0.5 * 0.01)
+        
+    end
+    @testset "Density and gravity and velocity" begin
+        feq = zeros(30,3)
+        Swalbe.equilibrium!(feq, ones(30), fill(0.1,30), 0.1)
+        @test all(feq[:,1] .== 1.0 - 0.5 * 0.1 - 0.01)
+        @test all(feq[:,2] .≈  0.025 + 0.5 * 0.1 + 0.5 * 0.01)
+        @test all(feq[:,3] .≈  0.025 - 0.5 * 0.1 + 0.5 * 0.01)
+    end
+end
