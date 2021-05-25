@@ -166,7 +166,7 @@ function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit;
     1. Constant part due to angle, n, m, hmin
     2. Part due to the powerlaw
     =#
-    output .= .- (γ .+ Gamma .* rho) .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+    output .= - (γ .+ Gamma .* rho) .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
                  .* (power_broad.(hmin./(f .+ hcrit), n)
                   .- power_broad.(hmin./(f .+ hcrit), m)) )
 
