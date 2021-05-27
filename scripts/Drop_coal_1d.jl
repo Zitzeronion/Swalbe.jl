@@ -2,7 +2,7 @@ using DrWatson
 @quickactivate :Swalbe
 using CSV
 # Take default values
-sys = Swalbe.SysConst_1D(L=512, Tmax=50001)
+sys = Swalbe.SysConst_1D(L=512, Tmax=100001, δ=0.5)
 # Kapital gamma, mobility M, diffusion coefficient D and dumping interval
 time_dump = 100
 
