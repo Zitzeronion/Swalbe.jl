@@ -1,4 +1,5 @@
 # Swalbe.jl
+
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zitzeronion.github.io/Swalbe.jl/dev/) [![CI](https://github.com/Zitzeronion/Swalbe.jl/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/Zitzeronion/Swalbe.jl/actions) [![codecov](https://codecov.io/gh/Zitzeronion/Swalbe.jl/branch/master/graph/badge.svg?token=J1AMK7YW69)](https://codecov.io/gh/Zitzeronion/Swalbe.jl)
 
 ## Thin film simulations using lattice Boltzmann :rainbow: :ocean:
@@ -11,10 +12,10 @@ Thus the name of the package **S**hallow **WA**ter **L**attice **B**oltzmann slo
 
 Of course using a plain shallow water model will not work to simulate thin film dynamics, that is the reason we build our own model :neckbeard:
 
-## How to **get** :
+## How to **get** 
 
 First of all you need a *Julia* installation. 
-*Julia* is a high level open source programming language and it is as easy to use as python :snake: (my opionion).
+*Julia* is a high level open source programming language and it is as easy to use as python :snake: (my opinion).
 
 *Julia* can be downloaded at the projects homepage [julialang.org](https://julialang.org/), use the correct installation for your operating system.
 **Important** for **CUDA** we require *Julia* version 1.6 or higher.  
