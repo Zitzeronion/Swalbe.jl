@@ -1,17 +1,14 @@
 using DrWatson
 @quickactivate :Swalbe
 using CSV
-# Take default values
-sys = Swalbe.SysConst_1D(L=512, Tmax=100001, δ=0.5)
-# Kapital gamma, mobility M, diffusion coefficient D and dumping interval
-time_dump = 100
 
+# Define initial condition
 """
     twodroplets(L)
 
 Generates a fluid state of two droplets with radii r₁, r₂, contact angles θ₁, θ₂ and centers `center`.
 """
-function twodroplets(L; r₁=115, r₂=115, θ₁=1/9, θ₂=1/9, center=(L/3,2L/3))
+function twodroplets(L; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(L/3,2L/3))
     dum = zeros(L)
     dum2 = zeros(L)
     height = zeros(L)
@@ -51,7 +48,7 @@ function twodroplets(L; r₁=115, r₂=115, θ₁=1/9, θ₂=1/9, center=(L/3,2L
     end
     return height
 end
-
+time_dump = 100
 """
     run_drop_coal()
 
@@ -68,7 +65,7 @@ function run_drop_coal(
     T=Float64
 )
     println("Simulating droplet coalecense")
-    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
+    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p, thermal = Swalbe.Sys(sys, true, T)
     drop_cent = (sys.L/3, 2*sys.L/3)
     height .= twodroplets(sys.L, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
     Swalbe.equilibrium!(feq, height, vel)
@@ -86,9 +83,9 @@ function run_drop_coal(
         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
         Swalbe.∇f!(h∇p, pressure, dgrad, height)
         Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        # HereSwalbe.thermal!(fluc, height, sys.kbt, sys.μ, sys.δ)
+        Swalbe.thermal!(thermal, height, sys.kbt, sys.μ, sys.δ)
         # Here we a force that is like pull of an inclined plane
-        F .= h∇p .+ slip # .+ fluc 
+        F .= h∇p .+ slip .+ thermal 
         Swalbe.equilibrium!(feq, height, vel)
         Swalbe.BGKandStream!(fout, feq, ftemp, -F)
         Swalbe.moments!(height, vel, fout)
@@ -100,7 +97,9 @@ function run_drop_coal(
     
 end
 # Now run the actual simulation
-fluid = run_drop_coal(sys, r₁=250, r₂=250)
+
+sys = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=50.0, γ=0.005)
+fluid = run_drop_coal(sys, r₁=500, r₂=500)
 # Push the results into a dict for writting to CSV
 df_fluid = Dict()
 df_rho = Dict()
@@ -110,6 +109,6 @@ for t in 1:sys.Tmax÷time_dump
 end
 # Write the desired CSV files
 #CSV.write("drop_coal_data/height_run_drop_coal_first_try.csv", df_fluid)
-save("drop_coal_data/height_run_drop_coal_first_try.jld2", df_fluid)
+save("drop_coal_data/height_run_drop_coal_thrid_try.jld2", df_fluid)
 # Simulation is done and output is save to files height_...csv and rho_...csv
 println("Sim done, results in height_{...}.csv")
