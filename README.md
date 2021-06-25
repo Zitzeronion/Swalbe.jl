@@ -20,7 +20,7 @@ First of all you need a *Julia* installation.
 *Julia* is a high level open source programming language and it is as easy to use as python :snake: (my opinion).
 
 *Julia* can be downloaded at the projects homepage [julialang.org](https://julialang.org/), use the correct installation for your operating system.
-**Important** for **CUDA** we require *Julia* version 1.6 or higher.  
+**Important** for **CUDA** we require *Julia* version 1.6 or higher, usually the most recent version is also the one you should aim for.  
 
 Since recently **Swalbe.jl** is a registered package of the *Julia* package manager.
 The only thing you have to do is to add the package to your *Julia* environment with: 
@@ -32,4 +32,4 @@ To see that the package works you can run the test suit with
 ```julia
 julia> ] test Swalbe
 ```
-All tests can be found in test folder, but do not expect too many comments there.
+All tests can be found in [test folder](https://github.com/Zitzeronion/Swalbe.jl/tree/master/test), but do not expect too many comments there.

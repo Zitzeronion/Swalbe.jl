@@ -1,12 +1,21 @@
+# Swalbe.jl Documentation
+
 ```@meta
 CurrentModule = Swalbe
 ```
 
-# Swalbe
-
-```@index
+```@contents
 ```
+## Functions
 
+<!-- ```@docs
+func(x)
+``` -->
 ```@autodocs
 Modules = [Swalbe]
+```
+
+## Index
+
+```@index
 ```
