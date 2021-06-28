@@ -4,24 +4,11 @@
 CurrentModule = Swalbe
 ```
 
-## Lattice Boltzmann core
-
-```@docs
-BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
+```@autodocs
+Modules = [Swalbe]
+Pages = ["equilibrium.jl", "collide.jl", "moments.jl", "forcing.jl", "pressure.jl", 
+         "differences.jl", "initialize.jl", "initialvalues.jl", "measures.jl", "simulate.jl"]
 ```
 
-```@docs
-moments!(height, velx, vely, fout)
+```@index
 ```
-
-
-## Pressure and forces
-
-The pressure function is at the heart of this method
-
-```@docs
-filmpressure!(pressure, height, γ, θ, n, m, hmin, hcrit)
-```
-
-- link to [Swalbe.jl Documentation](@ref)
-- link to [`filmpressure!(pressure, height, γ, θ, n, m, hmin, hcrit)`](@ref)
