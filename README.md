@@ -214,3 +214,7 @@ Of course to generate data we make system states copies with `Swalbe.snapshot!()
 What we get is something like this
 
 ![Hiern_logo_dewetting](https://user-images.githubusercontent.com/26249811/124448339-9cbc3880-dd82-11eb-9ccf-af44934b3f93.png)
+
+Now all of these frames can be merged into a movie file which is shown below
+
+[![HI-ERN](https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46#file-logo_red-png)](https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46#file-logo_animation-mp4)
