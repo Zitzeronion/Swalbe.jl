@@ -199,7 +199,7 @@ Fx .= h∇px .+ slipx
 Fy .= h∇py .+ slipy
 ```
 
-Now that we know the forces we just have to update our distribution functions `fout` and `ftemp` (the hot sauce of the lattice Boltzmann method), in this case with a simple single relaxation time collision operator ([BGK](https://journals.aps.org/pr/abstract/10.1103/PhysRev.94.511)) and periodic boundary conditions. This process is followed by an update of what is called macroscopic quantities, or simply the moment calculation
+Now that we know the forces we just have to update our distribution functions `fout` and `ftemp` (the hot sauce of the lattice Boltzmann method), in this case with a simple single relaxation time collision operator ([BGK](https://journals.aps.org/pr/abstract/10.1103/PhysRev.94.511)) and periodic boundary conditions. Last part of the lattice Boltzmann time step is the update of what is called macroscopic quantities (thickness & velocity), or simply the moment calculation (because these are the moments of the distribution mathematically speaking)
 ```julia
 # Update the equilibrium
 Swalbe.equilibrium!(feq, height, velx, vely, vsq)
@@ -209,12 +209,13 @@ Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
 Swalbe.moments!(height, velx, vely, fout)
 ```
 and that's it.
-Of course to generate data we make system states copies with `Swalbe.snapshot!()` and return this collection of states at the end of the simulation.
+Of course to generate data we make snapshots of the film using `Swalbe.snapshot!()` and return this collection of *thicknesses* at the end of the simulation.
 
 What we get is something like this
 
 ![Hiern_logo_dewetting](https://user-images.githubusercontent.com/26249811/124448339-9cbc3880-dd82-11eb-9ccf-af44934b3f93.png)
 
-Now all of these frames can be merged into a movie file which is shown below
+All of the time steps that were generated during the simulation can be merged together and can be compressed into a movie, see below
 
-[![HI-ERN](https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46#file-logo_red-png)](https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46#file-logo_animation-mp4)
+![Dewetting_logo](https://gist.githubusercontent.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/3a561e2a2b09eb42bf688f1d304f658b93fba8ed/logo_animation.gif)
+
