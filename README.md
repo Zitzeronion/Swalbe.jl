@@ -212,3 +212,5 @@ and that's it.
 Of course to generate data we make system states copies with `Swalbe.snapshot!()` and return this collection of states at the end of the simulation.
 
 What we get is something like this
+
+![Hiern_logo_dewetting](https://user-images.githubusercontent.com/26249811/124448339-9cbc3880-dd82-11eb-9ccf-af44934b3f93.png)

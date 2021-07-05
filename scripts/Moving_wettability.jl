@@ -212,23 +212,43 @@ end
 println("Moving Wettability and possible resonaces")
 v_lam1_dia = [0, 4900, 490, 49]
 v_lam2_dia = [0, 9802, 980, 98]
-v_lam3_dia = [0, 14702, 1470, 147] 
+v_lam3_dia = [0, 14702, 1470, 147]
+# Newer simulations 
+v4 = [19603, 1960, 196] 
+v5 = [24504, 2450, 245] 
+v6 = [29404, 2940, 294] 
+v7 = [34305, 3430, 343] 
+v8 = [39206, 3920, 392] 
+v9 = [44107, 4410, 441] 
 for direction in ["diagonal"] #  "diagonal"
     # Different initial volumes
-    for waves in [9] # 1 2 
-        speeds = zeros(Int, 4)
+    for waves in [4,5,6,7,8,9] # 1 2 
+        # speeds = zeros(Int, 4)
+        speeds = zeros(Int, 3)
         if waves == 1
             speeds .= v_lam1_dia
         elseif waves == 2
             speeds .= v_lam2_dia
         elseif waves == 3
             speeds .= v_lam3_dia
+        elseif waves == 4
+            speeds .= v4
+        elseif waves == 5
+            speeds .= v5
+        elseif waves == 6
+            speeds .= v6
+        elseif waves == 7
+            speeds .= v7
+        elseif waves == 8
+            speeds .= v8
+        elseif waves == 9
+            speeds .= v9
         end
-        for speed in [0] # speeds # 1 2 3
+        for speed in speeds # 1 2 3 # [0] 
             pattern = "sine"
             println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
             # sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000)
-            sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=15000, tdump=100)
+            sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
             df_fluid = Dict()
             df_sub = Dict()
             θₚ = ones(sys.Lx,sys.Ly)
