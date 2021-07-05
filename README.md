@@ -219,3 +219,27 @@ All of the time steps that were generated during the simulation can be merged to
 
 ![Dewetting_logo](https://gist.githubusercontent.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/3a561e2a2b09eb42bf688f1d304f658b93fba8ed/logo_animation.gif)
 
+## How to **perform research**
+
+The numerical approach is quite robust for a lot of thin film simulations. 
+This means in the limit of small Reynolds and Mach number simulations are usually stable, keeping in mind that for droplet like simulation the contact angle should be on smaller side (θ < π/2). 
+Things I have looked into so far are
+
+- Sliding droplets
+- Equilibrium shapes of droplets on patterned substrates, depending on surface tension.
+- Rayleigh-Taylor instability
+- Dewetting thin films
+- [Dewetting of fluctuating thin films](https://arxiv.org/abs/2012.12557)
+- Dewetting on switchable substrates
+
+Things I have not yet looked into
+
+- Non-Newtonian fluids
+- Surfactants
+- Particles
+- Multicomponent/Multiphase
+## How to **support**
+
+First of all leave a star if you like the idea and the package.
+Second you can support the project by actively using it and raise issues, so that the package gets better.
+Third 
