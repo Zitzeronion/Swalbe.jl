@@ -225,9 +225,9 @@ The numerical approach is quite robust for a lot of thin film simulations.
 This means in the limit of small Reynolds and Mach number simulations are usually stable, keeping in mind that for droplet like simulation the contact angle should be on smaller side (θ < π/2). 
 Things I have looked into so far are
 
-- Sliding droplets
+- [Sliding droplets](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 - Equilibrium shapes of droplets on patterned substrates, depending on surface tension.
-- Rayleigh-Taylor instability
+- [Rayleigh-Taylor instability](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 - Dewetting thin films
 - [Dewetting of fluctuating thin films](https://arxiv.org/abs/2012.12557)
 - Dewetting on switchable substrates
@@ -238,8 +238,23 @@ Things I have not yet looked into
 - Surfactants
 - Particles
 - Multicomponent/Multiphase
-## How to **support**
+## How to **support and contribute**
 
-First of all leave a star if you like the idea and the package.
-Second you can support the project by actively using it and raise issues, so that the package gets better.
-Third 
+First of all leave a star if you like the idea of the project and/or the content of the package.
+Second you can support the project by actively using it and raising [issues](https://github.com/Zitzeronion/Swalbe.jl/issues).
+Help is always very welcome, if you want to contribute open a [**PR**](https://github.com/Zitzeronion/Swalbe.jl/pulls) or raise an [issue](https://github.com/Zitzeronion/Swalbe.jl/issues) with a feature request (and if possible with a way how to include it).
+Feel free to DM me on [Twitter](https://twitter.com/Zitzero) if you have questions, I try to answer them all timely.
+
+## **Status** of the Package
+
+![Lifecycle](https://img.shields.io/badge/lifecycle-stable-green.svg)
+
+<!-- ![Lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
+![Lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
+![Lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)
+![Lifecycle](https://img.shields.io/badge/lifecycle-archived-red.svg)
+![Lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) -->
+
+The package has reached a stable release with version 0.1.
+All tools needed for running a numerical experiment are tested and usable.
+I am currently writing a paper where all experiments were done with this package :blush:.
