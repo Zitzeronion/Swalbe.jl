@@ -255,7 +255,7 @@ for direction in ["diagonal"] #  "diagonal"
             # Substrate patterning
             if pattern == "sine" 
                 for i in 1:sys.Lx, j in 1:sys.Ly
-                    θₚ[i,j] = 1/9 + 1/18 * sin(2π*waves*(i-1)/sys.Lx) * sin(2π*waves*(j-1)/sys.Ly)
+                    θₚ[i,j] = ang + 1/18 * sin(2π*waves*(i-1)/sys.Lx) * sin(2π*waves*(j-1)/sys.Ly)
                 end
             elseif pattern == "linear"
                 θₚ = pyramidpattern(sys.Lx, sys.Ly, waves=waves)
@@ -275,7 +275,8 @@ for direction in ["diagonal"] #  "diagonal"
                 df_sub["theta_$(t*sys.tdump)"] = substrate[t,:]
             end
             println("Saving Dict subdirection $direction subvel $speed and $(pattern) $waves to disk")
-            save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_tmax_$(sys.Tmax)_v2.jld2", df_fluid)
+            save_ang = Int(round(rad2deg(π*ang)))
+            save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_$(save_ang)_tmax_$(sys.Tmax)_v2.jld2", df_fluid)
             # bson("data/Moving_wettability/theta_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves)_tmax_$(sys.Tmax)_v2.bson", df_sub)
         
             CUDA.reclaim()
