@@ -238,6 +238,7 @@ Things I have not yet looked into
 - Surfactants
 - Particles
 - Multicomponent/Multiphase
+
 ## How to **support and contribute**
 
 First of all leave a star if you like the idea of the project and/or the content of the package.
@@ -258,3 +259,9 @@ Feel free to DM me on [Twitter](https://twitter.com/Zitzero) if you have questio
 The package has reached a stable release with version 0.1.
 All tools needed for running a numerical experiment are tested and usable.
 I am currently writing a paper where all experiments were done with this package :blush:.
+
+## **Credit**
+
+[Stefan Zitz (main developer)](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zitz/zitz.html?nn=2424408)
+[Andrea Scagliarini](https://www.iac.rm.cnr.it/iacsite/index.php?page=people&id=140)
+[Jens Harting](https://www.hi-ern.de/hi-ern/CompFlu/Team/Harting/harting.html?nn=2424408)
