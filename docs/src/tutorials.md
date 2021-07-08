@@ -7,12 +7,14 @@ To get a better understandig of both the LBM and the package we supply instructi
 ## Constant interface
 
 A nice and easy way to check the consistency of a fluid mechanics solver is to prob the mass or density.
-Per continuity equation $\partial_t\rho + \nabla\cdot\mathbf{j} = 0$, we require that density $\rho$ can only change if there is a flux $\mathbf{j}$ (okay a divergence of a flux). 
+Per continuity equation $\partial_t\rho + \nabla\cdot\mathbf{j} = 0$, we require that the local density $\rho$ can only change if there is a flux $\mathbf{j}$ (okay a divergence of a flux). 
 In case of vanishing or constant flux $\nabla\cdot\mathbf{j} = 0$ the density has to be time independent and therefore $\partial_t \rho = 0$. 
 
 Thin film flows can be described with the same kind of equation
 
 $$ \partial_t h(\mathbf{x},t) + \nabla\left(M(h)\nabla p(\mathbf{x},t)\right) = 0. $$
+
+The local height can only change with time if some pressure gradient 
 
 Having a vanshing pressure gradient the height $h(\mathbf{x},t)$ have to be constant independent of time.
 To check this we put together a small sample simulation that probes this.
@@ -37,6 +39,8 @@ height .= 1.0
 Swalbe.equilibrium!(ftemp, height, velx, vely, vsq)
 # Empty list to measure the total mass over time
 mass = []
+# Try it with a pressure gradient, will the result be the same?
+pressure_gradient = false
 # Start of the lattice Boltzmann time loop
 for t in 1:sys.Tmax
     # Fill the list 
@@ -45,15 +49,17 @@ for t in 1:sys.Tmax
     if t % sys.tdump == 0
         println("Time step $t mass is $(round(sum(height), digits=3))")
     end
-    # The pressure computation 
-    Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-    # Pressure gradient
-    Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-    # Slippage
-    Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-    # Summation of forces
-    Fx .= h∇px .+ slipx
-    Fy .= h∇py .+ slipy
+    if pressure_gradient
+        # The pressure computation 
+        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
+        # Pressure gradient
+        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
+        # Slippage
+        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+        # Summation of forces
+        Fx .= h∇px .+ slipx
+        Fy .= h∇py .+ slipy
+    end
     # New equilibrium
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
     # Collision and streaming of distribution function
@@ -70,10 +76,17 @@ plot(mass, xlabel="time [Δt]", ylabel="Mass [lbu]", label="flat interface", yli
 
 In fact this is a particular strength of the lattice Boltzmann method.
 Under the assumption that no forces are applied the mass is mathematically conserved.
-And this is how the result should look like
+Which is shown in the lower plot
 
 ![flat](https://user-images.githubusercontent.com/26249811/124790156-39313700-df4b-11eb-93af-9957bb46e411.png)
 
 ## Dewetting of patterned a substrate
 
-Next we take a look at patterend substrates and show how to use an image or some geometrical shape to induce directed dewetting.
+Next we take a look at substrates with a wettability gradient and show how to use an image or geometrical shapes to induce directed dewetting.
+Here we actually reuse the display simulation of the [README.md](https://github.com/Zitzeronion/Swalbe.jl/blob/master/README.md).
+The idea is to use [Youngs equation](https://upload.wikimedia.org/wikipedia/commons/8/85/Thomas_Young-An_Essay_on_the_Cohesion_of_Fluids.pdf)
+
+$$ \cos(\theta_{\text{eq}}) = \frac{\gamma_{sg} - \gamma_{sl}}{\gamma}, $$
+
+where the $\gamma$'s are the three interfacial energies and $\theta_{\text{eq}}$ is the equilibrium contact angle to address the wettability of the substrate.
+We can without problems discretize $\theta_{\text{eq}}$ similar to the pressure or the film thickness and therefore effectively introduce a wettability gradient $\nabla \theta_{\text{eq}} \neq 0$.
