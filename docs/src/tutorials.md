@@ -12,7 +12,9 @@ In case of vanishing or constant flux $\nabla\cdot\mathbf{j} = 0$ the density ha
 
 Thin film flows can be described with the same kind of equation
 
-$$ \partial_t h(\mathbf{x},t) + \nabla\left(M(h)\nabla p(\mathbf{x},t)\right) = 0. $$
+```math
+\partial_t h(\mathbf{x},t) + \nabla\left(M(h)\nabla p(\mathbf{x},t)\right) = 0. 
+```
 
 The local height can only change with time if some pressure gradient 
 
@@ -31,7 +33,7 @@ sys = Swalbe.SysConst(Lx = 100,     # 100 lattice units in x-direction
 # Allocation of distribution functions, macroscopic variables and forces 
 fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys,      # Size 
                                                                                                           "CPU",    # Where to run 
-                                                                                                          false,    #      
+                                                                                                          false,    # No fluctuations  
                                                                                                           Float64)  # Num type
 # Constant film thickness, or flat interface
 height .= 1.0
@@ -86,7 +88,9 @@ Next we take a look at substrates with a wettability gradient and show how to us
 Here we actually reuse the display simulation of the [README.md](https://github.com/Zitzeronion/Swalbe.jl/blob/master/README.md).
 The idea is to use [Youngs equation](https://upload.wikimedia.org/wikipedia/commons/8/85/Thomas_Young-An_Essay_on_the_Cohesion_of_Fluids.pdf)
 
-$$ \cos(\theta_{\text{eq}}) = \frac{\gamma_{sg} - \gamma_{sl}}{\gamma}, $$
+```math
+\cos(\theta_{\text{eq}}) = \frac{\gamma_{sg} - \gamma_{sl}}{\gamma}, 
+```
 
 where the $\gamma$'s are the three interfacial energies and $\theta_{\text{eq}}$ is the equilibrium contact angle to address the wettability of the substrate.
 Without problems it is possible to discretize $\theta_{\text{eq}}$ similar to the pressure or the film thickness and therefore effectively introduce a wettability gradient $\nabla \theta_{\text{eq}} \neq 0$.
@@ -109,7 +113,7 @@ sys = Swalbe.SysConst(Lx = 100,     # 100 lattice units in x-direction
 # Allocation of distribution functions, macroscopic variables and forces 
 fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys,      # Size 
                                                                                                           "CPU",    # Where to run 
-                                                                                                          false,    #      
+                                                                                                          false,    # No fluctuations
                                                                                                           Float64)  # Num type
 # Random (gaussian) perturbations put on top of a flat interface
 ϵ = 0.001
@@ -151,8 +155,82 @@ end
 # Another library for plotting and to my understanding actually the best you can do
 using CairoMakie
 # We are interested in the heatmap of the film thickness and the growth rate of the perturbation
-p1 = plot(1:sys.Tmax+1, diff_h, axis=:log, xlabel="time [Δt]", ylabel="thickness difference [lbu]", label="Δh")
-p2 = heatmap(height, aspect_ratio=1, xlabel="x [Δx]", ylabel="y [Δx]", c=:viridis, colorbar_title = "film thickness [lbu]" )
+let
+	x1 = 1:1:sys.Tmax
+	y2 = zeros(sys.Tmax)
+	y2 .= diff_h
+    fig = Figure(resolution = (960,450))
+	
+    ax1 = Axis(fig, xlabel = "time [Δt]", ylabel = "Δh [lbu]",xscale = log10, yscale = log10,xgridstyle=:dash, ygridstyle=:dash, xminorticksvisible = true,
+        xminorticks = IntervalsBetween(9), yminorticksvisible = true,
+        yminorticks = IntervalsBetween(9))
+	leg = lines!(ax1, x1, y2, color = :navy)
+	ax2 = Axis(fig,  aspect = 1, xlabel = "x [Δx]", ylabel = "y [Δx]")
+    hmap = heatmap!(ax2, height, colormap = :viridis)
+    cbar = Colorbar(fig, hmap, label = "thickness", ticksize=15, tickalign = 1, width = 15)
+	fig[1,1] = ax1
+    fig[1,2] = ax2
+    fig[1,3] = cbar
+    fig
+end
+```
 
-plot(p1,p2)
+Fluid is drained into regions of lower contact angle, therefore into in the triangle.
+The effect is the strongest around the vertices of the triangle.
+Since in principle this a dewetting instability with a *well defined spectrum* computable using the surface tension $\gamma$ and the disjoining pressure functional $\Pi(h)$.
+The result should look like the plot below 
+
+![patterned](https://user-images.githubusercontent.com/26249811/125091450-b3d78f00-e0d0-11eb-9786-9a817a495139.png)
+
+Of course you can and should play with the parameters ($\gamma$, $\delta$, $h_0$, ...) to get a physically correct simulation :wink:.
+
+## Droplet spreading in 1D
+
+An well studied academic problem is the spreading of a droplet on a flat interface.
+If a certain amount of liquid is placed on a surface, like a rain drop :droplet: hitting a plant leaf :four_leaf_clover: we observe a drop sticking to the leaf.
+The shape of the droplet is actually nature solving Young's law and finds an equilibrium shape which can be described, again by a simple marcoscopic observable, the contact angle $\theta_{\text{eq}}$.
+We can recast this behavior with a simple and fast simulation.
+
+In contrast to the two examples before we put the whole experiment into a function and just call the function.
+While this seem overkill here in fact this helps quite a lot.
+Instead of writing a script for every experiment, we can write a function and loop through function arguments.
+Therefore it way more convenient to do phase space scans and parameter studies. 
+
+```julia
+using Swalbe
+function run_dropletrelax(
+    sys::SysConst_1D;
+    radius=20, 
+    θ₀=1/6, 
+    center=(sys.L÷2), 
+    verbos=true, 
+    T=Float64
+)
+    println("Simulating an out of equilibrium droplet")
+    area = []
+    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
+    
+    Swalbe.singledroplet(height, radius, θ₀, center)
+    
+    Swalbe.equilibrium!(feq, height, vel)
+    ftemp .= feq
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(height)
+            if verbos
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        push!(area, length(findall(height .> 0.055)))
+        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
+        Swalbe.∇f!(h∇p, pressure, dgrad, height)
+        Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
+        F .= h∇p .+ slip
+        Swalbe.equilibrium!(feq, height, vel)
+        Swalbe.BGKandStream!(fout, feq, ftemp, -F)
+        Swalbe.moments!(height, vel, fout)
+    end
+    return height, area
+end
 ```
