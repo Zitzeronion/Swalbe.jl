@@ -27,7 +27,7 @@ The only thing you have to do is to add the package to your *Julia* environment 
 ```julia
 julia> ] add Swalbe
 ```
-Of course you can as well clone or fork the repo and activate the package inside der **REPL**.
+Of course you can also clone or fork the repo and activate the package inside der **REPL**.
 First you need to go the Swalbe directory and open a **REPL**
 ```bash
 cd \Swalbe_folder
@@ -41,7 +41,7 @@ julia> ] activate .
 (Swalbe)> 
 ```
 
-To see that the package works you can run the test suit with
+To check if the package works you can run the test suit with
 ```julia
 julia> ] test Swalbe
 ```
@@ -51,14 +51,14 @@ Still especially the [simulate.jl](https://github.com/Zitzeronion/Swalbe.jl/blob
 ## How to **use** 
 
 The idea of **Swalbe.jl** is to script your thin film simulation, based on a lattice Boltzmann iteration.
-That is why most core functions can easily be extended, or used out of the box.
-So how does it work, fist we have to load **Swalbe.jl** into the REPL or put the following line on top of our script
+That is why most core functions can be easily extended, or used out of the box.
+So how does it work, first we have to load **Swalbe.jl** into the REPL or put the following line on top of our script
 ```julia
 julia> ] add Swalbe         # If not yet added
 julia> using Swalbe
 ```
-which can take a minute or so, don't be alarmed if it takes more than ten seconds.
-Alternatively one can use [DrWatson](https://github.com/JuliaDynamics/DrWatson.jl) (super cool package to manage scientific computing with *Julia*) and use the `@quickactivate :Swalbe` macro.
+this might take a minute, don't be alarmed if it takes more than ten seconds.
+Alternatively we can use [DrWatson](https://github.com/JuliaDynamics/DrWatson.jl) (super cool package to manage scientific computing with *Julia*) and use the `@quickactivate :Swalbe` macro.
 
 As a picture says more than a thousand words here is a shiny use case of **Swalbe.jl** 
 ```julia
@@ -151,10 +151,10 @@ dewet_logo("C:\\Users\\Zitzero\\Pictures\\Science\\logo_red.png", slip=3.0, Tmax
 Here the [Images](https://github.com/JuliaImages/Images.jl) and [Colors](https://github.com/JuliaGraphics/Colors.jl) package allow convenient reading of png or jpg files.
 To give you an understanding of what happens here we take a look at the different parts.
 First of we define our simulation as `function` in this case `dewet_logo()`.
-There is one input needed, namely the location of the png or jpg file you want to dewet, in my case I used our institutes [logo](https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/b83988608cd5cdbdb9240e8182050383f442700f/logo_red.png).
+There is one input argument needed, namely the location of the png or jpg file you want to dewet, in my case I used our institutes [logo](https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/b83988608cd5cdbdb9240e8182050383f442700f/logo_red.png).
 Other arguments are keywords that have a default value.
 
-Next step is to define the system we want to simulate, so mostly allocations and initial conditions as well as substrate patterning
+The next step is to define the system we want to simulate, so mostly allocations and initial conditions as well as substrate patterning
 ```julia
 # Load the image file
 logo = load(logo_source)
@@ -189,7 +189,8 @@ end
 
 After the simulation box (or square to be more precise) is set we compute the first lattice Boltzmann equilibrium `Swalbe.equilibrium!(fout, height, velx, vely, vsq)`.
 Knowing the initial equilibrium we can enter the lattice Boltzmann time loop.
-Inside the loop we compute for every time step the forces that are present, here the film pressure (laplacian of the surface and wettability), slippage to regularize the contact line and the pressure gradient
+Inside the loop we compute the forces that are present for every time step.
+In this case the film pressure (laplacian of the surface and wettability), slippage to regularize the contact line and the pressure gradient
 ```julia
 Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, th, sys.n, sys.m, sys.hmin, sys.hcrit)
 Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
@@ -211,11 +212,11 @@ Swalbe.moments!(height, velx, vely, fout)
 and that's it.
 Of course to generate data we make snapshots of the film using `Swalbe.snapshot!()` and return this collection of *thicknesses* at the end of the simulation.
 
-What we get is something like this
+We get something like this
 
 ![Hiern_logo_dewetting](https://user-images.githubusercontent.com/26249811/124448339-9cbc3880-dd82-11eb-9ccf-af44934b3f93.png)
 
-All of the time steps that were generated during the simulation can be merged together and can be compressed into a movie, see below
+All of the time steps that were generated during the simulation can be merged together and can be compressed into a video, see below
 
 ![Dewetting_logo](https://gist.githubusercontent.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/3a561e2a2b09eb42bf688f1d304f658b93fba8ed/logo_animation.gif)
 
@@ -241,10 +242,10 @@ Things I have not yet looked into
 
 ## How to **support and contribute**
 
-First of all leave a star if you like the idea of the project and/or the content of the package.
-Second you can support the project by actively using it and raising [issues](https://github.com/Zitzeronion/Swalbe.jl/issues).
-Help is always very welcome, if you want to contribute open a [**PR**](https://github.com/Zitzeronion/Swalbe.jl/pulls) or raise an [issue](https://github.com/Zitzeronion/Swalbe.jl/issues) with a feature request (and if possible with a way how to include it).
-Feel free to DM me on [Twitter](https://twitter.com/Zitzero) if you have questions, I try to answer them all timely.
+Leave a star if you like the idea of the project and/or the content of the package.
+You can support the project by actively using it and raising [issues](https://github.com/Zitzeronion/Swalbe.jl/issues).
+Help is always very welcome, if you want to contribute open a [PR](https://github.com/Zitzeronion/Swalbe.jl/pulls) or raise an [issue](https://github.com/Zitzeronion/Swalbe.jl/issues) with a feature request (and if possible with a way how to include it).
+Feel free to DM me on [Twitter](https://twitter.com/Zitzero) if you have questions, I will try to answer them all timely.
 
 ## **Status** of the Package
 
@@ -258,7 +259,7 @@ Feel free to DM me on [Twitter](https://twitter.com/Zitzero) if you have questio
 
 The package has reached a stable release with version 0.1.
 All tools needed for running a numerical experiment are tested and usable.
-I am currently writing a paper where all experiments were done with this package :blush:.
+I am currently writing a paper for which all experiments were done with this package :blush:.
 
 ## **Credit**
 
