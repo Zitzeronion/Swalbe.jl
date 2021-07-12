@@ -186,51 +186,86 @@ Of course you can and should play with the parameters ($\gamma$, $\delta$, $h_0$
 
 ## Droplet spreading in 1D
 
-An well studied academic problem is the spreading of a droplet on a flat interface.
 If a certain amount of liquid is placed on a surface, like a rain drop :droplet: hitting a plant leaf :four_leaf_clover: we observe a drop sticking to the leaf.
-The shape of the droplet is actually nature solving Young's law and finds an equilibrium shape which can be described, again by a simple marcoscopic observable, the contact angle $\theta_{\text{eq}}$.
+The shape of the droplet is actually nature solving Young's law and finds an equilibrium shape which can be described by a simple macroscopic observable, the contact angle $\theta_{\text{eq}}$.
+There is of course more to it, for further reading check out [Snoeijer & Andreotti](http://stilton.tnw.utwente.nl/people/snoeijer/Papers/2013/SnoeijerARFM13.pdf)
 We can recast this behavior with a simple and fast simulation.
 
 In contrast to the two examples before we put the whole experiment into a function and just call the function.
-While this seem overkill here in fact this helps quite a lot.
-Instead of writing a script for every experiment, we can write a function and loop through function arguments.
-Therefore it way more convenient to do phase space scans and parameter studies. 
+While this may seem overkill here it is in fact very useful.
+Instead of writing a script for every experiment, we simply write a function and loop through function arguments.
+Making it very convenient to perform phase space scans and parameter studies.
 
 ```julia
 using Swalbe
+# Simulation that let's a droplet relax towards it's equilibrium contact angle
 function run_dropletrelax(
-    sys::SysConst_1D;
-    radius=20, 
-    θ₀=1/6, 
-    center=(sys.L÷2), 
-    verbos=true, 
-    T=Float64
+    sys::Swalbe.SysConst_1D;    # System Constants
+    radius=20,                  # Initial droplet radius
+    θ₀=1/6,                     # Initial contact angle
+    center=(sys.L÷2),           # Position of the center of mass
+    verbose=true,               # Simulation prints output 
+    T=Float64                   # Number subtype
 )
     println("Simulating an out of equilibrium droplet")
-    area = []
+    # Empty list to store the radius evolution
+    diameter = []
+    # Allocation
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
-    
+    # Initial condition, see initialvalues.jl, or ?Swalbe.singledroplet
     Swalbe.singledroplet(height, radius, θ₀, center)
-    
-    Swalbe.equilibrium!(feq, height, vel)
-    ftemp .= feq
+    # Initial equilibrium, in this case a D1Q3 equilibrium
+    Swalbe.equilibrium!(ftemp, height, vel)
+    # Lattice Boltzmann loop starts
     for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            if verbos
+        if verbose
+        # Check if the mass conserved
+            if t % sys.tdump == 0
+                mass = 0.0
+                mass = sum(height)
+
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        push!(area, length(findall(height .> 0.055)))
+        # Push the number of lattice sides inside the droplet to the list
+        push!(diameter, length(findall(height .> 0.055)))
+        # Compute film pressure with contact angle \theta = 1/9
         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
+        # Compute the gradient of the pressure and multiply it with the height
         Swalbe.∇f!(h∇p, pressure, dgrad, height)
+        # Calculate the substrate friction, velocity boundary condition
         Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
+        # Sum the forces up
         F .= h∇p .+ slip
+        # New equilibrium
         Swalbe.equilibrium!(feq, height, vel)
+        # Collide and stream
         Swalbe.BGKandStream!(fout, feq, ftemp, -F)
+        # Compute the new moments
         Swalbe.moments!(height, vel, fout)
     end
-    return height, area
+    return height, diameter
 end
+```
+
+If we defined the function as above we can use it to run several experiments and test for example [Tanners law](https://iopscience.iop.org/article/10.1088/0022-3727/12/9/009/pdf).
+The idea of Tanner was that the evolution of the droplets radius during spreading should be captured by a powerlaw $R(t) \propto t^{\alpha}$, with $\alpha = 1/10$ in this case. 
+**Swalbe.jl** by definition of a numerical solver does not know about real world experiments.
+That is why we have to find the correct parameters to capture experimental findings, in this case we like to observe a powerlaw growth in diameter with $\alpha = 1/10$. 
+There are two things we could easily change, the surface tension $\gamma$ and the velocity boundary or slippage $\delta$.
+
+```julia
+# Dictionary to store the results
+results = Dict();
+# Loop over different slip lengths
+for slip in [2.0, 1.0, 0.5, 0.1]
+    # Simulation parameters
+    sys = Swalbe.SysConst_1D(L=2048, γ=0.0005, n=3, m=2, δ=slip, hmin=0.07, Tmax=100000);
+    # Run the simulation
+    h, d = run_dropletrelax(sys, radius=400, θ₀=1/6)
+    # Store the data in the dict
+    results[slip] = d
+end
+
+
 ```
