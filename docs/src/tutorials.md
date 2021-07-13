@@ -228,7 +228,7 @@ function run_dropletrelax(
             end
         end
         # Push the number of lattice sides inside the droplet to the list
-        push!(diameter, length(findall(height .> 0.055)))
+        push!(diameter, length(findall(height .> 0.06)))
         # Compute film pressure with contact angle \theta = 1/9
         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
         # Compute the gradient of the pressure and multiply it with the height
@@ -249,23 +249,34 @@ end
 ```
 
 If we defined the function as above we can use it to run several experiments and test for example [Tanners law](https://iopscience.iop.org/article/10.1088/0022-3727/12/9/009/pdf).
-The idea of Tanner was that the evolution of the droplets radius during spreading should be captured by a powerlaw $R(t) \propto t^{\alpha}$, with $\alpha = 1/10$ in this case. 
+The idea of Tanner was that the evolution of the droplets radius during spreading should be captured by a powerlaw $R(t) \propto t^{\alpha}$, with $\alpha = 1/10$ in this case.
+There are subtleties to this which you can read up in this very nice paper by [Eddi et al.](http://stilton.tnw.utwente.nl/people/eddi/Papers/PhysFluids_spreading.pdf).
 **Swalbe.jl** by definition of a numerical solver does not know about real world experiments.
-That is why we have to find the correct parameters to capture experimental findings, in this case we like to observe a powerlaw growth in diameter with $\alpha = 1/10$. 
+That is why we have to find the correct parameters to capture experimental findings (real world physics), in this case we like to observe a powerlaw growth in radius with $\alpha = 1/10$. 
 There are two things we could easily change, the surface tension $\gamma$ and the velocity boundary or slippage $\delta$.
 
 ```julia
 # Dictionary to store the results
-results = Dict();
+results = Dict()
 # Loop over different slip lengths
-for slip in [2.0, 1.0, 0.5, 0.1]
+for slip in [2.0, 1.0, 0.5]
     # Simulation parameters
-    sys = Swalbe.SysConst_1D(L=2048, γ=0.0005, n=3, m=2, δ=slip, hmin=0.07, Tmax=100000);
+    sys = Swalbe.SysConst_1D(L=2048, γ=0.001, n=3, m=2, δ=slip, Tmax=2000000);
     # Run the simulation
-    h, d = run_dropletrelax(sys, radius=400, θ₀=1/6)
+    h, d = run_dropletrelax(sys, radius=400, θ₀=1/4)
     # Store the data in the dict
     results[slip] = d
 end
-
-
 ```
+
+Given the finite slippage we do not observe *large* deviations from the $\alpha=1/10$ powerlaw in the long time limit.
+
+## Further tutorials
+
+More tutorials will follow in the future.
+I plan to create one for every  paper the method was used for.
+So be sure to check out the docs every now and then.
+
+The next tutorial will be about switchable substrates. 
+In this case the wettability can not only addressed locally but also with a time dependency.
+Here is what happens if the time frequency is [high](https://gist.github.com/Zitzeronion/116d87978ece82c8ae64a3f7edb9dbb3#gistcomment-3811414) and this happens if we update with a [lower](https://gist.github.com/Zitzeronion/116d87978ece82c8ae64a3f7edb9dbb3#gistcomment-3811414) frequency.
