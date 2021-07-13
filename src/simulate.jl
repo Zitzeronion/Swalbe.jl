@@ -29,7 +29,7 @@ Test passed
 ``` 
 """
 function run_flat(sys::SysConst, device::String; verbos=true, T=Float64)
-    println("Simulating a flat interface without driving forces (nothing should happen)")
+    println("Simulating a flat interface without driving forces (nothing should happen) in two dimensions")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     height .= 1.0
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
@@ -55,7 +55,7 @@ function run_flat(sys::SysConst, device::String; verbos=true, T=Float64)
 end
 
 function run_flat(sys::SysConst_1D; verbos=true, T=Float64)
-    println("Simulating a flat interface without driving forces (nothing should happen)")
+    println("Simulating a flat interface without driving forces (nothing should happen) in one dimension")
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
     height .= 1.0
     Swalbe.equilibrium!(feq, height, vel)
@@ -108,7 +108,7 @@ julia> h = Swalbe.run_random(sys, "CPU", h₀=10, ϵ=0.1, verbos=false);
 ```
 """
 function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=true, T=Float64)
-    println("Simulating a random undulated interface")
+    println("Simulating a random undulated interface in two dimensions")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     Swalbe.randinterface!(height, h₀, ϵ)
     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
@@ -135,7 +135,7 @@ function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=tru
 end
 # 1D case
 function run_random(sys::SysConst_1D; h₀=1.0, ϵ=0.01, verbos=true, T=Float64)
-    println("Simulating a random undulated interface")
+    println("Simulating a random undulated interface in one dimension")
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
     height .= h₀ .* (1.0 .+ ϵ .* randn(sys.L))
     Swalbe.equilibrium!(feq, height, vel)
@@ -194,7 +194,7 @@ julia> h = Swalbe.run_random(sys, "CPU", h₀=10, ϵ=0.1, verbos=false);
 ```
 """
 function run_rayleightaylor(sys::SysConst, device::String; kx=15, ky=18, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
-    println("Simulating the Rayleigh Taylor instability")
+    println("Simulating the Rayleigh Taylor instability in two dimensions")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     for i in 1:sys.Lx, j in 1:sys.Ly
         height[i,j] = h₀ * (1 + ϵ * sin(2π*kx*i/(sys.Lx-1)) * sin(2π*ky*j/(sys.Ly-1)))
@@ -224,7 +224,7 @@ function run_rayleightaylor(sys::SysConst, device::String; kx=15, ky=18, h₀=1.
 end
 # 1D case
 function run_rayleightaylor(sys::SysConst_1D; k=15, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
-    println("Simulating the Rayleigh Taylor instability")
+    println("Simulating the Rayleigh Taylor instability in one dimension")
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
     for i in 1:sys.L
         height[i] = h₀ * (1 + ϵ * sin(2π*k*i/(sys.L-1)))
@@ -266,7 +266,7 @@ function run_dropletrelax(
     verbos=true, 
     T=Float64
 )
-    println("Simulating an out of equilibrium droplet")
+    println("Simulating an out of equilibrium droplet in two dimensions")
     area = []
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
@@ -308,7 +308,7 @@ function run_dropletrelax(
     verbos=true, 
     T=Float64
 )
-    println("Simulating an out of equilibrium droplet")
+    println("Simulating an out of equilibrium droplet in one dimensions")
     area = []
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
     
@@ -351,7 +351,7 @@ function run_dropletpatterned(
     verbos=true, 
     T=Float64
 )
-    println("Simulating a droplet on a patterned substrate")
+    println("Simulating a droplet on a patterned substrate in two dimensions")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
         Swalbe.singledroplet(height, radius, θ₀, center)
@@ -394,7 +394,7 @@ function run_dropletpatterned(
     verbos=true, 
     T=Float64
 )
-    println("Simulating a droplet on a patterned substrate")
+    println("Simulating a droplet on a patterned substrate in one dimension")
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
     
     Swalbe.singledroplet(height, radius, θ₀, center)
@@ -439,7 +439,7 @@ function run_dropletforced(
     verbos=true, 
     T=Float64
 )
-    println("Simulating a sliding droplet")
+    println("Simulating a sliding droplet in two dimensions")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
         Swalbe.singledroplet(height, radius, θ₀, center)
@@ -488,7 +488,7 @@ function run_dropletforced(
     verbos=true, 
     T=Float64
 )
-    println("Simulating a sliding droplet")
+    println("Simulating a sliding droplet in one dimension")
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
     
     Swalbe.singledroplet(height, radius, θ₀, center)
