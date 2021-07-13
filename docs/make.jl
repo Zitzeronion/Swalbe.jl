@@ -15,6 +15,8 @@ makedocs(;
     # checkdocs = :exports,
     pages=[
         "Home" => "index.md",
+        "Tutorials" => "tutorials.md",
+        "Functions" => "functions.md",
     ],
 )
 
