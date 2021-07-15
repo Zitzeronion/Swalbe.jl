@@ -67,7 +67,18 @@ scientific explorations of forthcoming data releases from the *Gaia* mission
 
 # Mathematics
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
+``Swalbe.jl`` links two different approaches to solve flow problems with one small spatial dimension.
+Therefore $\frac{h}{L} \ll 1$, with $h$ being the thickness of a liquid film and $L$ being its lateral scale.
+Our approach builds on the lattice Boltzmann method, which is a discretized Boltzmann equation with.
+
+$$f_l(\mathbf{x}+\mathbf{c}^{(l)}\Delta t,t+\Delta t) = (1 - \omega) f_l(\mathbf{x},t) + \omega f_l^{(eq)}(\mathbf{x},t) + w_l \frac{\Delta t}{c_s^2} \mathbf{c}^{(l)} \cdot \mathbf{F}_{\textrm{\tiny{tot}}}, $$
+
+where $f_l(\mathbf{x}+\mathbf{c}^{(l)}$ are particle distribution functions, $\omega$ is a relaxation rate, $c_s$ is the speed of sound and 
+
+$$ \partial_t h(\mathbf{x},t) = \nabla\cdot(M(h)\nabla p(\mathbf{x},t)), $$
+
+where $M(h)$ is a mobility and $p(\mathbf{x},t)$ is the pressure.
+Since this scalar equation can not be simulated 
 
 Double dollars make self-standing equations:
 
