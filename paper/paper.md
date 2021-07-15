@@ -37,19 +37,11 @@ bibliography: paper.bib
 # Summary
 
 Small amounts of liquid dispersed on a substrate are an every day phenomenon.
-From a theoretical point of view this poses a complex modelling problem as it includes the interaction of three phases. 
-First being the substrate liquid interaction that determines the stability and equilibrium conditions.
-
- 
-<!-- The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration). -->
+From a theoretical point of view this poses a complex modelling problem.
+On the one hand the liquids flow is best described using the Navier Stokes equations.
+On the other hand it includes the interaction between three phases, the solid substrate, the liquid film and the surrounding gas.
+A rather efficient way to deal with this problem is the thin film approach.
+The hin
 
 # Statement of need
 
