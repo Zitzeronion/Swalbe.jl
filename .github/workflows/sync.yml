@@ -1,0 +1,23 @@
+name: Sync
+on:
+  - push
+
+jobs:
+  sync:
+    name: Synchronize with jugit.fz-juelich.de
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+      - name: add remote 
+        run: git remote add jugit https://jugit.fz-juelich.de/compflu/swalbe.jl
+      - name: enable locally stored credentials
+        run: git config credential.helper store
+      - name: add credentials from projects secrets
+        env:
+          JUGIT_USER: ${{ secrets.jugituser }}
+          JUGIT_PASS: ${{ secrets.jugitpass }}
+        run: echo "https://$JUGIT_USER:$JUGIT_PASS@jugit.fz-juelich.de" >| ~/.git-credentials
+      - name: mirror push to new remote
+        run: git push --prune jugit +refs/remotes/origin/*:refs/heads/* +refs/tags/*:refs/tags/*
