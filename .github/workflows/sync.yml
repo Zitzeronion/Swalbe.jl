@@ -20,4 +20,4 @@ jobs:
           JUGIT_PASS: ${{ secrets.jugitpass }}
         run: echo "https://$JUGIT_USER:$JUGIT_PASS@jugit.fz-juelich.de" >| ~/.git-credentials
       - name: mirror push to new remote
-        run: git push jugit --mirror
+        run: git push jugit refs/remotes/origin/*:refs/heads/*
