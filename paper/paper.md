@@ -10,6 +10,9 @@ authors:
   - name: Stefan Zitz^[corresponding author] # note this makes a footnote saying 'co-first author'
     orcid: 0000-0002-2371-5610
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
+  - name: Manuel Zellhöfer # note this makes a footnote saying 'co-first author'
+    # orcid: 0000-0002-3893-746X
+    affiliation: "1"
   - name: Andrea Scagliarini # note this makes a footnote saying 'co-first author'
     orcid: 0000-0002-3893-746X
     affiliation: "3, 4"
