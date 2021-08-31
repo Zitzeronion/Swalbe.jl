@@ -48,10 +48,10 @@ An efficient way to deal with this problem is via the thin-film equation:
 where $h$ is the film thickness, $M(h)$ is a thickness dependent mobility and $p$ is the pressure inside the film.
 Solving the thin film equation directly is however a difficult task as it is a fourth order degenerate PDE[@becker2003complex].
 `Swalbe.jl` approaches the problem from a different angle.
-Instead of directly solving the thin film equation we use a novel method based on a class lattice Boltzmann models, originally developed to simulate shallow water flows [@Salmon:1999:0022-2402:503].
+Instead of directly solving the thin film equation we use a novel method based on a class lattice Boltzmann models [krueger2017], originally developed to simulate shallow water flows [@Salmon:1999:0022-2402:503].
 This allows us to benefit from the simplicity of the lattice Boltzmann algorithm which makes it straightforward to parallelize the code and run it on accelerator devices.
 Choosing appropriate forces it is possible to simulate complex problems.
-Among them is the dewetting of a patterned substrates as shown in Fig.~\ref{fig:logo}.
+Among them is the dewetting of a patterned substrates as shown in Fig. \ref{fig:logo}.
 It is as well possible to simulate low contact angle droplets out of equilibrium to probe relaxation experiments, e.g. the Cox-Voinov or Tanner's law [@RevModPhys.81.739].
 Due to a disjoining pressure model for the three phase contact line droplets can not only relax towards their equilibrium they can slide as well [@PhysRevE.100.033313].
 All of this can be coupled with thermal fluctuations to study the stochastic thin film equation [@shah_van_steijn_kleijn_kreutzer_2019].
