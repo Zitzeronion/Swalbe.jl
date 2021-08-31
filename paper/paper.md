@@ -25,7 +25,7 @@ affiliations:
    index: 3
  - name: INFN, sezione Roma "Tor Vergata"
    index: 4
-date: 15 July 2021
+date: 31 August 2021
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
@@ -36,89 +36,51 @@ bibliography: paper.bib
 
 # Summary
 
-Small amounts of liquid dispersed on a substrate are an every day phenomenon.
-From a theoretical point of view this poses a complex modelling problem.
-On the one hand the liquids flow is best described using the Navier Stokes equations.
-On the other hand it includes the interaction between three phases, the solid substrate, the liquid film and the surrounding gas.
-A rather efficient way to deal with this problem is the thin film approach.
-The hin
+Small amounts of liquid deposited on a substrate are an everyday phenomenon.
+From a theoretical point of view this represents a modelling challenge, due to the multiple scales involved: from the molecular interactions among the three phases (solid substrate, liquid film and surrounding gas) to the hydrodynamic flows.
+An efficient way to deal with this problem is via the thin-film equation:
+\begin{equation}\label{eq:thin_film}
+    \partial_t h = \nabla\cdot(M(h)\nabla p),
+\end{equation}
+where $h$ is the film thickness, $M(h)$ is a thickness dependent mobility and $p$ is the pressure inside the film.
+Solving the thin film equation directly is however a difficult task as it is a fourth order degenerate PDE[@becker2003complex].
+`Swalbe.jl` approaches the problem from a different angle.
+Instead of directly solving the thin film equation we use a novel method based on a class lattice Boltzmann models, originally developed to simulate shallow water flows [@Salmon:1999:0022-2402:503].
+This allows us to benefit from the simplicity of the lattice Boltzmann algorithm which makes it straightforward to parallelize the code and run it on accelerator devices.
+Choosing appropriate forces it is possible to simulate complex problems.
+Among them is the dewetting of a patterned substrates as shown in Fig.~\ref{fig:logo}.
+It is as well possible to simulate low contact angle droplets out of equilibrium to probe relaxation experiments, e.g. the Cox-Voinov or Tanner's law [@RevModPhys.81.739].
+Due to a disjoining pressure model for the three phase contact line droplets can not only relax towards their equilibrium they can slide as well [@PhysRevE.100.033313].
+All of this can be coupled with thermal fluctuations to study the stochastic thin film equation [@shah_van_steijn_kleijn_kreutzer_2019].
+
+![Dewetting simulation on a patterned substrate, letters have a higher wettability than the rest of the substrate.\label{fig:logo}](Hiern_logo.png)
 
 # Statement of need
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+`Swalbe` is written in Julia [@doi:10.1137/141000671] and developed for a `script your experiment` workflow.
+For that reason an experiment is composed of three steps.
+First, the initial problem is defined by setting the system size and other input parameters, stored in a custom type.
+Followed by the lattice Boltzmann time loop where different force terms allow for different dynamics.
+To note here however is that some forces are mandatory for every experiment.
+This is on the one hand the friction with the substrate, the slip that helps regularizing the contact line and on the other hand the capillary- or filmpressure that accounts for the correct wetting behavior.  
+After the time loop has ended an IO step can be included to store the data in files or to generate a plot.
+The package is written in pure Julia, therefore it can be easily coupled with other packages from the Julia ecosystem such as Plots.jl [@tom_breloff_2021] to visualize data and JLD2.jl [@JLD2.jl] to store data in HDF5 format.
+Of course one future development goal is to interact with `SciML` environment to pair modelling with ML.  
+`Swalbe.jl` is designed to approach two problems, first being the modelling itself and second the applicability to large system sizes.
+Ideas can be implemented quickly and tested with a two dimensional system, which is discretized in a single horizontal direction and offers a second computed dimension for the thickness.
+The hardware requirements to run these two dimensional simulations are comparably low and depending on the number of lattice Boltzmann iterations ranging from seconds to at most an hour on a single Core of a modern CPU.
+After testing it is possible to scale up and simulate the same or other problems in three dimensions with a slightly more complex discretization.
+Keeping the simulation time low is archived by using a Nvidia GPU.
+Most functions are written in a generic style and can be executed both on a CPU or GPU.
+For the GPU usage the high-level API of CUDA.jl [@besard2018juliagpu; @besard2019prototyping] is used, mostly CuArrays.
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
-
-# Mathematics
-
-``Swalbe.jl`` links two different approaches to solve flow problems with one small spatial dimension.
-Therefore $\frac{h}{L} \ll 1$, with $h$ being the thickness of a liquid film and $L$ being its lateral scale.
-Our approach builds on the lattice Boltzmann method, which is a discretized Boltzmann equation with.
-
-$$f_l(\mathbf{x}+\mathbf{c}^{(l)}\Delta t,t+\Delta t) = (1 - \omega) f_l(\mathbf{x},t) + \omega f_l^{(eq)}(\mathbf{x},t) + w_l \frac{\Delta t}{c_s^2} \mathbf{c}^{(l)} \cdot \mathbf{F}_{\textrm{\tiny{tot}}}, $$
-
-where $f_l(\mathbf{x}+\mathbf{c}^{(l)}$ are particle distribution functions, $\omega$ is a relaxation rate, $c_s$ is the speed of sound and 
-
-$$ \partial_t h(\mathbf{x},t) = \nabla\cdot(M(h)\nabla p(\mathbf{x},t)), $$
-
-where $M(h)$ is a mobility and $p(\mathbf{x},t)$ is the pressure.
-Since this scalar equation can not be simulated 
-
-Double dollars make self-standing equations:
-
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
-
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
-
-# Citations
-
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
-
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
-
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
-
-# Figures
-
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
-
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% }
+An older version of the numerical model (written in C++) has been tested and used for thin film simulations in previous publications [@PhysRevE.100.033313; @zitz2020lattice].
+While there is a small performance decrease when moving from C++ with OpenACC to Julia, the benefits of usability, straightforward documentation and automated testing outweighs this issue.
+There are many thin film problems the authors will investigate in the future with `Swalbe.jl`.
+Among those are switchable substrate and their influence on a dewetting thin film, or the influence of thermal fluctuations on the coalescence of droplets.
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+The authors acknowledge financial support by the Deutsche Forschungsgemeinschaft (DFG) within the priority program SPP2171 ``Dynamic Wetting of Flexible, Adaptive, and Switchable Substrates'', within project HA-4382/11.
 
 # References
