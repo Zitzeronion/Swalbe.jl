@@ -48,7 +48,7 @@ An efficient way to deal with this problem is via the thin-film equation:
 where $h$ is the film thickness, $M(h)$ is a thickness dependent mobility and $p$ is the pressure inside the film.
 Solving the thin film equation directly is however a difficult task as it is a fourth order degenerate PDE[@becker2003complex].
 `Swalbe.jl` approaches the problem from a different angle.
-Instead of directly solving the thin film equation we use a novel method based on a class lattice Boltzmann models [krueger2017], originally developed to simulate shallow water flows [@Salmon:1999:0022-2402:503].
+Instead of directly solving the thin film equation we use a novel method based on a class lattice Boltzmann models [@krueger2017], originally developed to simulate shallow water flows [@Salmon:1999:0022-2402:503].
 This allows us to benefit from the simplicity of the lattice Boltzmann algorithm which makes it straightforward to parallelize the code and run it on accelerator devices.
 Choosing appropriate forces it is possible to simulate complex problems.
 Among them is the dewetting of a patterned substrates as shown in Fig. \ref{fig:logo}.
