@@ -77,7 +77,7 @@ Keeping the simulation time low is archived by using a Nvidia GPU.
 Most functions are written in a generic style and can be executed both on a CPU or GPU.
 For the GPU usage the high-level API of CUDA.jl [@besard2018juliagpu; @besard2019prototyping] is used, mostly CuArrays.
 
-An older version of the numerical model (written in C++) has been tested and used for thin film simulations in previous publications [@PhysRevE.100.033313; @zitz2020lattice].
+An older version of the numerical model (written in C++) has been tested and used for thin film simulations in previous publications [@PhysRevE.100.033313; @PhysRevE.104.034801].
 While there is a small performance decrease when moving from C++ with OpenACC to Julia, the benefits of usability, straightforward documentation and automated testing outweighs this issue.
 There are many thin film problems the authors will investigate in the future with `Swalbe.jl`.
 Among those are switchable substrate and their influence on a dewetting thin film, or the influence of thermal fluctuations on the coalescence of droplets.
