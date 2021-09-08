@@ -75,9 +75,9 @@ To check if the package works you can run the test suite with
 julia> ] test Swalbe
 ```
 
-All tests can be found in [test
-folder](https://github.com/Zitzeronion/Swalbe.jl/tree/master/test), but do not
-expect too many comments.  Still especially the
+All tests can be found in
+[test folder](https://github.com/Zitzeronion/Swalbe.jl/tree/master/test), but do not
+expect too many comments. Still especially the
 [simulate.jl](https://github.com/Zitzeronion/Swalbe.jl/blob/master/test/simulate.jl)
 file is worth a look.
 
@@ -85,19 +85,27 @@ file is worth a look.
 
 The idea of **Swalbe.jl** is to script your thin film simulation, based on a
 lattice Boltzmann iteration.  That is why most core functions can be easily
-extended, or used out of the box.  So how does it work, first we have to load
-**Swalbe.jl** into the REPL or put the following line on top of our script
+extended, or used out of the box. Find some examples in the
+[scripts](https://github.com/Zitzeronion/Swalbe.jl/tree/master/scripts) folder.
+
+Some initial conditions are handily pre-programmed. E.g. simulating the
+Rayleigh-Taylor instability:
 
 ```julia
-julia> using Swalbe
+using Swalbe
+
+# set the constants of the system
+sys = Swalbe.SysConst(Lx=100, Ly=100, g=-0.001, γ=0.0005, Tmax=1000)
+
+# run [please fill] with given parameters for Tmax timesteps
+# return Lx×Ly array and [please fill]
+h = Swalbe.run_rayleightaylor(sys, "CPU"; h₀=1.0, ϵ=0.01, verbos=true)
 ```
 
-this might take a minute, don't be alarmed if it takes more than ten seconds.
-
-Alternatively we can use
-[DrWatson](https://github.com/JuliaDynamics/DrWatson.jl) (super cool package to
-manage scientific computing with *Julia*) and use the `@quickactivate :Swalbe`
-macro.
+Further helpers are
+  - `run_[please fill]` describe briefly
+  - `run_[please fill]` describe briefly
+.
 
 ## How to **support and contribute**
 
