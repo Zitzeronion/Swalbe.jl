@@ -34,6 +34,7 @@ moved to *Julia*)
 
 ## How to **get**
 
+### Requirements
 First of all you need a *Julia* (>= 1.6) installation.  *Julia* is a high level
 open source programming language and it is as easy to use as python :snake: (my
 opinion).
@@ -41,12 +42,16 @@ opinion).
 *Julia* can be downloaded at the projects homepage
 [julialang.org](https://julialang.org/).
 
+### Install using the Julia package manager
+
 **Swalbe.jl** is a registered package of the *Julia* package manager.  The only
 thing you have to do is to add the package to your *Julia* environment with:
 
 ```julia
 julia> ] add Swalbe
 ```
+
+### Install from source
 
 Of course you can also clone or fork the repo and activate the package inside
 the julia **REPL** (Read Evaluate Print Loop). First you need to go the Swalbe
