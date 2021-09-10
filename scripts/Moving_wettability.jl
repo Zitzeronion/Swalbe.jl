@@ -25,7 +25,6 @@ function measure_substratewave(
     verbos=true, 
     T=Float64
 )
-    println("Simulating a droplet on a patterned substrate")
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
         for i in 1:sys.Lx, j in 1:sys.Ly
@@ -220,15 +219,19 @@ v6 = [29404, 2940, 294]
 v7 = [34305, 3430, 343] 
 v8 = [39206, 3920, 392] 
 v9 = [44107, 4410, 441] 
+# To pin down the Rayleigh-Plateu instability
+v_lam2_dia_more = [490, 245, 164, 123]
 for direction in ["diagonal"] #  "diagonal"
     # Different initial volumes
-    for waves in [4,5,6,7,8,9] # 1 2 
+    for waves in [2]# [4,5,6,7,8,9] # 1 2 
+        n_vel = length(v_lam2_dia_more)
         # speeds = zeros(Int, 4)
-        speeds = zeros(Int, 3)
+        speeds = zeros(Int, n_vel)
         if waves == 1
             speeds .= v_lam1_dia
         elseif waves == 2
-            speeds .= v_lam2_dia
+            # speeds .= v_lam2_dia
+            speeds .= v_lam2_dia_more
         elseif waves == 3
             speeds .= v_lam3_dia
         elseif waves == 4
@@ -246,9 +249,10 @@ for direction in ["diagonal"] #  "diagonal"
         end
         for speed in speeds # 1 2 3 # [0] 
             pattern = "sine"
+            ang = 1/9
             println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-            # sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000)
-            sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
+            sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000)
+            #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
             df_fluid = Dict()
             df_sub = Dict()
             θₚ = ones(sys.Lx,sys.Ly)

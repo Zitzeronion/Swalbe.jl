@@ -40,11 +40,23 @@ Test Passed
 - [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
 - [Zitz, Scagliarini and Harting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 """
-function moments!(height, velx, vely, fout)
+function moments!(height::Matrix, velx, vely, fout)
     # Get views of the populations
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
     # Compute the height
     sum!(height, fout)
+    # and the velocities (as simple as possible)
+    velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ height
+    vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
+    return nothing
+end
+
+function moments!(height::CuArray, velx, vely, fout)
+    # Get views of the populations
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
+    # Compute the height
+    # TODO: figuring out this new CUDA problem, seems `sum!` is broken
+    height .= sum(fout, dims=3)[:,:,1]
     # and the velocities (as simple as possible)
     velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ height
     vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
