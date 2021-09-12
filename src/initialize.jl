@@ -82,11 +82,11 @@ end
 Data structure that stores all arrays for a given simulation.
 M is one less than N: ``N = 3, M = 2``
 """
-@with_kw struct Dynamics_1D{T, N}
+@with_kw struct Dynamics_1D{T}
     # Distribution functions
-    fout :: Array{T, N}
-    ftemp :: Array{T, N}
-    feq :: Array{T, N} 
+    fout :: Matrix{T}
+    ftemp :: Matrix{T}
+    feq :: Matrix{T} 
     # Macroscopic variables and moments 
     height :: Vector{T} 
     vel :: Vector{T} 
@@ -95,7 +95,7 @@ M is one less than N: ``N = 3, M = 2``
     F :: Vector{T} 
     slip :: Vector{T}
     h∇p :: Vector{T}
-    dgrad :: Array{T, N} 
+    dgrad :: Matrix{T} 
 end
 
 
@@ -232,7 +232,7 @@ function Sys(sysc::SysConst_1D, exotic::Bool, T)
 end
 
 function Sys(sysc::SysConst_1D; T=Float64)
-    dyn = Dynamics_1D{T,3}(
+    dyn = Dynamics_1D{T}(
         fout = zeros(sysc.L, 3),
         ftemp = zeros(sysc.L, 3),
         feq = zeros(sysc.L, 3),
