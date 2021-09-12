@@ -130,7 +130,7 @@ I am currently writing a paper for which all experiments were done with this pac
 
 ## **Credit**
 
-[Stefan Zitz (main developer)](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zitz/zitz.html)
-[Manuel Zellhöfer](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zellhoefer/zellhoefer.html)
-[Andrea Scagliarini](https://www.iac.rm.cnr.it/iacsite/index.php?page=people&id=140)
-[Jens Harting](https://www.hi-ern.de/hi-ern/CompFlu/Team/Harting/harting.html)
+- [Stefan Zitz (main developer)](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zitz/zitz.html)
+- [Manuel Zellhöfer](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zellhoefer/zellhoefer.html)
+- [Andrea Scagliarini](https://www.iac.rm.cnr.it/iacsite/index.php?page=people&id=140)
+- [Jens Harting](https://www.hi-ern.de/hi-ern/CompFlu/Team/Harting/harting.html)
