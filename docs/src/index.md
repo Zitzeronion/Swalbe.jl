@@ -145,7 +145,7 @@ function dewet_logo(logo_source;         # png file location
     end
 end
 # Run the simulation
-dewet_logo("C:\\Users\\Zitzero\\Pictures\\Science\\logo_red.png", slip=3.0, Tmax=10000, dump=100, verbose=true)
+dewet_logo("path-to-logo", slip=3.0, Tmax=10000, dump=100, verbose=true)
 ```
 
 Here the [Images](https://github.com/JuliaImages/Images.jl) and [Colors](https://github.com/JuliaGraphics/Colors.jl) package allow convenient reading of png or jpg files.
@@ -231,7 +231,7 @@ Things I have looked into so far are
 - Equilibrium shapes of droplets on patterned substrates, depending on surface tension.
 - [Rayleigh-Taylor instability](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 - Dewetting thin films
-- [Dewetting of fluctuating thin films](https://arxiv.org/abs/2012.12557)
+- [Dewetting of fluctuating thin films](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801)
 - Dewetting on switchable substrates
 
 Things I have not yet looked into
