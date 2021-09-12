@@ -50,6 +50,56 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 end
 
 """
+    Dynamics{T, N, M}
+
+Data structure that stores all arrays for a given simulation.
+M is one less than N: ``N = 3, M = 2``
+"""
+@with_kw struct Dynamics{T, N}
+    # Distribution functions
+    fout :: Array{T, N}
+    ftemp :: Array{T, N}
+    feq :: Array{T, N} 
+    # Macroscopic variables and moments 
+    height :: Matrix{T} 
+    velx :: Matrix{T} 
+    vely :: Matrix{T}  
+    vsq :: Matrix{T} 
+    pressure :: Matrix{T} 
+    # Forces and a dummy for the gradient
+    Fx :: Matrix{T} 
+    Fy :: Matrix{T} 
+    slipx :: Matrix{T} 
+    slipy :: Matrix{T} 
+    h∇px :: Matrix{T} 
+    h∇py :: Matrix{T} 
+    dgrad :: Array{T,N} 
+end
+
+"""
+    Dynamics_1D{T, N, M}
+
+Data structure that stores all arrays for a given simulation.
+M is one less than N: ``N = 3, M = 2``
+"""
+@with_kw struct Dynamics_1D{T, N}
+    # Distribution functions
+    fout :: Array{T, N}
+    ftemp :: Array{T, N}
+    feq :: Array{T, N} 
+    # Macroscopic variables and moments 
+    height :: Vector{T} 
+    vel :: Vector{T} 
+    pressure :: Vector{T} 
+    # Forces and a dummy for the gradient
+    F :: Vector{T} 
+    slip :: Vector{T}
+    h∇p :: Vector{T}
+    dgrad :: Array{T, N} 
+end
+
+
+"""
     Sys(sysc, device, exotic)
 
 Mostly allocations of arrays used to run a simulation, but all within one function :)
@@ -113,6 +163,48 @@ function Sys(sysc::SysConst, device::String, exotic::Bool, T)
     end
 end
 
+function Sys(sysc::SysConst, device::String; T=Float64)
+    if device == "CPU"
+        dyn = Dynamics{T, 3}(
+            fout = zeros(sysc.Lx, sysc.Ly, 9),
+            ftemp = zeros(sysc.Lx, sysc.Ly, 9),
+            feq = zeros(sysc.Lx, sysc.Ly, 9),
+            height = ones(sysc.Lx, sysc.Ly),
+            velx = zeros(sysc.Lx, sysc.Ly),
+            vely = zeros(sysc.Lx, sysc.Ly),
+            vsq = zeros(sysc.Lx, sysc.Ly),
+            pressure = zeros(sysc.Lx, sysc.Ly),
+            dgrad = zeros(sysc.Lx, sysc.Ly, 8),
+            Fx = zeros(sysc.Lx, sysc.Ly),
+            Fy = zeros(sysc.Lx, sysc.Ly),
+            slipx = zeros(sysc.Lx, sysc.Ly),
+            slipy = zeros(sysc.Lx, sysc.Ly),
+            h∇px = zeros(sysc.Lx, sysc.Ly),
+            h∇py = zeros(sysc.Lx, sysc.Ly)
+        )
+        return dyn
+    elseif device == "GPU"
+        dyn = Dynamics{T, 3}(
+            fout = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+            ftemp = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+            feq = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+            height = CUDA.ones(T, sysc.Lx, sysc.Ly),
+            velx = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            vely = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            vsq = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            pressure = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            dgrad = CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
+            Fx = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            Fy = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            slipx = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            slipy = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            h∇px = CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            h∇py = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        )
+        return dyn
+    end
+end
+
 function Sys(sysc::SysConst_1D, exotic::Bool, T)
     # Meso
     fout = zeros(sysc.L, 3)
@@ -136,5 +228,22 @@ function Sys(sysc::SysConst_1D, exotic::Bool, T)
     end
 
     return fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p
+    
+end
+
+function Sys(sysc::SysConst_1D; T=Float64)
+    dyn = Dynamics_1D{T,3}(
+        fout = zeros(sysc.L, 3),
+        ftemp = zeros(sysc.L, 3),
+        feq = zeros(sysc.L, 3),
+        height = ones(sysc.L),
+        vel = zeros(sysc.L),
+        pressure = zeros(sysc.L),
+        dgrad = zeros(sysc.L, 2),
+        F = zeros(sysc.L),
+        slip = zeros(sysc.L),
+        h∇p = zeros(sysc.L),
+    )
+    return dyn
     
 end

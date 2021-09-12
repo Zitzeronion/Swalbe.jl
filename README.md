@@ -83,13 +83,11 @@ file is worth a look.
 
 ## How to **use**
 
-The idea of **Swalbe.jl** is to script your thin film simulation, based on a
-lattice Boltzmann iteration.  That is why most core functions can be easily
-extended, or used out of the box. Find some examples in the
-[scripts](https://github.com/Zitzeronion/Swalbe.jl/tree/master/scripts) folder.
+The idea of **Swalbe.jl** is to script your thin film simulation, based on a lattice Boltzmann iteration.  
+That is why most core functions can be easily extended, or used out of the box. Find some examples in the [scripts](https://github.com/Zitzeronion/Swalbe.jl/tree/master/scripts) folder.
 
-Some initial conditions are handily pre-programmed. E.g. simulating the
-Rayleigh-Taylor instability:
+Some initial conditions are handily pre-programmed. 
+E.g. simulating the Rayleigh-Taylor instability:
 
 ```julia
 using Swalbe
