@@ -95,15 +95,12 @@ using Swalbe
 # set the constants of the system
 sys = Swalbe.SysConst(Lx=100, Ly=100, g=-0.001, γ=0.0005, Tmax=1000)
 
-# run [please fill] with given parameters for Tmax timesteps
-# return Lx×Ly array and [please fill]
+# run with given parameters for Tmax timesteps ...
+# return Lx×Ly array with the final configuration
 h = Swalbe.run_rayleightaylor(sys, "CPU"; h₀=1.0, ϵ=0.01, verbos=true)
 ```
 
-Further helpers are
-  - `run_[please fill]` describe briefly
-  - `run_[please fill]` describe briefly
-.
+Further examples can be found in the tutorials section of the documentation: [Tutorials](https://zitzeronion.github.io/Swalbe.jl/dev/tutorials/)
 
 ## How to **support and contribute**
 
