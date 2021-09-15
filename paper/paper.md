@@ -20,13 +20,13 @@ authors:
     orcid: 0000-0002-9200-6623
     affiliation: "1, 2"
 affiliations:
- - name: Helmholtz Institute Erlangen-Nürnberg for Renewable Energy
+ - name: Helmholtz Institute Erlangen-Nürnberg for Renewable Energy, Erlangen, Germany
    index: 1
- - name: Friedrich-Alexander-Universität Erlangen-Nürnberg
+ - name: Friedrich-Alexander-Universität Erlangen-Nürnberg, Erlangen, Germany
    index: 2
- - name: Consiglio Nazionale delle Ricerche (CNR)
+ - name: Consiglio Nazionale delle Ricerche (CNR), Roma, Italy
    index: 3
- - name: INFN, sezione Roma "Tor Vergata"
+ - name: INFN, sezione Roma "Tor Vergata", Roma, Italy
    index: 4
 date: 31 August 2021
 bibliography: paper.bib
