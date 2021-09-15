@@ -1,3 +1,20 @@
+# """
+#     run()
+
+# Combine testcase into a single a run() function.
+# WIP
+# """
+# function run(def::String, sys::SysConst, device::String; verbos=true)
+#     dyn = Swalbe.Sys(sys, device) 
+#     if def == "Rayleigh-Taylor"
+
+#     if def == "Relax-droplet"
+
+#     if def == "Moving-droplet"
+
+#     end
+# end
+
 """
     run_flat(Sys::SysConst, device::String)
 
