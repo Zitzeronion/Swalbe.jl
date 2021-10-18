@@ -82,6 +82,43 @@ While there is a small performance decrease when moving from C++ with OpenACC to
 There are many thin film problems the authors will investigate in the future with `Swalbe.jl`.
 Among those are switchable substrate and their influence on a dewetting thin film, or the influence of thermal fluctuations on the coalescence of droplets.
 
+# State of the field
+
+In the context of computational fluid dynamics low Reynolds number flows and especially thin film flows are a comparably small subsection.
+Therefore numerical tools that deal exclusively with the thin film problem are sparse.
+One package for simulations of thin film hydrodynamics is **ThinViscoelasticFilms** [@ThinViscoelasticFilms].
+The core components are written in Fortran and the package can be used according to BSD-2 license. 
+Documentation however is only available through code comments and a short readme, leaving the user little guidance.
+
+That said, the thin film equation is a fourth-order parabolic equation and can of course be solved with appropriate numerical schemes.
+Some of these schemes can be found in the refs. [@PhysRevFluids.1.073901; @PhysRevE.63.011208; @becker2003complex; @Peschka9275].
+Upon contacting the authors it should be possible to have access to a working version of the described approach.
+
+Wilczek et al. used [**DUNE**](https://www.dune-project.org/) to study the dynamics of an ensemble of sliding drops in ref. [@PhysRevLett.119.204501].
+DUNE is a software suite written in *C++* that solves partial differential equations with a grid based approach.
+Of course DUNE is not limited to the problem of thin film flows, interested readers may visit the projects home page.
+
+Another open source package with similar functionality that is or, given the last publication added, was used to solve thin film problems is [**oomph-lib**](http://oomph-lib.maths.man.ac.uk/doc/html/index.html).
+oomph-lib is a software to solve differential equations, as such similar to DUNE its capabilities are not limited to thin film flows.
+
+Given the nature of the thin film problem one can as well use classical Navier-Stokes solvers with appropriate initial and boundary conditions.
+What comes to mind here is for example [**OpenFOAM**](https://www.openfoam.com/) a widely used open source CFD software with an active community.
+Within same category one can find other lattice Boltzmann packages, to name a few: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/) or some smaller project [**STLBM**](https://gitlab.com/unigehpfs/stlbm). 
+
+There is of course proprietary software, e.g. [**COMSOL**](https://www.comsol.com/) which can as well be used to simulate thin film dynamics.
+Wedershoven et al. used COMSOL to study the rupture of a thin film due to laser irradiation [@doi:10.1063/1.4863318].
+Berendsen et al. from the same group simulated the dynamics an impinging air jet has on a thin film using COMSOL [@doi:10.1021/la301353f].
+
+With the exclusion of **ThinViscoelasticFilms** every above mentioned project has a much wider purpose than *just* solving the thin film equation.
+However due to this generality it can become quite complex to set up a simulation for a thin film problem.
+Especially concerning the Navier-Stokes solvers one uses a *sledge hammer to crack a nut*.
+
+# Workflow
+
+The usage of `Swalbe.jl` is best show given a simple physical example.
+A long studied problem is the coalescence of two sessile droplets [@eggers1999coalescence; @PhysRevLett.111.144502].
+Assuming radial symmetry we use only one horizontal dimension.
+
 # Acknowledgements
 
 The authors acknowledge financial support by the Deutsche Forschungsgemeinschaft (DFG) within the priority program SPP2171 ``Dynamic Wetting of Flexible, Adaptive, and Switchable Substrates'', within project HA-4382/11.
