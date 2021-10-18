@@ -1,6 +1,4 @@
-using DrWatson
-@quickactivate :Swalbe
-using CSV
+using DataFrames, CairoMakie
 
 # Define initial condition
 """
@@ -100,6 +98,37 @@ end
 
 sys = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=50.0, γ=0.005)
 fluid = run_drop_coal(sys, r₁=500, r₂=500)
+
+sys2 = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=10.0, γ=0.005)
+fluid2 = run_drop_coal(sys2, r₁=500, r₂=500)
+
+sys3 = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=200.0, γ=0.0001)
+fluid3 = run_drop_coal(sys3, r₁=500, r₂=500)
+
+bridge_h = Float64[]
+bridge_h2 = Float64[]
+bridge_h3 = Float64[]
+for i in 1:size(fluid)[1]
+    push!(bridge_h, fluid[i, sys.L÷2])
+    push!(bridge_h2, fluid2[i, sys.L÷2])
+    push!(bridge_h3, fluid3[i, sys.L÷2])
+end
+
+let
+    lines(1:100:2000000, bridge_h, figure = (resolution = (700,450),),
+        axis = (xscale = log10, yscale = log10, xlabel = L"time [Δt]", ylabel = L"h_B",
+        xgridstyle=:dash, ygridstyle=:dash, xminorticksvisible = true,
+        xminorticks = IntervalsBetween(9), yminorticksvisible = true,
+        yminorticks = IntervalsBetween(9)))
+    current_figure()
+end
+
+lines!(1:100:2000000, bridge_h2)
+lines!(1:100:2000000, bridge_h3)
+current_figure()
+
+
+
 # Push the results into a dict for writting to CSV
 df_fluid = Dict()
 df_rho = Dict()

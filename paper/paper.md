@@ -86,7 +86,7 @@ Among those are switchable substrate and their influence on a dewetting thin fil
 
 In the context of computational fluid dynamics low Reynolds number flows and especially thin film flows are a comparably small subsection.
 Therefore numerical tools that deal exclusively with the thin film problem are sparse.
-One package for simulations of thin film hydrodynamics is **ThinViscoelasticFilms** [@ThinViscoelasticFilms].
+Two packages for simulations of thin film hydrodynamics are **ThinViscoelasticFilms** and **stochastic_thin_films** [@ThinViscoelasticFilms; @stochastic_thin_films].
 The core components are written in Fortran and the package can be used according to BSD-2 license. 
 Documentation however is only available through code comments and a short readme, leaving the user little guidance.
 
