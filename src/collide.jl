@@ -237,6 +237,7 @@ function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     fout .= ftemp
     return nothing
 end
+
 # Case τ=1
 function BGKandStream!(fout, feq, ftemp, F::Vector)
     # All distribution functions
@@ -258,6 +259,53 @@ function BGKandStream!(fout, feq, ftemp, F::Vector)
     
     # Overwrite fout with ftemp
     fout .= ftemp
+    return nothing
+end
+# with state struct
+function BGKandStream!(state::State_1D, sys::SysConst_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = viewdists_1D(state.feq)
+    ft0, ft1, ft2 = viewdists_1D(state.ftemp)
+    fo0, fo1, fo2 = viewdists_1D(state.fout)
+
+    omeg = 1-1/sys.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    fo0 .= omeg .* ft0 .+ 1/sys.τ .* fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= omeg .* ft1 .+ 1/sys.τ .* fe1 .+ 1/2 .* state.F
+    fo2 .= omeg .* ft2 .+ 1/sys.τ .* fe2 .- 1/2 .* state.F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+    
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
+    return nothing
+end
+
+function BGKandStream!(state::State_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = viewdists_1D(state.feq)
+    ft0, ft1, ft2 = viewdists_1D(state.ftemp)
+    fo0, fo1, fo2 = viewdists_1D(state.fout)
+
+    # Collision for the three populations
+    # Zeroth, no forcing!
+    fo0 .= fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= fe1 .+ 1/2 .* state.F
+    fo2 .= fe2 .- 1/2 .* state.F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+    
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
     return nothing
 end
 

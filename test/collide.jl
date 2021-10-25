@@ -138,6 +138,20 @@
         @test all(fout[:,1] .== feq[:,1])
         @test all(fout[:,2] .== circshift(feq[:,1] .+ 1/20,1))
         @test all(fout[:,3] .== circshift(feq[:,1] .- 1/20,-1))
+
+        sys = Swalbe.SysConst_1D(L=30)
+        state = Swalbe.Sys(sys)
+        state.ftemp .= 1.0
+        state.fout .= 1.0
+        state.feq .= 1.0
+        state.F .= 0.1
+        state.feq[1,:] .= 2.0
+        onebytau = 1.0/sys.τ
+        omega = 1.0 - onebytau
+        Swalbe.BGKandStream!(state, sys)
+        @test all(state.fout[:,1] .== state.feq[:,1])
+        @test all(state.fout[:,2] .== circshift(state.feq[:,1] .+ 1/20, 1))
+        @test all(state.fout[:,3] .== circshift(state.feq[:,1] .- 1/20, -1))
     end
     @testset "Dummy dists τ=0.75 with forces 1D" begin
         feq = ones(30,3)
@@ -150,6 +164,20 @@
         @test all(fout[:,1] .== omega .* 1.0 .+ onebytau .* feq[:,1])
         @test all(fout[:,2] .== circshift(omega .* 1.0 .+ onebytau * feq[:,1].+ 1/20,1))
         @test all(fout[:,3] .== circshift(omega .* 1.0 .+ onebytau * feq[:,1].- 1/20,-1))
+
+        sys = Swalbe.SysConst_1D(L=30, τ=0.75)
+        state = Swalbe.Sys(sys)
+        state.ftemp .= 1.0
+        state.fout .= 1.0
+        state.feq .= 1.0
+        state.F .= 0.1
+        state.feq[1,:] .= 2.0
+        onebytau = 1.0/sys.τ
+        omega = 1.0 - onebytau
+        Swalbe.BGKandStream!(state, sys)
+        @test all(state.fout[:,1] .== omega .* 1.0 .+ onebytau .* state.feq[:,1])
+        @test all(state.fout[:,2] .== circshift(omega .* 1.0 .+ onebytau * state.feq[:,1].+ 1/20,1))
+        @test all(state.fout[:,3] .== circshift(omega .* 1.0 .+ onebytau * state.feq[:,1].- 1/20,-1))
     end
 end
 
