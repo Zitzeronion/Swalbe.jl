@@ -24,7 +24,7 @@
     @test isa(h∇py, Array{Float64, 2})
     @test isa(fthermalx, Array{Float64, 2})
     @test isa(fthermaly, Array{Float64, 2})
-    # println("Here 1")
+    
     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py, = Swalbe.Sys(sys, "CPU", false, T)
     # Struct should do what I expect, hopefully
     @test sys.Lx == 25
@@ -44,7 +44,7 @@
     @test isa(slipy, Array{Float64, 2})
     @test isa(h∇px, Array{Float64, 2})
     @test isa(h∇py, Array{Float64, 2})
-    # println("Here 2")
+    
     dyn = Swalbe.Sys(sys, "CPU")
     # Struct should do what I expect, hopefully
     @test sys.Lx == 25
@@ -64,7 +64,7 @@
     @test isa(dyn.slipy, Array{Float64, 2})
     @test isa(dyn.h∇px, Array{Float64, 2})
     @test isa(dyn.h∇py, Array{Float64, 2})
-    # println("Here 3")
+    
     # 1D case
     sys1d = Swalbe.SysConst_1D{T}(L=25)
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p, fthermal = Swalbe.Sys(sys1d, true, T)
@@ -83,7 +83,7 @@
     @test isa(slip, Vector{Float64})
     @test isa(h∇p, Vector{Float64})
     @test isa(fthermal, Vector{Float64})
-    # println("Here 4")
+    
     dyn = Swalbe.Sys(sys1d)
     # Struct should do what I expect, hopefully
     @test sys1d.L == 25
@@ -99,7 +99,7 @@
     @test isa(dyn.F, Vector{Float64})
     @test isa(dyn.slip, Vector{Float64})
     @test isa(dyn.h∇p, Vector{Float64})
-    # println("Here 5")
+    
     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys1d, false, T)
     # Struct should do what I expect, hopefully
     @test sys1d.L == 25
