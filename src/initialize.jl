@@ -50,12 +50,11 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 end
 
 """
-    Dynamics{T, N, M}
+    State{T, N}
 
 Data structure that stores all arrays for a given simulation.
-M is one less than N: ``N = 3, M = 2``
 """
-@with_kw struct Dynamics{T, N}
+@with_kw struct State{T, N}
     # Distribution functions
     fout :: Array{T, N}
     ftemp :: Array{T, N}
@@ -77,12 +76,11 @@ M is one less than N: ``N = 3, M = 2``
 end
 
 """
-    Dynamics_1D{T, N, M}
+    State_1D{T, N}
 
 Data structure that stores all arrays for a given simulation.
-M is one less than N: ``N = 3, M = 2``
 """
-@with_kw struct Dynamics_1D{T}
+@with_kw struct State_1D{T}
     # Distribution functions
     fout :: Matrix{T}
     ftemp :: Matrix{T}
@@ -165,7 +163,7 @@ end
 
 function Sys(sysc::SysConst, device::String; T=Float64)
     if device == "CPU"
-        dyn = Dynamics{T, 3}(
+        dyn = State{T, 3}(
             fout = zeros(sysc.Lx, sysc.Ly, 9),
             ftemp = zeros(sysc.Lx, sysc.Ly, 9),
             feq = zeros(sysc.Lx, sysc.Ly, 9),
@@ -184,7 +182,7 @@ function Sys(sysc::SysConst, device::String; T=Float64)
         )
         return dyn
     elseif device == "GPU"
-        dyn = Dynamics{T, 3}(
+        dyn = State{T, 3}(
             fout = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
             ftemp = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
             feq = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
@@ -232,7 +230,7 @@ function Sys(sysc::SysConst_1D, exotic::Bool, T)
 end
 
 function Sys(sysc::SysConst_1D; T=Float64)
-    dyn = Dynamics_1D{T}(
+    dyn = State_1D{T}(
         fout = zeros(sysc.L, 3),
         ftemp = zeros(sysc.L, 3),
         feq = zeros(sysc.L, 3),

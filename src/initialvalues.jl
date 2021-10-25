@@ -108,6 +108,80 @@ function singledroplet(height::Vector, radius, θ, center)
 end
 
 """
+    two_droplets(sys)
+
+Generates a fluid configuration of a two droplets in the shape of spherical cap with contact angles `θ₁`, `θ₂`, sphere radius `r₁`, `r₂` and centers at `center`.
+
+This is work in progress, therefore so far it is only available for the lower dimension model.
+
+# Arguments
+
+- `r₁::Float64`: radius of the first sphere from which the cap is cut of
+- `r₂::Float64`: radius of the second sphere from which the cap is cut of
+- `θ₁::Float64`: contact angle of the first cap in multiples of `π`
+- `θ₂::Float64`: contact angle of the second cap in multiples of `π`
+- `center::Tuple{Int,Int}`: x coordinates of the centers of the droplets
+
+# Examples
+
+```jldoctest
+julia> using Swalbe, Test
+
+julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200);
+
+julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
+
+julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) atol=0.01 # Simple geometry
+Test Passed
+
+```
+
+# References
+
+See also: 
+"""
+function two_droplets(sys::SysConst_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+    dum = zeros(sys.L)
+    dum2 = zeros(sys.L)
+    height = zeros(sys.L)
+    # area = 2π * radius^2 * (1- cospi(θ))
+    @inbounds for i in 1:sys.L
+        circ = sqrt((i-center[1])^2)
+        if circ <= r₁
+            dum[i] = (cos(asin(circ/r₁)) - cospi(θ₁)) * r₁
+        else    
+            dum[i] = 0.05
+        end
+    end
+    
+    @inbounds for i in 1:sys.L
+        circ2 = sqrt((i-center[2])^2)
+        if circ2 <= r₂
+            dum2[i] = (cos(asin(circ2/r₂)) - cospi(θ₂)) * r₂
+        else    
+            dum2[i] = 0.05
+        end
+    end
+
+    @inbounds for i in 1:sys.L
+        if dum[i] < 0
+            dum[i] = 0.05
+        end
+        if dum2[i] < 0
+            dum2[i] = 0.05
+        end
+    end
+
+    height .= dum .+ dum2 .- 0.05
+    @inbounds for i in 1:sys.L
+        if height[i] < 0
+            height[i] = 0.05
+        end
+    end
+    return height
+end
+
+"""
     restart_from_height(data)
 
 Restarts a simulation from already generated height data.
