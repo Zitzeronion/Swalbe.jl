@@ -87,7 +87,7 @@ Among those are switchable substrate and their influence on a dewetting thin fil
 In the context of computational fluid dynamics low Reynolds number flows and especially thin film flows are a comparably small subsection.
 Therefore numerical tools that deal exclusively with the thin film problem are sparse.
 Two packages for simulations of thin film hydrodynamics are **ThinViscoelasticFilms** and **stochastic_thin_films** [@ThinViscoelasticFilms; @stochastic_thin_films].
-The core components are written in Fortran and the package can be used according to BSD-2 license. 
+The core components are written in Fortran and at least the later package can be used according to BSD-2 license.
 Documentation however is only available through code comments and a short readme, leaving the user little guidance.
 
 That said, the thin film equation is a fourth-order parabolic equation and can of course be solved with appropriate numerical schemes.
@@ -95,7 +95,7 @@ Some of these schemes can be found in the refs. [@PhysRevFluids.1.073901; @PhysR
 Upon contacting the authors it should be possible to have access to a working version of the described approach.
 
 Wilczek et al. used [**DUNE**](https://www.dune-project.org/) to study the dynamics of an ensemble of sliding drops in ref. [@PhysRevLett.119.204501].
-DUNE is a software suite written in *C++* that solves partial differential equations with a grid based approach.
+DUNE is a software suite written in *C++* that solves partial differential equations with a grid based approach [@sander2020dune].
 Of course DUNE is not limited to the problem of thin film flows, interested readers may visit the projects home page.
 
 Another open source package with similar functionality that is or, given the last publication added, was used to solve thin film problems is [**oomph-lib**](http://oomph-lib.maths.man.ac.uk/doc/html/index.html).
@@ -103,6 +103,8 @@ oomph-lib is a software to solve differential equations, as such similar to DUNE
 
 Given the nature of the thin film problem one can as well use classical Navier-Stokes solvers with appropriate initial and boundary conditions.
 What comes to mind here is for example [**OpenFOAM**](https://www.openfoam.com/) a widely used open source CFD software with an active community.
+One further example would be the [**basilisk**](http://basilisk.fr) software suit. 
+Written in C it is the successor of [**GERRIS**](http://gfs.sourceforge.net/wiki/index.php/Main_Page) and used a solver for partial differential equations with emphasis on fluid dynamic problems.
 Within same category one can find other lattice Boltzmann packages, to name a few: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/) or some smaller project [**STLBM**](https://gitlab.com/unigehpfs/stlbm). 
 
 There is of course proprietary software, e.g. [**COMSOL**](https://www.comsol.com/) which can as well be used to simulate thin film dynamics.
@@ -116,8 +118,11 @@ Especially concerning the Navier-Stokes solvers one uses a *sledge hammer to cra
 # Workflow
 
 The usage of `Swalbe.jl` is best show given a simple physical example.
-A long studied problem is the coalescence of two sessile droplets [@eggers1999coalescence; @PhysRevLett.111.144502].
-Assuming radial symmetry we use only one horizontal dimension.
+A long studied problem is the coalescence of two sessile droplets [@eggers1999coalescence; @PhysRevLett.111.144502; @PhysRevLett.109.184502; @PhysRevLett.95.164503].
+Assuming radial symmetry the problem can be studied using the one dimensional thin film equation.
+
+The workflow is then as follows:
+The easiest approach is to write a function that contains the fluid dynamic solver with the addition of the performed measurements.
 
 # Acknowledgements
 
