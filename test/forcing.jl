@@ -2,8 +2,17 @@
     fx = zeros(5,5)
     fy = zeros(5,5)
     f1 = zeros(30)
+
+    # With new struct
+    sys = Swalbe.SysConst(Lx=5, Ly=5)
+    state = Swalbe.Sys(sys, "CPU")
+    state.height .= 1.0
+    
+    state.Fx .= 0.1
+    state.Fy .= -0.1
     @testset "Slippage" begin
         # No velocities
+        Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), zeros(5,5), 1.0, 1/6)
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), zeros(5,5), 1.0, 1/6)
         @test all(fx .== 0.0)
         @test all(fy .== 0.0)

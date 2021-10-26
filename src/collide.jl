@@ -177,7 +177,7 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy)
     fout .= ftemp
     return nothing
 end
-
+# Explicit version for the case τ = 1, with state struct
 function BGKandStream!(state::State)
     # All distribution functions
     fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdists(state.feq)

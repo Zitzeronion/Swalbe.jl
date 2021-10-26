@@ -36,9 +36,9 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     return nothing
 end
 # with state struct
-function slippage!(slipx, slipy, state::State, sys::SysConst)
-    slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
-    slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
+function slippage!(state::State, sys::SysConst)
+    state.slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
+    state.slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
     return nothing
 end
 
@@ -47,8 +47,8 @@ function slippage!(slip, height, vel, δ, μ)
     return nothing
 end
 # with state struct
-function slippage!(slip, state::State_1D, sys::SysConst_1D)
-    slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height.^2 .+ 6*sys.δ .* state.height .+ 3*sys.δ^2 )
+function slippage!(state::State_1D, sys::SysConst_1D)
+    state.slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height.^2 .+ 6*sys.δ .* state.height .+ 3*sys.δ^2 )
     return nothing
 end
 
