@@ -2,9 +2,14 @@
     fx = zeros(5,5)
     fy = zeros(5,5)
     f1 = zeros(30)
+    # For structs
     sys = Swalbe.SysConst(Lx=5, Ly=5)
     state = Swalbe.Sys(sys, "CPU")
     state.height .= 1.0
+    # One dim model   
+    sys1D = Swalbe.SysConst_1D(L=30)
+    state1D = Swalbe.Sys(sys1D)
+    state1D.height .= 1.0
     @testset "Slippage" begin
         # No velocities
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), zeros(5,5), 1.0, 1/6)
@@ -57,13 +62,24 @@
     @testset "Slippage 1D" begin
         # No velocities
         Swalbe.slippage!(f1, ones(30), zeros(30), 1.0, 1/6)
+        Swalbe.slippage!(state1D, sys1D)
         @test all(f1 .== 0.0)
+        @test all(state1D.slip .== 0.0)
         # Velocity in x
         Swalbe.slippage!(f1, ones(30), fill(0.1,30), 1.0, 1/6)
+        state1D.vel .= 0.1
+        state1D.slip .= 0.0
+        Swalbe.slippage!(state1D, sys1D)
         @test all(f1 .== 0.1/11)
+        @test state1D.slip[1] ≈ 0.1/11
         # No slip
         Swalbe.slippage!(f1, ones(30), fill(-0.1,30), 0.0, 1/6)
+        state1D.vel .= -0.1
+        state1D.slip .= 0.0
+        sys1D2 = Swalbe.SysConst_1D(L=30, δ=0.0)
+        Swalbe.slippage!(state1D, sys1D2)
         @test all(f1 .== -0.1/2)
+        @test state1D.slip[1] ≈ -0.1/2
     end
 
     @testset "Thermal" begin
