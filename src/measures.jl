@@ -26,7 +26,41 @@ end
 """
     t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
 
-Computes a characteristic time scale for an unstable film.
+Computes a characteristic time scale for an spinodally dewetting film.
+
+# Arguments
+
+- `hᵦ :: Float64`: height at which the disjoining pressure vanishes
+- `γ :: Float64`: surface tension value
+- `μ :: Float64`: kinematic viscosity, same as dynamic for ρ=1
+- `θ :: Float64`: highest contact angle given as radiant, e.g. θ=π/9 for 20 degrees
+e
+# Mathematics
+
+
+
+# Examples
+```jldoctest
+julia> using Swalbe, Statistics, Test
+
+julia> x = ones(50,50); y = ones(50,50); h = ones(50,50);
+
+julia> Swalbe.thermal!(x, y, h, 0.1, 1/6, 1)
+
+julia> @test mean(x) ≈ 0.0 atol=1e-2
+Test Passed
+
+julia> @test mean(y) ≈ 0.0 atol=1e-2
+Test Passed
+
+julia> @test var(x) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
+Test Passed
+
+```
+
+# References
+
+- [Mecke, Rauscher](https://iopscience.iop.org/article/10.1088/0953-8984/17/45/042/meta)
 """
 function t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
     qsq = hᵦ * (1 - cospi(θ)) * (2 - 3 * hᵦ) 
@@ -82,11 +116,36 @@ function snapshot!(snap, field, t; dumping = 1000)
 end
 
 """
-    surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface)
+    surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface,)
 
 Measures the surface area of the liquid vapor interface and the reduced surface energy.
+
+# Arguments
+
+- `area_lv :: Vector{Float64}`: array to store the computed liquid vapor area
+- `red_energy :: Vector{Float64}`: array the stores the computed reduced surface energy 
+- `height :: Matrix{Float64}`: current height configuration
+- `θ :: Matrix{Float64}`: contact angle field distribution
+- `∇hx :: Matrix{Float64}`: height gradient x-component 
+- `∇hy :: Matrix{Float64}`: height gradient y-component
+- `dgrad :: Array{Float64,3}`: dummy array to store derivatives 
+- `surface :: Matrix{Float64}`: array that computes locally the liquid vapor surface area 
+- `t :: Int`: current time step
+- `hthresh :: Float64`: height threshold below which the substrate is considered *dry*
+
 """
-function surfacearea!(area_lv, red_energy, height, θ, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
+function surfacearea!(area_lv, red_energy, height, θ::Float64, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
+    ∇f_simple!(∇hx, ∇hy, height, dgrad)
+    surf = 0.0
+    surface .= sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
+    surf = sum(surface[height .> htresh])
+    area_lv[t] = surf
+    red_energy[t] = surf - length(height[height .> htresh]) * cospi(θ) 
+
+    return nothing
+end
+
+function surfacearea!(area_lv, red_energy, height, θ::Matrix, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
     surf = 0.0
     surface .= sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
