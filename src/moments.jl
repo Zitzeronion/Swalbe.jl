@@ -50,16 +50,27 @@ function moments!(height::Matrix, velx, vely, fout)
     vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
     return nothing
 end
-
-function moments!(height::CuArray, velx, vely, fout)
+# with new state struct
+function moments!(state::State)
     # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
+    # Compute the height
+    sum!(state.height, state.fout)
+    # and the velocities (as simple as possible)
+    state.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.height
+    state.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.height
+    return nothing
+end
+
+function moments!(state::State, device::String)
+    # Get views of the populations
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
     # Compute the height
     # TODO: figuring out this new CUDA problem, seems `sum!` is broken
-    height .= sum(fout, dims=3)[:,:,1]
+    sum!(state.height, state.fout)[:,:,1]
     # and the velocities (as simple as possible)
-    velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ height
-    vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
+    state.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.height
+    state.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.height
     return nothing
 end
 
@@ -70,5 +81,15 @@ function moments!(height, vel, fout)
     sum!(height, fout)
     # and the velocities (as simple as possible)
     vel .= (f1 .- f2) ./ height
+    return nothing
+end
+
+function moments!(state::State_1D)
+    # Get views of the populations
+    f0, f1, f2 = Swalbe.viewdists_1D(state.fout) 
+    # Compute the height
+    sum!(state.height, state.fout)
+    # and the velocities (as simple as possible)
+    state.vel .= (f1 .- f2) ./ state.height
     return nothing
 end
