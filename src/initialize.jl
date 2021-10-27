@@ -12,7 +12,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
     # Collision related
     τ :: T = 1.0
     cₛ :: T = 1/sqrt(3.0)
-    μ :: T =  cₛ^2 / 2 *( τ - 0.5)
+    μ :: T =  cₛ^2 *( τ - 0.5)
     # Force related
     δ :: T = 1.0
     kbt :: T = 0.0
@@ -37,7 +37,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
     # Collision related
     τ :: T = 1.0
     cₛ :: T = 1/sqrt(3.0)
-    μ :: T =  cₛ^2 / 2 *( τ - 0.5)
+    μ :: T =  cₛ^2 *( τ - 0.5)
     # Force related
     δ :: T = 1.0
     kbt :: T = 0.0
