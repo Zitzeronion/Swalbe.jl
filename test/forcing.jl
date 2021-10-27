@@ -2,37 +2,58 @@
     fx = zeros(5,5)
     fy = zeros(5,5)
     f1 = zeros(30)
-
-    # With new struct
     sys = Swalbe.SysConst(Lx=5, Ly=5)
     state = Swalbe.Sys(sys, "CPU")
     state.height .= 1.0
-    
-    state.Fx .= 0.1
-    state.Fy .= -0.1
     @testset "Slippage" begin
         # No velocities
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), zeros(5,5), 1.0, 1/6)
-        Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), zeros(5,5), 1.0, 1/6)
+        Swalbe.slippage!(state, sys)
         @test all(fx .== 0.0)
         @test all(fy .== 0.0)
+        @test all(state.slipx .== 0.0)
+        @test all(state.slipy .== 0.0)
+
         # Velocity in x
         Swalbe.slippage!(fx, fy, ones(5,5), fill(0.1,5,5), zeros(5,5), 1.0, 1/6)
+        state.velx .= 0.1
+        Swalbe.slippage!(state, sys)
         @test all(fx .== 0.1/11)
         @test all(fy .== 0.0)
+        # At some point I have to find out how to use all() with atol 
+        @test state.slipx[1,1] ≈ 0.1/11 # atol=1e-8
+        @test all(state.slipy .== 0.0)
         # Velocity in y
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), fill(0.1,5,5), 1.0, 1/6)
+        state.velx .= 0.0
+        state.vely .= 0.1
+        Swalbe.slippage!(state, sys)
         @test all(fx .== 0.0)
         @test all(fy .== 0.1/11)
+        @test all(state.slipx .== 0.0)
+        @test state.slipy[1,1] ≈ 0.1/11 # atol=1e-8
         # Velocity
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 1.0, 1/6)
+        state.velx .= -0.1
+        state.vely .= 0.1
+        Swalbe.slippage!(state, sys)
         @test all(fx .== -0.1/11)
         @test all(fy .== 0.1/11)
+        @test state.slipx[1,1] ≈ -0.1/11 
+        @test state.slipy[1,1] ≈ 0.1/11
         # No slip
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 0.0, 1/6)
+        state.velx .= -0.1
+        state.vely .= 0.1
+        sys2 = Swalbe.SysConst(Lx=5,Ly=5,δ=0.0)
+        Swalbe.slippage!(state, sys2)
         @test all(fx .== -0.1/2)
         @test all(fy .== 0.1/2)
+        @test state.slipx[1,1] ≈ -0.1/2
+        @test state.slipy[1,1] ≈ 0.1/2
     end
+
+
     @testset "Slippage 1D" begin
         # No velocities
         Swalbe.slippage!(f1, ones(30), zeros(30), 1.0, 1/6)
