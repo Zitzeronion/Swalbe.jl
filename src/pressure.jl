@@ -190,7 +190,7 @@ function filmpressure!(state::State_1D, sys::SysConst_1D, θ)
                  .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
                   .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
 
-    state.height .-= sys.γ .* (hip .- 2 .* state.height .+ him)
+    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
     return nothing
 end
 

@@ -16,6 +16,76 @@
 # end
 
 """
+    time_loop(sys, state, θ)
+
+Time stepping procedure for the lattice Boltzmann state `state` given parameters `sys`
+"""
+function time_loop(sys::SysConst, state::State, θ; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys, θ)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.Fx .= -state.h∇px .- state.slipx
+        state.Fy .= -state.h∇py .- state.slipy
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    end
+    return state
+end
+# Time loop with snapshots saved
+function time_loop(sys::SysConst, state::State, θ, data::Matrix; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys, θ)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.Fx .= -state.h∇px .- state.slipx
+        state.Fy .= state.h∇py .+ state.slipy
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+        
+        Swalbe.snapshot!(data, state.height, t, dumping = sys.tdump)
+        
+    end
+    return state
+end
+
+function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys, θ)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.F .= -state.h∇p .- state.slip
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    end
+    return state
+end
+
+"""
     run_flat(Sys::SysConst, device::String)
 
 Performs a simulation of an flat interface without forces.
@@ -47,28 +117,11 @@ Test passed
 """
 function run_flat(sys::SysConst, device::String; verbos=true, T=Float64)
     println("Simulating a flat interface without driving forces (nothing should happen) in two dimensions")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
-    height .= 1.0
-    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-    ftemp .= feq
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3))")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-        Fx .= h∇px .+ slipx
-        Fy .= h∇py .+ slipy
-        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-        Swalbe.BGKandStream!(fout, feq, ftemp, Fx, Fy)
-        Swalbe.moments!(height, velx, vely, fout)
-    end
-    return height
+    state = Swalbe.Sys(sys, "CPU")
+    state.height .= 1.0
+    time_loop(sys, state, 1/9)
+
+    return state.height
 end
 
 function run_flat(sys::SysConst_1D; verbos=true, T=Float64)
