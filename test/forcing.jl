@@ -82,6 +82,28 @@
         @test state1D.slip[1] ≈ -0.1/2
     end
 
+    @testset "Pressure gradient" begin
+        sys = Swalbe.SysConst(Lx=5, Ly=5)
+        state = Swalbe.Sys(sys, "CPU")    
+        state.pressure .= reshape(collect(1.0:25),5,5)
+        state.height .= 1.0
+        Swalbe.h∇p!(state)
+        
+        solx = [-1.5 -1.5 -1.5 -1.5 -1.5;
+                 1.0 1.0 1.0 1.0 1.0;
+                 1.0 1.0 1.0 1.0 1.0;
+                 1.0 1.0 1.0 1.0 1.0;
+                -1.5 -1.5 -1.5 -1.5 -1.5]
+        soly = [-7.5 5.0 5.0 5.0 -7.5;
+                -7.5 5.0 5.0 5.0 -7.5;
+                -7.5 5.0 5.0 5.0 -7.5;
+                -7.5 5.0 5.0 5.0 -7.5;
+                -7.5 5.0 5.0 5.0 -7.5]
+        
+        @test all(state.h∇px .== solx)
+        @test all(state.h∇py .== soly)
+    end
+
     @testset "Thermal" begin
         f1 = ones(50,50)
         f2 = ones(50,50)

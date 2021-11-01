@@ -130,41 +130,6 @@ function equilibrium!(feq, height, velocityx, velocityy, vsquare)
     return nothing
 end
 
-function equilibrium!(feq, height, velocityx, velocityy, vsquare, gravity)
-    # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(feq) 
-    # Some constants, gravity and weights
-    g0 = 1.5 * gravity
-    w1 = 1/9
-    w5 = 1/36
-
-    vsquare .= velocityx .* velocityx .+ velocityy .* velocityy 
-
-    # Zeroth dist
-    f0 .= height .* (1 .- 5/6 .* gravity .* height .- 2/3 .* vsquare)
-    # First
-    f1 .= w1 .* height .* (g0 .* height .+ 3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
-    # Second
-    f2 .= w1 .* height .* (g0 .* height .+ 3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
-    # Third
-    f3 .= w1 .* height .* (g0 .* height .- 3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
-    # Forth
-    f4 .= w1 .* height .* (g0 .* height .- 3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
-    # Fifth
-    f5 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityx .+ velocityy) .+ 
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
-    # Sixth
-    f6 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityy .- velocityx) .+ 
-                         4.5 .* (velocityy .- velocityx).^2 .- 1.5 .* vsquare)
-    # Seventh
-    f7 .= w5 .* height .* (g0 .* height .- 3 .* (velocityx .+ velocityy) .+
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
-    # Eigth
-    f8 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityx .- velocityy) .+ 
-                         4.5 .* (velocityx .- velocityy).^2 .- 1.5 .* vsquare)
-    return nothing
-end
-
 # Dispatch without gravity and state struct
 function equilibrium!(state::State)
     # Views help to circumvent having a loop, which sucks on the GPU

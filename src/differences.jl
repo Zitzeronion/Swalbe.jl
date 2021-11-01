@@ -203,25 +203,6 @@ function ∇f!(outputx, outputy, f, dgrad, a)
     return nothing
 end
 
-function h∇p!(state::State)
-    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(fip, state.pressure, (1,0))
-    circshift!(fjp, state.pressure, (0,1))
-    circshift!(fim, state.pressure, (-1,0))
-    circshift!(fjm, state.pressure, (0,-1))
-    # Diagonal elements  
-    circshift!(fipjp, state.pressure, (1,1))
-    circshift!(fimjp, state.pressure, (-1,1))
-    circshift!(fimjm, state.pressure, (-1,-1))
-    circshift!(fipjm, state.pressure, (1,-1))
-    # In the end it is just a weighted sum...
-    state.h∇px .= state.height .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
-    state.h∇py .= state.height .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
-
-    return nothing
-end
-
 function ∇f!(output::Vector, f, dgrad, a)
     fip, fim = viewneighbors_1D(dgrad)
     # One dim case, central differences
@@ -230,18 +211,6 @@ function ∇f!(output::Vector, f, dgrad, a)
     
     # In the end it is just a weighted sum...
     output .= a .* -0.5 .* (fip .- fim)
-
-    return nothing
-end
-
-function h∇p!(state::State_1D)
-    fip, fim = viewneighbors_1D(state.dgrad)
-    # One dim case, central differences
-    circshift!(fip, state.pressure, 1)
-    circshift!(fim, state.pressure, -1)
-    
-    # In the end it is just a weighted sum...
-    state.h∇p .= state.height .* -0.5 .* (fip .- fim)
 
     return nothing
 end
