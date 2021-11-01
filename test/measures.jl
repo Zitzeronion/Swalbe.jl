@@ -81,7 +81,7 @@
         solsurf = sum(sqrt.(Xgrad.^2 .+ Ygrad.^2 .+ 1))
         solener = 0.0
         solener = solsurf - sum(cospi.(θ))
-        println("area is $(area_lv)")
+        # println("area is $(area_lv)")
         @test solsurf ≈ area_lv[1] atol=1e-10
         @test solener ≈ red_energy[1] atol=1e-10
         # With a non vanishing cosine

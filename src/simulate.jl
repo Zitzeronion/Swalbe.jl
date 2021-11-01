@@ -62,28 +62,6 @@ function time_loop(sys::SysConst, state::State, θ, Δh::Vector; verbose=false)
     end
     return state
 end
-
-function time_loop(sys::SysConst, state::State, θ, measurement::Function; verbose=false)
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(state.height)
-            if verbose
-                println("Time step $t mass is $(round(mass, digits=3))")
-            end
-        end
-        measurement
-        Swalbe.filmpressure!(state, sys, θ)
-        Swalbe.h∇p!(state)
-        Swalbe.slippage!(state, sys)
-        state.Fx .= -state.h∇px .- state.slipx
-        state.Fy .= -state.h∇py .- state.slipy
-        Swalbe.equilibrium!(state)
-        Swalbe.BGKandStream!(state)
-        Swalbe.moments!(state)
-    end
-    return state
-end
 # Time loop with snapshots saved
 function time_loop(sys::SysConst, state::State, θ, data::Matrix; verbose=false)
     for t in 1:sys.Tmax
@@ -217,7 +195,7 @@ end
 # 1D case
 function run_random(sys::SysConst_1D; h₀=1.0, ϵ=0.01, verbos=true)
     println("Simulating a random undulated interface in one dimension")
-    state = Swalbe.Sys(sys, device)
+    state = Swalbe.Sys(sys)
     Swalbe.randinterface!(state.height, h₀, ϵ)
     Swalbe.equilibrium!(state)
     time_loop(sys, state, 1/9, verbose=verbos)
@@ -332,16 +310,16 @@ function run_dropletrelax(
 )
     println("Simulating an out of equilibrium droplet in two dimensions")
     area = []
-    state = Swalbe.Sys(sys, device)
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
     if device == "CPU"
-        Swalbe.singledroplet(state.height, radius, θ₀, center)
+        Swalbe.singledroplet(height, radius, θ₀, center)
     elseif device == "GPU"
-        h = zeros(size(state.height))
+        h = zeros(size(height))
         Swalbe.singledroplet(h, radius, θ₀, center)
-        state.height = CUDA.adapt(CuArray, h)
+        height = CUDA.adapt(CuArray, h)
     end
-    Swalbe.equilibrium!(state)
-    
+    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+    ftemp .= feq
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
             mass = 0.0
