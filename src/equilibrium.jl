@@ -130,6 +130,41 @@ function equilibrium!(feq, height, velocityx, velocityy, vsquare)
     return nothing
 end
 
+# Dispatch without gravity and state struct
+function equilibrium!(state::State)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.feq) 
+    # Some constants, gravity and weights
+    w1 = 1/9
+    w5 = 1/36
+
+    state.vsq .= state.velx .* state.velx .+ state.vely .* state.vely 
+
+    # Zeroth dist
+    f0 .= state.height .* (1 .- 2/3 .* state.vsq)
+    # First
+    f1 .= w1 .* state.height .* (3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
+    # Second
+    f2 .= w1 .* state.height .* (3 .* state.vely .+ 4.5 .* state.vely.^2 .- 1.5 .* state.vsq)
+    # Third
+    f3 .= w1 .* state.height .* (-3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
+    # Forth
+    f4 .= w1 .* state.height .* (-3 .* state.vely .+ 4.5 .* state.vely.^2 .- 1.5 .* state.vsq)
+    # Fifth
+    f5 .= w5 .* state.height .* (3 .* (state.velx .+ state.vely) .+ 
+                         4.5 .* (state.velx .+ state.vely).^2 .- 1.5 .* state.vsq)
+    # Sixth
+    f6 .= w5 .* state.height .* (3 .* (state.vely .- state.velx) .+ 
+                         4.5 .* (state.vely .- state.velx).^2 .- 1.5 .* state.vsq)
+    # Seventh
+    f7 .= w5 .* state.height .* (-3 .* (state.velx .+ state.vely) .+
+                         4.5 .* (state.velx .+ state.vely).^2 .- 1.5 .* state.vsq)
+    # Eight
+    f8 .= w5 .* state.height .* (3 .* (state.velx .- state.vely) .+ 
+                         4.5 .* (state.velx .- state.vely).^2 .- 1.5 .* state.vsq)
+    return nothing
+end
+
 function equilibrium!(feq, height, velocity, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(feq) 
@@ -154,5 +189,18 @@ function equilibrium!(feq, height, velocity)
     f1 .= height .* (0.5 .* velocity .+ 0.5 .* velocity.^2)
     # Second
     f2 .= height .* (-0.5 .* velocity .+ 0.5 .* velocity.^2)
+    return nothing
+end
+
+function equilibrium!(state::State_1D)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2 = viewdists_1D(state.feq) 
+    
+    # Zeroth dist
+    f0 .= state.height .* (1 .- state.vel.^2)
+    # First
+    f1 .= state.height .* (0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    # Second
+    f2 .= state.height .* (-0.5 .* state.vel .+ 0.5 .* state.vel.^2)
     return nothing
 end

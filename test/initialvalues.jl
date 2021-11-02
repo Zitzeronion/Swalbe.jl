@@ -33,6 +33,16 @@
         @test findmax(height)[2] == center
     end
 
+    @testset "Two droplets" begin
+        rad = 45
+        θ = 1/4
+        sys = Swalbe.SysConst_1D(L=200)
+        height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
+        @test isa(height, Vector{Float64})
+        @test size(height) == (200,)
+        @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.01
+    end
+
     @testset "Restart height" begin
         h1 = rand(10,10)
         h2 = rand(10,10)

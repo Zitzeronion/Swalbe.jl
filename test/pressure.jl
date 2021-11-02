@@ -1,9 +1,15 @@
 @testset "Capillary pressure" begin
+    # Struct
+    sys = Swalbe.SysConst(Lx=5, Ly=5, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.1)
+    state = Swalbe.Sys(sys, "CPU")
+    state.height .= reshape(collect(1.0:25),5,5)
+    # With arguments struct
     f = reshape(collect(1.0:25),5,5)
     f_float = reshape(collect(1.0f0:25.0f0),5,5)
     res = zeros(5,5)
     @testset "No contact angle" begin
         Swalbe.filmpressure!(res, f, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        Swalbe.filmpressure!(state, sys, 0.0)
         sol = [-30.0 -5.0 -5.0 -5.0 20;
                -25.0 0.0 0.0 0.0 25.0;
                -25.0 0.0 0.0 0.0 25.0;
@@ -12,6 +18,7 @@
                ]
         for i in eachindex(sol)
             @test res[i] .≈ sol[i] atol=1e-10
+            @test state.pressure[i] .≈ sol[i] atol=1e-10
         end
         Swalbe.filmpressure!(res, f, 0.0)
         for i in eachindex(sol)
@@ -20,12 +27,19 @@
     end
     @testset "No height gradient" begin
         nograd = ones(5,5)
+        state.height .= 1.0
+        sys2 = Swalbe.SysConst(Lx=5, Ly=5, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0)
         Swalbe.filmpressure!(res, nograd, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        Swalbe.filmpressure!(state, sys2, 1/2)
         for i in eachindex(res)
             @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
+            @test state.pressure[i] .≈ -2(0.1^2-0.1) atol=1e-10
         end
     end
     @testset "Gradient and contact angle" begin
+        state.height .= reshape(collect(1.0:25),5,5)
+        sys2 = Swalbe.SysConst(Lx=5, Ly=5, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0)
+        Swalbe.filmpressure!(state, sys2, 1/2)
         Swalbe.filmpressure!(res, f, 1.0, 1/2, 3, 2, 0.1, 0.0)
         sol = [30.0 5.0 5.0 5.0 -20;
                25.0 0.0 0.0 0.0 -25.0;
@@ -35,6 +49,7 @@
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
             @test res[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+            @test state.pressure[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
         end
     end
     @testset "Gradient and contact angle Float32" begin
@@ -52,6 +67,8 @@
     end
     dgrad = zeros(5,5,8)
     @testset "No contact angle circshift!" begin
+        state.height .= reshape(collect(1.0:25),5,5)
+        Swalbe.filmpressure!(state, sys, 0.0)
         Swalbe.filmpressure!(res, f, dgrad, 1.0, 0.0, 3, 2, 0.1, 0.1)
         sol = [-30.0 -5.0 -5.0 -5.0 20;
                -25.0 0.0 0.0 0.0 25.0;
@@ -61,38 +78,52 @@
                ]
         for i in eachindex(sol)
             @test res[i] .≈ sol[i] atol=1e-10
+            @test state.pressure[i] .≈ sol[i] atol=1e-10
         end
     end
 end
 
 @testset "Capillary pressure 1D" begin
+    # Struct
+    sys = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.1)
+    state = Swalbe.Sys(sys)
+    state.height .= collect(1.0:30)
+    sys2 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0)
+    state2 = Swalbe.Sys(sys2)
+    # Without the struct
     f = collect(1.0:30)
     f_float = collect(1.0f0:30.0f0)
     res = zeros(30)
     dummy = zeros(30,3)
     @testset "No contact angle" begin
         Swalbe.filmpressure!(res, f, dummy, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        Swalbe.filmpressure!(state, sys, 0.0)
         # println("My result: $res")
         sol = zeros(30)
         sol[1] = 30
         sol[end] = -30
         @test all(res .== -sol)
+        @test all(state.pressure .== -sol)
     end
     @testset "No height gradient" begin
         nograd = ones(30)
+        state2.height .= 1.0
         Swalbe.filmpressure!(res, nograd, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
-        for i in eachindex(res)
-            @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
-        end
+        Swalbe.filmpressure!(state2, sys2, 1/2)
+        @test res[15] ≈ -2(0.1^2-0.1) atol=1e-10
+        @test state2.pressure[15] ≈ -2(0.1^2-0.1) atol=1e-10
+        
     end
     @testset "Gradient and contact angle" begin
         Swalbe.filmpressure!(res, f, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        Swalbe.filmpressure!(state, sys2, 1/2)
         sol = zeros(30)
         sol[1] = 30
         sol[end] = -30
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
             @test res[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+            @test state.pressure[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
         end
     end
 end

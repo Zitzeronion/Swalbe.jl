@@ -60,6 +60,8 @@
         dy = ones(5,5)
         area_lv = [0.0]
         red_energy = [0.0]
+        area_lv2 = [0.0]
+        red_energy2 = [0.0]
         θ = fill(0.5, 5, 5)
         Swalbe.surfacearea!(area_lv, red_energy, height, θ, dx, dy, dummy, surface, 1)
         # Solutions gradient
@@ -79,15 +81,20 @@
         solsurf = sum(sqrt.(Xgrad.^2 .+ Ygrad.^2 .+ 1))
         solener = 0.0
         solener = solsurf - sum(cospi.(θ))
-        println("area is $(area_lv)")
+        # println("area is $(area_lv)")
         @test solsurf ≈ area_lv[1] atol=1e-10
         @test solener ≈ red_energy[1] atol=1e-10
         # With a non vanishing cosine
         θ = fill(1/9, 5, 5)
         Swalbe.surfacearea!(area_lv, red_energy, height, θ, dx, dy, dummy, surface, 1)
+        Swalbe.surfacearea!(area_lv2, red_energy2, height, 1/9, dx, dy, dummy, surface, 1)
         solener = solsurf - sum(cospi.(θ))
-        @test solsurf ≈ area_lv[1] atol=1e-10
-        @test solener ≈ red_energy[1] atol=1e-10
+        for i in [area_lv[1], area_lv2[1]]
+            @test solsurf ≈ i atol=1e-10
+        end
+        for j in [red_energy[1], red_energy2[1]]
+            @test solener ≈ j atol=1e-10
+        end
         # More time steps
         d1 = zeros(5,5)
         d2 = zeros(5,5)

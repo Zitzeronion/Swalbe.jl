@@ -16,13 +16,22 @@ Fluid substrate interaction that effectively mimics a velocity boundary conditio
 # Mathematics
 
 With the velocity boundary condition at the fluid substrate interface we build the second main descriptor between our model and the thin film equation.
-One well studied assumption is that the fluid velocity vanishes at `` h(\\mathbf{x}) = 0 `` which is called **no slip** condition.
+One well studied assumption is that the fluid velocity vanishes at `` h(\\mathbf{x}) = 0 `` which is called **no-slip** condition.
+In terms of thin film mobility `M(h)` this means 
 
-TBD
+`` M(h) = \\frac{h^3}{3\\mu}. ``
 
-# Examples
+This assumption, however, can be relaxed to allow for some slippage with a further parameter δ which determines the slip length.
+The here presented model matches the thin film equation by modification of the momentum equation of the shallow water model.
+Therefore the force we add to the momentum equation to compensate for the substrate fluid friction is given as
 
-TBD
+`` F_{fric} = -\\nu \\alpha_{\\delta}(h)\\mathbf{u},  ``
+
+where ν is the kinematic viscosity and α 
+
+`` \\alpha_{\\delta}(h) = \\frac{6h}{2h^2 + 6h\\delta +3\\delta^2}, ``
+
+and δ being the slip length, or the distance inside the substrate where the fluids velocity vanishes.
 
 # References
 
@@ -35,9 +44,56 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     slipy .= (6μ .* height .* vely) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
     return nothing
 end
+# with state struct
+function slippage!(state::State, sys::SysConst)
+    state.slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
+    state.slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
+    return nothing
+end
 
 function slippage!(slip, height, vel, δ, μ)
     slip .= (6μ .* height .* vel) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
+    return nothing
+end
+# with state struct
+function slippage!(state::State_1D, sys::SysConst_1D)
+    state.slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height.^2 .+ 6*sys.δ .* state.height .+ 3*sys.δ^2 )
+    return nothing
+end
+
+"""
+    h∇p!(state)
+
+Computation of the pressure gradient multiplied with the height.
+"""
+function h∇p!(state::State)
+    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(fip, state.pressure, (1,0))
+    circshift!(fjp, state.pressure, (0,1))
+    circshift!(fim, state.pressure, (-1,0))
+    circshift!(fjm, state.pressure, (0,-1))
+    # Diagonal elements  
+    circshift!(fipjp, state.pressure, (1,1))
+    circshift!(fimjp, state.pressure, (-1,1))
+    circshift!(fimjm, state.pressure, (-1,-1))
+    circshift!(fipjm, state.pressure, (1,-1))
+    # In the end it is just a weighted sum...
+    state.h∇px .= state.height .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
+    state.h∇py .= state.height .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
+
+    return nothing
+end
+# One dimensional implementation
+function h∇p!(state::State_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.h∇p .= state.height .* -0.5 .* (fip .- fim)
+
     return nothing
 end
 
