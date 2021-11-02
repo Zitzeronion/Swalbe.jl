@@ -21,3 +21,4 @@ jobs:
         run: echo "https://$JUGIT_USER:$JUGIT_PASS@jugit.fz-juelich.de" >| ~/.git-credentials
       - name: mirror push to new remote
         run: git push --prune jugit +refs/remotes/origin/*:refs/heads/* +refs/tags/*:refs/tags/*
+

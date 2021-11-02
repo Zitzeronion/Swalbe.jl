@@ -90,6 +90,7 @@ That is why most core functions can be easily extended, or used out of the box. 
 Some initial conditions are handily pre-programmed. 
 E.g. simulating the Rayleigh-Taylor instability:
 
+
 ```julia
 using Swalbe
 
