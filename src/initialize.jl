@@ -74,6 +74,32 @@ Data structure that stores all arrays for a given simulation.
     h∇py :: Matrix{T} 
     dgrad :: Array{T,N} 
 end
+"""
+    CuState
+
+Data structure that stores all arrays for a given simulation.
+Specific for GPU computing using `CUDA.jl`
+"""
+struct CuState
+    # Distribution functions
+    fout :: CuArray
+    ftemp :: CuArray
+    feq :: CuArray 
+    # Macroscopic variables and moments 
+    height :: CuArray
+    velx :: CuArray
+    vely :: CuArray
+    vsq :: CuArray
+    pressure :: CuArray
+    # Forces and a dummy for the gradient
+    Fx :: CuArray 
+    Fy :: CuArray 
+    slipx :: CuArray
+    slipy :: CuArray 
+    h∇px :: CuArray 
+    h∇py :: CuArray 
+    dgrad :: CuArray
+end
 
 """
     State_1D{T, N}
@@ -182,22 +208,26 @@ function Sys(sysc::SysConst, device::String; T=Float64)
         )
         return dyn
     elseif device == "GPU"
-        dyn = State{T, 3}(
-            fout = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
-            ftemp = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
-            feq = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
-            height = CUDA.ones(T, sysc.Lx, sysc.Ly),
-            velx = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            vely = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            vsq = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            pressure = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            dgrad = CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
-            Fx = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            Fy = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            slipx = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            slipy = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            h∇px = CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            h∇py = CUDA.zeros(T, sysc.Lx, sysc.Ly)
+        dyn = CuState(
+            # Distribution functions
+            CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+            # Macro
+            CUDA.ones(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            # For gradients
+            CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
+            # Forces
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly),
+            CUDA.zeros(T, sysc.Lx, sysc.Ly)
         )
         return dyn
     end
