@@ -3,7 +3,7 @@
 
 Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
 """
-@with_kw struct SysConst{T}
+Base.@kwdef struct SysConst{T}
     # Lattice
     Lx :: Int = 256
     Ly :: Int = 256
@@ -29,7 +29,7 @@ end
 
 Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
 """
-@with_kw struct SysConst_1D{T}
+Base.@kwdef struct SysConst_1D{T}
     # Lattice
     L :: Int = 256
     Tmax :: Int = 1000
@@ -54,7 +54,7 @@ end
 
 Data structure that stores all arrays for a given simulation.
 """
-@with_kw struct State{T, N}
+Base.@kwdef struct State{T, N}
     # Distribution functions
     fout :: Array{T, N}
     ftemp :: Array{T, N}
@@ -106,7 +106,7 @@ end
 
 Data structure that stores all arrays for a given simulation.
 """
-@with_kw struct State_1D{T}
+Base.@kwdef struct State_1D{T}
     # Distribution functions
     fout :: Matrix{T}
     ftemp :: Matrix{T}

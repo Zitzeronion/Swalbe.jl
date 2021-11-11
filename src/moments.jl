@@ -62,7 +62,7 @@ function moments!(state::State)
     return nothing
 end
 
-function moments!(state::State, device::String)
+function moments!(state::CuState)
     # Get views of the populations
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
     # Compute the height
