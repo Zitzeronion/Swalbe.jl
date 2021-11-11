@@ -2,7 +2,7 @@
 
 A lattice Boltzmann framework to solve thin liquid film problems.
 
-## Thin film simulations using lattice Boltzmann :rainbow: :ocean:
+## Thin film simulations using lattice Boltzmann
 
 Why is a thin film solver called **Swalbe.jl** you may ask?
 
