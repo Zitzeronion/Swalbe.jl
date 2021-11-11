@@ -65,6 +65,46 @@ end
     h∇p!(state)
 
 Computation of the pressure gradient multiplied with the height.
+
+# Mathematics
+
+The pressure gradient (``\\nabla p``) is **the** driving force of the standard thin film equation `` \\partial_t h = (M(h)\\nabla p)``.
+Our approach however does not solve the thin film equation directly,
+Instead we have to add the pressure gradient as a force which is given as
+
+`` F_{film} = -\\frac{1}{\\rho_0} h \\nabla p_{film}, ``
+
+where the term ``p_{film}`` describes the film pressure 
+
+`` p_{film} = -\\gamma [\\Delta h - \\Pi(h)] .``
+
+As such it is the combination of a laplacian term that minimizes the surface area as well as a interfacial potential between substrate and fluid.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10), "CPU");
+
+julia> state.pressure .= reshape(collect(1:100),10,10)
+
+julia> Swalbe.h∇p(state)
+
+julia> @test all(state.h∇px[1,:] .== -4.0) # at boundary
+Test Passed
+
+julia> @test all(state.h∇px[2,:] .== 1.0) # inside
+Test Passed
+
+```
+
+# References
+
+- [Zitz, Scagliarini and Harting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
+- [Craster, Matar](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.81.1131)
+- [Oron, Davis and Bankoff](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.69.931)
+
+See also: [`Swalbe.filmpressure!`](@ref)
 """
 function h∇p!(state::State)
     fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
