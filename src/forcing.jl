@@ -86,9 +86,9 @@ julia> using Swalbe, Test
 
 julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10), "CPU");
 
-julia> state.pressure .= reshape(collect(1:100),10,10)
+julia> state.pressure .= reshape(collect(1:100),10,10);
 
-julia> Swalbe.h∇p(state)
+julia> Swalbe.h∇p!(state)
 
 julia> @test all(state.h∇px[1,:] .== -4.0) # at boundary
 Test Passed
@@ -153,7 +153,16 @@ Computations of force due to thermal fluctuations.
 
 # Mathematics
 
-TBD
+The classical thin film equation is an equation without thermal noise which is defined as
+
+``\\partial_t h = \\nabla(M(h)\\nabla p).``
+
+Already in the last century about 1950 first x-ray scattering experiments on liquid surfaces show that thermal energy is enough to excite thermal capillary waves.
+These capillary waves however a rather small amplitude and are damped by surface tension, therefore they are usually hidden to the eye.
+Coming back to thin liquid films, one would assume that for example during dewetting these capillary waves are of importance.
+Close to the rupture of any film the lqiuid height is compareable to the amplitude of the capillary waves.
+Introducing them to the thin film approach was however a hard task, since the stochastic stress tensor is a rather unpleasent term.
+Cutting the story short TBD  
 
 # Examples
 ```jldoctest
