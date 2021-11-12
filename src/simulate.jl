@@ -16,10 +16,30 @@
 # end
 
 """
-    time_loop(sys, state, θ)
+    time_loop(sys, state)
 
 Time stepping procedure for the lattice Boltzmann state `state` given parameters `sys`
 """
+function time_loop(sys::SysConst, state::State; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.Fx .= -state.h∇px .- state.slipx
+        state.Fy .= -state.h∇py .- state.slipy
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    end
+    return state
+end
 function time_loop(sys::SysConst, state::State, θ; verbose=false)
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
@@ -41,7 +61,7 @@ function time_loop(sys::SysConst, state::State, θ; verbose=false)
     return state
 end
 
-function time_loop(sys::SysConst, state::State, θ, Δh::Vector; verbose=false)
+function time_loop(sys::SysConst, state::State, Δh::Vector; verbose=false)
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
             mass = 0.0
@@ -50,17 +70,40 @@ function time_loop(sys::SysConst, state::State, θ, Δh::Vector; verbose=false)
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        Δh[t] = maximum(h) - minimum(h)
-        Swalbe.filmpressure!(state, sys, θ)
+        push!(Δh, maximum(state.height) - minimum(state.height))
+        Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.Fx .= -state.h∇px .- state.slipx
         state.Fy .= -state.h∇py .- state.slipy
-        Swalbe.equilibrium!(state)
+        Swalbe.equilibrium!(state, sys)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
     end
     return state
+end
+
+function time_loop(sys::SysConst, state::State, f::Function, measure::Vector; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        f(measure, state)
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.Fx .= -state.h∇px .- state.slipx
+        state.Fy .= state.h∇py .+ state.slipy
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    
+    end
+    return state, measure
 end
 # Time loop with snapshots saved
 function time_loop(sys::SysConst, state::State, θ, data::Matrix; verbose=false)
@@ -87,6 +130,26 @@ function time_loop(sys::SysConst, state::State, θ, data::Matrix; verbose=false)
     return state
 end
 
+function time_loop(sys::SysConst_1D, state::State_1D; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.F .= -state.h∇p .- state.slip
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    end
+    return state
+end
+
 function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose=false)
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
@@ -107,6 +170,26 @@ function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose=false)
     return state
 end
 
+function time_loop(sys::SysConst_1D, state::State_1D, Δh::Vector; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        push!(Δh, maximum(state.height) - minimum(state.height))
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.F .= -state.h∇p .- state.slip
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    end
+    return state
+end
 """
     run_flat(Sys::SysConst, device::String)
 
@@ -141,7 +224,7 @@ function run_flat(sys::SysConst, device::String; verbos=true)
     println("Simulating a flat interface without driving forces (nothing should happen) in two dimensions")
     state = Swalbe.Sys(sys, device)
     state.height .= 1.0
-    time_loop(sys, state, 1/9, verbose=verbos)
+    time_loop(sys, state, verbose=verbos)
 
     return state.height
 end
@@ -150,7 +233,7 @@ function run_flat(sys::SysConst_1D; verbos=true, T=Float64)
     println("Simulating a flat interface without driving forces (nothing should happen) in one dimension")
     state = Swalbe.Sys(sys)
     state.height .= 1.0
-    time_loop(sys, state, 1/9, verbose=verbos)
+    time_loop(sys, state, verbose=verbos)
 
     return state.height
 end
@@ -237,61 +320,26 @@ julia> h = Swalbe.run_random(sys, "CPU", h₀=10, ϵ=0.1, verbos=false);
 """
 function run_rayleightaylor(sys::SysConst, device::String; kx=15, ky=18, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
     println("Simulating the Rayleigh Taylor instability in two dimensions")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+    state = Swalbe.Sys(sys, device)
     for i in 1:sys.Lx, j in 1:sys.Ly
-        height[i,j] = h₀ * (1 + ϵ * sin(2π*kx*i/(sys.Lx-1)) * sin(2π*ky*j/(sys.Ly-1)))
+        state.height[i,j] = h₀ * (1 + ϵ * sin(2π*kx*i/(sys.Lx-1)) * sin(2π*ky*j/(sys.Ly-1)))
     end
     diff = []
-    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-    ftemp .= feq
-    for t in 1:sys.Tmax 
-        push!(diff, maximum(height) - minimum(height))
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3))\nAbsolute difference is $difference")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-        Fx .= h∇px .+ slipx
-        Fy .= h∇py .+ slipy
-        Swalbe.equilibrium!(feq, height, velx, vely, vsq, sys.g)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-        Swalbe.moments!(height, velx, vely, fout)
-    end
-    return height, diff
+    Swalbe.equilibrium!(state)
+    Swalbe.time_loop(sys, state, diff, verbose=verbos)
+    return state.height, diff
 end
 # 1D case
 function run_rayleightaylor(sys::SysConst_1D; k=15, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
     println("Simulating the Rayleigh Taylor instability in one dimension")
-    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
+    state = Swalbe.Sys(sys)
     for i in 1:sys.L
-        height[i] = h₀ * (1 + ϵ * sin(2π*k*i/(sys.L-1)))
+        state.height[i] = h₀ * (1 + ϵ * sin(2π*k*i/(sys.L-1)))
     end
     diff = []
-    Swalbe.equilibrium!(feq, height, vel)
-    ftemp .= feq
-    for t in 1:sys.Tmax
-        push!(diff, maximum(height) - minimum(height))
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3))\nAbsolute difference is $difference")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇p, pressure, dgrad, height)
-        Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        F .= h∇p .+ slip
-        Swalbe.equilibrium!(feq, height, vel, sys.g)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-        Swalbe.moments!(height, vel, fout)
-    end
-    return height, diff
+    Swalbe.equilibrium!(state)
+    Swalbe.time_loop(sys, state, diff, verbose=verbos)
+    return state.height, diff
 end
 
 """
@@ -310,35 +358,17 @@ function run_dropletrelax(
 )
     println("Simulating an out of equilibrium droplet in two dimensions")
     area = []
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+    state = Swalbe.Sys(sys, device)
     if device == "CPU"
-        Swalbe.singledroplet(height, radius, θ₀, center)
+        Swalbe.singledroplet(state.height, radius, θ₀, center)
     elseif device == "GPU"
-        h = zeros(size(height))
+        h = zeros(size(state.height))
         Swalbe.singledroplet(h, radius, θ₀, center)
-        height = CUDA.adapt(CuArray, h)
+        state.height = CUDA.adapt(CuArray, h)
     end
-    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-    ftemp .= feq
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3))")
-            end
-        end
-        push!(area, length(findall(height .> 0.055)))
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-        Fx .= h∇px .+ slipx
-        Fy .= h∇py .+ slipy
-        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-        Swalbe.moments!(height, velx, vely, fout)
-    end
-    return height, area
+    Swalbe.equilibrium!(state)
+    time_loop(sys, state, Swalbe.wetted!, area, verbose=verbos)
+    return state.height, area
 end
 # 1D case
 function run_dropletrelax(
