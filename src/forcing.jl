@@ -168,7 +168,7 @@ However Grün et al. showed that it is not nessary to use the full stochastic st
 where ``\\sigma`` and ``\\mathcal{N}`` are a dimensionless temperture and a gaussian white noise.
 Similar to the pressure gradient the addition of this term is introduced as force in our model
 
-`` F_{fluc} = \\frac{1}{\\rho_0}\\sqrt{2k_BT\\\mu\\alpha_{\\delta}(h)}\\mathcal{N},``
+`` F_{fluc} = \\frac{1}{\\rho_0}\\sqrt{2k_BT\\mu\\alpha_{\\delta}(h)}\\mathcal{N},``
 
 with ``\\alpha_{\\delta}(h)`` being the force generated due to substrate slip. 
 
@@ -227,6 +227,8 @@ end
     update_rho()
 
 Time evolution of the `active` field rho.
+
+TODO: @Tilmann!
 """
 function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
     lap_rho, grad_rho, lap_h, grad_h = view_four(differentials)

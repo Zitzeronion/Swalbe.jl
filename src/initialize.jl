@@ -220,6 +220,13 @@ end
     Sys(sysc, device, exotic)
 
 Mostly allocations of arrays used to run a simulation, but all within one function :)
+
+# Arguments
+
+- `sysc :: SysConst`: Needed for the lattice dimensions, `Lx` and `Ly`
+- `device :: String`: Use either `CPU` for computation of a CPU or `GPU` for computation on the GPU 
+- `exotic :: Bool`: If true thermal fluctuations can be computed and saved to the `fthermalx` and `fthermaly` field
+- `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
 """
 function Sys(sysc::SysConst, device::String, exotic::Bool, T)
     if device == "CPU"
@@ -326,6 +333,17 @@ function Sys(sysc::SysConst, device::String; T=Float64)
     end
 end
 
+"""
+    Sys(sysc, exotic, T)
+
+Mostly allocations of arrays used to run a simulation, but all within one function :)
+
+# Arguments
+
+- `sysc :: SysConst_1D`: Needed for the lattice dimensions, `L` 
+- `exotic :: Bool`: If true thermal fluctuations can be computed and saved to the `fthermalx` and `fthermaly` field
+- `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
+"""
 function Sys(sysc::SysConst_1D, exotic::Bool, T)
     # Meso
     fout = zeros(sysc.L, 3)
