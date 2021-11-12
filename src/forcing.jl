@@ -155,14 +155,22 @@ Computations of force due to thermal fluctuations.
 
 The classical thin film equation is an equation without thermal noise which is defined as
 
-``\\partial_t h = \\nabla(M(h)\\nabla p).``
+``\\partial_t h = \\nabla\\cdot(M(h)\\nabla p).``
 
-Already in the last century about 1950 first x-ray scattering experiments on liquid surfaces show that thermal energy is enough to excite thermal capillary waves.
-These capillary waves however a rather small amplitude and are damped by surface tension, therefore they are usually hidden to the eye.
-Coming back to thin liquid films, one would assume that for example during dewetting these capillary waves are of importance.
-Close to the rupture of any film the lqiuid height is compareable to the amplitude of the capillary waves.
-Introducing them to the thin film approach was however a hard task, since the stochastic stress tensor is a rather unpleasent term.
-Cutting the story short TBD  
+Classically thermal excitations are neglected for thin film flows.
+It is of course possible to introduce for example an envolving surface tension or viscosity but both do not account for e.g. the spectrum of thermal capillary waves.
+The reason for this short coming is the complex from the thin film equation takes if derived from the Landau-Lifshitz Navier-Stokes equation.
+One addition term due to the stochastic stress tensor makes it somewhat impossible to solve the eqaution self-consistently.
+However Grün et al. showed that it is not nessary to use the full stochastic stress tensor, but simple a multiplicative noise term
+
+``\\partial_t h = \\nabla\\cdot[M(h)(\\nabla p + \\sigma \\mathcal{N}], ``
+
+where ``\\sigma`` and ``\\mathcal{N}`` are a dimensionless temperture and a gaussian white noise.
+Similar to the pressure gradient the addition of this term is introduced as force in our model
+
+`` F_{fluc} = \\frac{1}{\\rho_0}\\sqrt{2k_BT\\\mu\\alpha_{\\delta}(h)}\\mathcal{N},``
+
+with ``\\alpha_{\\delta}(h)`` being the force generated due to substrate slip. 
 
 # Examples
 ```jldoctest
@@ -189,6 +197,7 @@ Test Passed
 - [Mecke, Rauscher](https://iopscience.iop.org/article/10.1088/0953-8984/17/45/042/meta)
 - [Davidovitch, Moro and Stone](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.95.244505)
 
+See also: [`Swalbe.slippage!`](@ref)
 """ 
 function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     randn!(fluc_x)
