@@ -400,41 +400,16 @@ function run_dropletpatterned(
     radius=20, 
     θ₀=1/6, 
     center=(sys.Lx÷2, sys.Ly÷2), 
-    θₛ=ones(sys.Lx, sys.Ly), 
-    verbos=true, 
-    T=Float64
+    θₛ=fill(1/9, sys.Lx, sys.Ly), 
+    verbos=true
 )
     println("Simulating a droplet on a patterned substrate in two dimensions")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
-    if device == "CPU"
-        Swalbe.singledroplet(height, radius, θ₀, center)
-    elseif device == "GPU"
-        h = zeros(size(height))
-        Swalbe.singledroplet(h, radius, θ₀, center)
-        height = CUDA.adapt(CuArray, h)
-    end
-    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-    ftemp .= feq
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            maxU = maximum(abs.(velx))
-            maxV = maximum(abs.(vely))
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3)) and max vel ($maxU $maxV)")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-        Fx .= h∇px .+ slipx
-        Fy .= h∇py .+ slipy
-        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-        Swalbe.moments!(height, velx, vely, fout)
-    end
-    return height
+    state = Swalbe.Sys(sys, device)
+    Swalbe.singledroplet(state.height, radius, θ₀, center)
+    Swalbe.equilibrium!(state)
+    time_loop(sys, state, θₛ, verbose=verbos)
+    
+    return state.height
 
 end
 # 1D case
@@ -443,36 +418,15 @@ function run_dropletpatterned(
     radius=20, 
     θ₀=1/6, 
     center=sys.L÷2, 
-    θₛ=ones(sys.L), 
-    verbos=true, 
-    T=Float64
+    θₛ=fill(1/2, sys.L), 
+    verbos=true
 )
     println("Simulating a droplet on a patterned substrate in one dimension")
-    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
-    
-    Swalbe.singledroplet(height, radius, θ₀, center)
-        
-    Swalbe.equilibrium!(feq, height, vel)
-    ftemp .= feq
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            maxU = maximum(abs.(vel))
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3)) and max vel $maxU")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇p, pressure, dgrad, height)
-        Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        F .= h∇p .+ slip
-        Swalbe.equilibrium!(feq, height, vel)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-        Swalbe.moments!(height, vel, fout)
-    end
-    return height
-
+    state = Swalbe.Sys(sys)
+    Swalbe.singledroplet(state.height, radius, θ₀, center)
+    Swalbe.equilibrium!(state)
+    time_loop(sys, state, θₛ, verbose=verbos)
+    return state.height
 end
 
 """
