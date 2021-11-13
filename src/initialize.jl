@@ -1,3 +1,5 @@
+abstract type LBM_state end
+
 """
     SysConst{T}
 
@@ -114,7 +116,7 @@ Data structure that stores all arrays for a given simulation.
 - `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
 
 """
-Base.@kwdef struct State{T, N}
+Base.@kwdef struct State{T, N} <: LBM_state
     # Distribution functions
     fout :: Array{T, N}
     ftemp :: Array{T, N}
@@ -160,7 +162,7 @@ Specific for GPU computing using `CUDA.jl`
 - `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
 
 """
-struct CuState
+struct CuState <: LBM_state
     # Distribution functions
     fout :: CuArray
     ftemp :: CuArray
@@ -199,7 +201,7 @@ Data structure that stores all arrays for a given simulation.
 - `h∇p :: Vector{T}`: Pressure gradient times the height
 - `dgrad :: Matrix{T}`: Dummy allocation to store shifted arrays using `circshift!`
 """
-Base.@kwdef struct State_1D{T}
+Base.@kwdef struct State_1D{T} <: LBM_state
     # Distribution functions
     fout :: Matrix{T}
     ftemp :: Matrix{T}

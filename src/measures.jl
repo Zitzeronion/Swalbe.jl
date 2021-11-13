@@ -10,7 +10,7 @@ function wetted!(area_size, maxheight, height, t; hthresh = 0.055)
     return nothing
 end
 
-function wetted!(area_size, state::State; hthresh = 0.055)
+function wetted!(area_size, state::LBM_state; hthresh = 0.055)
     push!(area_size, length(findall(state.height .> hthresh)))
 
     return nothing

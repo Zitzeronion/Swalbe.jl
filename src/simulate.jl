@@ -97,7 +97,7 @@ function time_loop(sys::SysConst, state::State, f::Function, measure::Vector; ve
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.Fx .= -state.h∇px .- state.slipx
-        state.Fy .= state.h∇py .+ state.slipy
+        state.Fy .= -state.h∇py .- state.slipy
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
@@ -189,6 +189,28 @@ function time_loop(sys::SysConst_1D, state::State_1D, Δh::Vector; verbose=false
         Swalbe.moments!(state)
     end
     return state
+end
+
+function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure::Vector; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        f(measure, state)
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.F .= -state.h∇p .- state.slip
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+    
+    end
+    return state, measure
 end
 """
     run_flat(Sys::SysConst, device::String)
@@ -347,64 +369,24 @@ end
 
 Simulates an out of equilibrium droplet
 """
-function run_dropletrelax(
-    sys::SysConst, 
-    device::String; 
-    radius=20, 
-    θ₀=1/6, 
-    center=(sys.Lx÷2, sys.Ly÷2), 
-    verbos=true, 
-    T=Float64
-)
+function run_dropletrelax(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true)
     println("Simulating an out of equilibrium droplet in two dimensions")
-    area = []
     state = Swalbe.Sys(sys, device)
-    if device == "CPU"
-        Swalbe.singledroplet(state.height, radius, θ₀, center)
-    elseif device == "GPU"
-        h = zeros(size(state.height))
-        Swalbe.singledroplet(h, radius, θ₀, center)
-        state.height = CUDA.adapt(CuArray, h)
-    end
+    Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state)
+    area = []
     time_loop(sys, state, Swalbe.wetted!, area, verbose=verbos)
     return state.height, area
 end
 # 1D case
-function run_dropletrelax(
-    sys::SysConst_1D;
-    radius=20, 
-    θ₀=1/6, 
-    center=(sys.L÷2), 
-    verbos=true, 
-    T=Float64
-)
+function run_dropletrelax(sys::SysConst_1D; radius=20, θ₀=1/6, center=(sys.L÷2), verbos=true )
     println("Simulating an out of equilibrium droplet in one dimensions")
     area = []
-    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
-    
-    Swalbe.singledroplet(height, radius, θ₀, center)
-    
-    Swalbe.equilibrium!(feq, height, vel)
-    ftemp .= feq
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3))")
-            end
-        end
-        push!(area, length(findall(height .> 0.055)))
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, 1/9, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇p, pressure, dgrad, height)
-        Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        F .= h∇p .+ slip
-        Swalbe.equilibrium!(feq, height, vel)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-        Swalbe.moments!(height, vel, fout)
-    end
-    return height, area
+    state = Swalbe.Sys(sys)
+    Swalbe.singledroplet(state.height, radius, θ₀, center) 
+    Swalbe.equilibrium!(state)
+    time_loop(sys, state, Swalbe.wetted!, area, verbose=verbos)
+    return state.height, area
 end
 
 """
