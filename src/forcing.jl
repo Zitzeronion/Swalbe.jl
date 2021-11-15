@@ -224,18 +224,40 @@ function thermal!(fluc, height, kᵦT, μ, δ)
 end
 
 """
-   inclination!(state)
+   inclination!(α, state)
 
 Force that mimics the effect of an inclined plate.
+
+Simple model to add a body force on the fluid that should mimic the effect of an inclined plate.
+The model includes a smoothing `tanh` function to absorb shocks which might occure.
+    
+# Arguments
+
+-`α :: Vector`: Force vector that both hosts direction of the force as well as strength
+-`state::State`: Lattice Boltzmann state of the fluid, here we need the `state.Fx`, `state.Fy` fields
+-`t::Int`: Time step, used for the smoothing `tanh` factor
+-`tstart::Int`: Time delay at which the `tanh` becomes positve
+-`tsmooth::Int`: Time interval over which the `tanh` is smeared
+
+# Mathematics
+
+This body force is simply force strength time the mass of the fluid or even simpler the height (assuming ρ=1).
+Thus the force becomes
+
+`` \\mathbf{F} = \\mathbf{\\alpha} h \\tanh\\bigg(\\frac{t-t_0}{t_s}\\bigg),``
+
+with ``t_0`` being the time lag at which the `tanh` changes sign and ``t_s`` is width of interval between -1 and 1.
+
+See also: [Swalbe.run_dropletforced](@ref)
 """
-function inclination!(state::State, α=zeros(2); t=1000, tstart=0, tsmooth=1)
+function inclination!(α::Vector, state::State; t=1000, tstart=0, tsmooth=1)
     state.Fx .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
     state.Fy .+= state.height .* α[2] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
     return nothing
 end
 
-function inclination!(state::State_1D; t=0, tstart=0, tsmooth=1, α=zeros(1))
+function inclination!(α::Vector, state::State_1D; t=1000, tstart=0, tsmooth=1)
     state.F .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
     return nothing

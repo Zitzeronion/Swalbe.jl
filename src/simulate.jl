@@ -212,6 +212,29 @@ function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure::Vect
     end
     return state, measure
 end
+
+function time_loop(sys::SysConst_1D, state::State_1D, data::Matrix; verbose=false)
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(state.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.F .= -state.h∇p .- state.slip
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+        
+        Swalbe.snapshot!(data, state.height, t, dumping = sys.tdump)
+        
+    end
+    return data
+end
 """
     run_flat(Sys::SysConst, device::String)
 
@@ -394,15 +417,7 @@ end
 
 Simulates an droplet on a patterned substrate
 """
-function run_dropletpatterned(
-    sys::SysConst, 
-    device::String; 
-    radius=20, 
-    θ₀=1/6, 
-    center=(sys.Lx÷2, sys.Ly÷2), 
-    θₛ=fill(1/9, sys.Lx, sys.Ly), 
-    verbos=true
-)
+function run_dropletpatterned(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), θₛ=fill(1/9, sys.Lx, sys.Ly), verbos=true)
     println("Simulating a droplet on a patterned substrate in two dimensions")
     state = Swalbe.Sys(sys, device)
     Swalbe.singledroplet(state.height, radius, θ₀, center)
@@ -413,14 +428,7 @@ function run_dropletpatterned(
 
 end
 # 1D case
-function run_dropletpatterned(
-    sys::SysConst_1D; 
-    radius=20, 
-    θ₀=1/6, 
-    center=sys.L÷2, 
-    θₛ=fill(1/2, sys.L), 
-    verbos=true
-)
+function run_dropletpatterned(sys::SysConst_1D; radius=20, θ₀=1/6, center=sys.L÷2, θₛ=fill(1/2, sys.L), verbos=true)
     println("Simulating a droplet on a patterned substrate in one dimension")
     state = Swalbe.Sys(sys)
     Swalbe.singledroplet(state.height, radius, θ₀, center)
@@ -434,18 +442,7 @@ end
 
 Simulates an droplet on a patterned substrate
 """
-function run_dropletforced(
-    sys::SysConst, 
-    device::String; 
-    radius=20, 
-    θ₀=1/6, 
-    center=(sys.Lx÷2, sys.Ly÷2), 
-    θₛ=fill(1/9, sys.Lx, sys.Ly), 
-    fx=0.0, 
-    fy=0.0, 
-    verbos=true, 
-    T=Float64
-)
+function run_dropletforced(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), fx=0.0, fy=0.0, verbos=true)
     bodyforce = zeros(2)
     bodyforce[1] = fx
     bodyforce[2] = fy
@@ -454,231 +451,64 @@ function run_dropletforced(
     Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state)
     println("Starting the lattice Boltzmann time loop")
-    time_loop(sys, state, Swalbe.inclination!, area, verbose=verbos)
+    time_loop(sys, state, Swalbe.inclination!, bodyforce, verbose=verbos)
 
     return state.height, state.velx, state.vely
     
 end
 # 1D case
-function run_dropletforced(
-    sys::SysConst_1D; 
-    radius=20, 
-    θ₀=1/6, 
-    center=(sys.L÷2), 
-    θₛ=fill(1/9, sys.L), 
-    f=0.0, 
-    verbos=true, 
-    T=Float64
-)
+function run_dropletforced(sys::SysConst_1D; radius=20, θ₀=1/6, center=(sys.L÷2), θₛ=fill(1/9, sys.L), f=0.0, verbos=true)
+    bodyforce = zeros(1)
+    bodyforce[1] = f
     println("Simulating a sliding droplet in one dimension")
-    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
-    
-    Swalbe.singledroplet(height, radius, θ₀, center)
-    
-    Swalbe.equilibrium!(feq, height, vel)
-    ftemp .= feq
+    state = Swalbe.Sys(sys)
+    Swalbe.singledroplet(state.height, radius, θ₀, center)
+    Swalbe.equilibrium!(state)
     println("Starting the lattice Boltzmann time loop")
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            maxU = maximum(abs.(vel))
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3)) and max vel ($maxU)")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇p, pressure, dgrad, height)
-        Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        # Here we a force that is like pull of an inclined plane
-        F .= h∇p .+ slip .+ f .* height 
-        Swalbe.equilibrium!(feq, height, vel)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-        Swalbe.moments!(height, vel, fout)
-    end
-    return height, vel
+    time_loop(sys, state, Swalbe.inclination!, bodyforce, verbose=verbos)
+    return state.height, state.vel
 
 end
 
-# """
-#     run_fluctuating_thin_film()
-
-
-# """
-# function run_fluctuating_thin_film(
-#     sys::SysConst, 
-#     device::String;
-#     h₀=1,
-#     ϵ=0.001, 
+# Fix me: 15.11 does not exactly what it should do, see drop_coal notebook.
+# function run_drop_coal(
+#     sys::Swalbe.SysConst_1D;
+#     r₁=115,
+#     r₂=115, 
 #     θ₀=1/9,  
 #     verbos=true, 
-#     T=Float64
+#     dump = 100, 
+#     fluid=zeros(sys.Tmax÷dump, sys.L),
 # )
-#     println("Simulating a thin film with thermal fluctuations")
-#     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py, tx, ty = Swalbe.Sys(sys, device, true, T)
-#     if device == "CPU"
-#         Swalbe.randinterface!(height, h₀, ϵ)
-#     elseif device == "GPU"
-#         h = zeros(size(height))
-#         Swalbe.randinterface!(h, h₀, ϵ)
-#         height = CUDA.adapt(CuArray, h)
-#     end
-#     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-#     ftemp .= feq
+#     println("Simulating droplet coalecense")
+#     state = Swalbe.Sys(sys)
+#     drop_cent = (sys.L/3, 2*sys.L/3)
+#     state.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+#     Swalbe.equilibrium!(state)
 #     println("Starting the lattice Boltzmann time loop")
 #     for t in 1:sys.Tmax
 #         if t % sys.tdump == 0
 #             mass = 0.0
-#             mass = sum(height)
+#             mass = sum(state.height)
 #             if verbos
-#                 println("Time step $t mass is $(round(mass, digits=3))")
+#                 println("Time step $t bridge height is $(round(state.height[Int(sys.L/2)], digits=3))")
 #             end
 #         end
-#         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
-#         Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-#         Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-#         Swalbe.thermal!(tx, ty, height, sys.kbt, sys.μ, sys.δ)
+#         # Film pressure with rho field
+#         Swalbe.filmpressure!(state, sys)
+#         Swalbe.h∇p!(state)
+#         Swalbe.slippage!(state, sys)
+#         # Swalbe.thermal!(thermal, height, sys.kbt, sys.μ, sys.δ)
 #         # Here we a force that is like pull of an inclined plane
-#         Fx .= h∇px .+ slipx .+ tx 
-#         Fy .= h∇py .+ slipy .+ ty
-#         Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-#         Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-#         Swalbe.moments!(height, velx, vely, fout)
+#         state.F .= -state.h∇p .- state.slip # .+ thermal 
+#         Swalbe.equilibrium!(state)
+#         Swalbe.BGKandStream!(state)
+#         Swalbe.moments!(state)
+#         # Make a snaphot of the configuration
+#         Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
 #     end
-#     return height, velx, vely
-#     #= Works on the GPU =)
-#        sys = Swalbe.SysConst(Lx=512, Ly=512, Tmax=50000, δ=2.0)
-#        h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
-#     =#
-# end
-
-# function run_fluctuating_thin_film(
-#     sys::SysConst_1D;
-#     h₀=1,
-#     ϵ=0.001, 
-#     θ₀=1/9,  
-#     verbos=true, 
-#     T=Float64
-# )
-#     println("Simulating a thin film with thermal fluctuations")
-#     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p, fluc = Swalbe.Sys(sys, true, T)
-#     Swalbe.randinterface!(height, h₀, ϵ)
+#     return fluid
     
-#     Swalbe.equilibrium!(feq, height, vel)
-#     ftemp .= feq
-#     println("Starting the lattice Boltzmann time loop")
-#     for t in 1:sys.Tmax
-#         if t % sys.tdump == 0
-#             mass = 0.0
-#             mass = sum(height)
-#             if verbos
-#                 println("Time step $t mass is $(round(mass, digits=3))")
-#             end
-#         end
-#         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
-#         Swalbe.∇f!(h∇p, pressure, dgrad, height)
-#         Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-#         Swalbe.thermal!(fluc, height, sys.kbt, sys.μ, sys.δ)
-#         # Here we a force that is like pull of an inclined plane
-#         F .= h∇p .+ slip .+ fluc 
-#         Swalbe.equilibrium!(feq, height, vel)
-#         Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-#         Swalbe.moments!(height, vel, fout)
-#     end
-#     return height, vel
-#     #= Works on the GPU =)
-#        sys = Swalbe.SysConst(Lx=512, Ly=512, Tmax=50000, δ=2.0)
-#        h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
-#     =#
-# end
-
-# function run_no_fluctuating_thin_film(
-#     sys::SysConst, 
-#     device::String;
-#     h₀=1,
-#     ϵ=0.001, 
-#     θ₀=1/9,  
-#     verbos=true, 
-#     T=Float64
-# )
-#     println("Simulating a thin film with thermal fluctuations")
-#     fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
-#     if device == "CPU"
-#         Swalbe.randinterface!(height, h₀, ϵ)
-#     elseif device == "GPU"
-#         h = zeros(size(height))
-#         Swalbe.randinterface!(h, h₀, ϵ)
-#         height = CUDA.adapt(CuArray, h)
-#     end
-#     Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-#     ftemp .= feq
-#     println("Starting the lattice Boltzmann time loop")
-#     for t in 1:sys.Tmax
-#         if t % sys.tdump == 0
-#             mass = 0.0
-#             mass = sum(height)
-#             if verbos
-#                 println("Time step $t mass is $(round(mass, digits=3))")
-#             end
-#         end
-#         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
-#         Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-#         Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-#         # Swalbe.thermal!(tx, ty, height, sys.kbt, sys.μ, sys.δ)
-#         # Here we a force that is like pull of an inclined plane
-#         Fx .= h∇px .+ slipx # .+ tx 
-#         Fy .= h∇py .+ slipy # .+ ty
-#         Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-#         Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-#         Swalbe.moments!(height, velx, vely, fout)
-#     end
-#     return height, velx, vely
-#     #= Works on the GPU =)
-#        sys = Swalbe.SysConst(Lx=512, Ly=512, Tmax=50000, δ=2.0)
-#        h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
-#     =#
-# end
-
-# function run_no_fluctuating_thin_film(
-#     sys::SysConst_1D;
-#     h₀=1,
-#     ϵ=0.001, 
-#     θ₀=1/9,  
-#     verbos=true, 
-#     T=Float64
-# )
-#     println("Simulating a thin film with thermal fluctuations")
-#     fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p = Swalbe.Sys(sys, false, T)
-    
-#     Swalbe.randinterface!(height, h₀, ϵ)
-    
-#     Swalbe.equilibrium!(feq, height, vel)
-#     ftemp .= feq
-#     println("Starting the lattice Boltzmann time loop")
-#     for t in 1:sys.Tmax
-#         if t % sys.tdump == 0
-#             mass = 0.0
-#             mass = sum(height)
-#             if verbos
-#                 println("Time step $t mass is $(round(mass, digits=3))")
-#             end
-#         end
-#         Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
-#         Swalbe.∇f!(h∇p, pressure, dgrad, height)
-#         Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        
-#         # Here we a force that is like pull of an inclined plane
-#         F .= h∇p .+ slip # .+ tx 
-        
-#         Swalbe.equilibrium!(feq, height, vel)
-#         Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-#         Swalbe.moments!(height, vel, fout)
-#     end
-#     return height, vel
-#     #= Works on the GPU =)
-#        sys = Swalbe.SysConst(Lx=512, Ly=512, Tmax=50000, δ=2.0)
-#        h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
-#     =#
 # end
 
 # function run_active_thin_film(

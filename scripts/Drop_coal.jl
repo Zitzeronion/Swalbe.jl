@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.0
+# v0.17.1
 
 using Markdown
 using InteractiveUtils
@@ -308,6 +308,7 @@ p2 = plot(time_norm,
 	      w = 3, 							# line width
 		  alpha=0.6,
 	      ylims=(2e-4, 2e-1),
+		  xticks=([0.001, 0.01, 0.1, 1, 10], ["10⁻³", "10⁻²", "10⁻¹", "1", "10"]),
 		  st = :samplemarkers, 				# some recipy stuff
 		  step = 1000, 						# density of markers
 		  marker = (8, :auto, 0.6),			# marker size 
@@ -322,6 +323,14 @@ p2 = plot(time_norm,
 begin
 	l = @layout[a{0.6h}; b c]
 	all_p = plot(p01, p1, p2, layout = l)
+end
+
+# ╔═╡ 18b6a427-1bfa-4a9a-b7be-ae4438ae8ac2
+begin
+	there = collect(1e-5:1e-5:10)
+	plot(p2)
+	plot!(there, 0.024 .* there.^(2/3), c=:black, w=4, l=:dash, label="t^(2/3)")
+	xlims!(1e-4, 100)
 end
 
 # ╔═╡ 66461659-672f-42ce-94f0-7f800bbfc2f6
@@ -1569,6 +1578,7 @@ version = "0.9.1+5"
 # ╠═0db816bf-9dc2-43f3-a315-887c9ca68ff4
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
+# ╠═18b6a427-1bfa-4a9a-b7be-ae4438ae8ac2
 # ╠═66461659-672f-42ce-94f0-7f800bbfc2f6
 # ╠═0373e918-ab80-4fae-830d-eec3d6cf270e
 # ╠═22c9a3e8-687b-4023-ba9d-805e3a72dbcd
