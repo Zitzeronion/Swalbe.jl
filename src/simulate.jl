@@ -92,12 +92,12 @@ function time_loop(sys::SysConst, state::State, f::Function, measure::Vector; ve
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        f(measure, state)
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.Fx .= -state.h∇px .- state.slipx
         state.Fy .= -state.h∇py .- state.slipy
+        f(measure, state)
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
@@ -200,11 +200,11 @@ function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure::Vect
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        f(measure, state)
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.F .= -state.h∇p .- state.slip
+        f(measure, state)
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
@@ -446,43 +446,18 @@ function run_dropletforced(
     verbos=true, 
     T=Float64
 )
+    bodyforce = zeros(2)
+    bodyforce[1] = fx
+    bodyforce[2] = fy
     println("Simulating a sliding droplet in two dimensions")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
-    if device == "CPU"
-        Swalbe.singledroplet(height, radius, θ₀, center)
-    elseif device == "GPU"
-        h = zeros(size(height))
-        Swalbe.singledroplet(h, radius, θ₀, center)
-        height = CUDA.adapt(CuArray, h)
-    end
-    Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-    ftemp .= feq
+    state = Swalbe.Sys(sys, device)
+    Swalbe.singledroplet(state.height, radius, θ₀, center)
+    Swalbe.equilibrium!(state)
     println("Starting the lattice Boltzmann time loop")
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
-            mass = 0.0
-            mass = sum(height)
-            maxU = maximum(abs.(velx))
-            maxV = maximum(abs.(vely))
-            if verbos
-                println("Time step $t mass is $(round(mass, digits=3)) and max vel ($maxU $maxV)")
-            end
-        end
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
-        # Here we a force that is like pull of an inclined plane
-        Fx .= h∇px .+ slipx .+ fx .* height 
-        Fy .= h∇py .+ slipy .+ fy .* height
-        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
-        Swalbe.moments!(height, velx, vely, fout)
-    end
-    return height, velx, vely
-    #= Works on the GPU =)
-       sys = Swalbe.SysConst(Lx=512, Ly=512, Tmax=50000, δ=2.0)
-       h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
-    =#
+    time_loop(sys, state, Swalbe.inclination!, area, verbose=verbos)
+
+    return state.height, state.velx, state.vely
+    
 end
 # 1D case
 function run_dropletforced(
@@ -522,10 +497,7 @@ function run_dropletforced(
         Swalbe.moments!(height, vel, fout)
     end
     return height, vel
-    #= Works on the GPU =)
-       sys = Swalbe.SysConst(Lx=512, Ly=512, Tmax=50000, δ=2.0)
-       h = Swalbe.run_dropletforced(sys, "GPU", radius=50, θₛ=CUDA.fill(1/9, sys.Lx, sys.Ly), fx=-0.0001f0)
-    =#
+
 end
 
 # """

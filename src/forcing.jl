@@ -224,6 +224,23 @@ function thermal!(fluc, height, kᵦT, μ, δ)
 end
 
 """
+   inclination!(state)
+
+Force that mimics the effect of an inclined plate.
+"""
+function inclination!(state::State, α=zeros(2); t=1000, tstart=0, tsmooth=1)
+    state.Fx .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+    state.Fy .+= state.height .* α[2] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+
+    return nothing
+end
+
+function inclination!(state::State_1D; t=0, tstart=0, tsmooth=1, α=zeros(1))
+    state.F .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+
+    return nothing
+end
+"""
     update_rho()
 
 Time evolution of the `active` field rho.
