@@ -333,41 +333,8 @@ begin
 	xlims!(1e-4, 100)
 end
 
-# ╔═╡ 66461659-672f-42ce-94f0-7f800bbfc2f6
-begin
-	if os
-		savefig(all_p, "Poster_figures/Drop_merge.svg")		
-	else
-		savefig(all_p, "Poster_figures\\Drop_merge.svg")
-	end
-end
-
-# ╔═╡ 0373e918-ab80-4fae-830d-eec3d6cf270e
-begin
-	if os
-		savefig(p01, "Poster_figures/drop_vis.svg")		
-	else
-		savefig(p01, "Poster_figures\\drop_vis.svg")
-	end
-end
-
-# ╔═╡ 22c9a3e8-687b-4023-ba9d-805e3a72dbcd
-begin
-	if os
-		savefig(p1, "Poster_figures/Merge_lbmdim.svg")		
-	else
-		savefig(p1, "Poster_figures\\Merge_lbmdim.svg")
-	end
-end
-
-# ╔═╡ 0110588e-fafa-467a-b677-c64bedb4a6d9
-begin
-	if os
-		savefig(p2, "Poster_figures/Merge_nondim.svg")		
-	else
-		savefig(p2, "Poster_figures\\Merge_nondim.svg")
-	end
-end
+# ╔═╡ 9910639f-8dc3-49ad-bfa8-b2543e48b3df
+md"The last plot states that the merge is happening in the viscous regime."
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1579,9 +1546,6 @@ version = "0.9.1+5"
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
 # ╠═18b6a427-1bfa-4a9a-b7be-ae4438ae8ac2
-# ╠═66461659-672f-42ce-94f0-7f800bbfc2f6
-# ╠═0373e918-ab80-4fae-830d-eec3d6cf270e
-# ╠═22c9a3e8-687b-4023-ba9d-805e3a72dbcd
-# ╠═0110588e-fafa-467a-b677-c64bedb4a6d9
+# ╠═9910639f-8dc3-49ad-bfa8-b2543e48b3df
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
