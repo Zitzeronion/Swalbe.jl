@@ -1,6 +1,5 @@
 using Swalbe, Plots
 
-
 """
     run_drop_coal()
 

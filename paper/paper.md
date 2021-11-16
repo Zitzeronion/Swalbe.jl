@@ -117,7 +117,7 @@ Especially concerning the Navier-Stokes solvers one uses a *sledge hammer to cra
 
 # Workflow
 
-The usage of `Swalbe.jl` is best show given a simple physical example.
+The usage of `Swalbe.jl` is best show given a simple example.
 A long studied problem is the coalescence of two sessile droplets [@eggers1999coalescence; @PhysRevLett.111.144502; @PhysRevLett.109.184502; @PhysRevLett.95.164503].
 Assuming radial symmetry the problem can be studied using the one dimensional thin film equation.
 

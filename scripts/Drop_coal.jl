@@ -327,9 +327,10 @@ end
 
 # ╔═╡ 18b6a427-1bfa-4a9a-b7be-ae4438ae8ac2
 begin
+	exponent = 2/3
 	there = collect(1e-5:1e-5:10)
 	plot(p2)
-	plot!(there, 0.024 .* there.^(2/3), c=:black, w=4, l=:dash, label="t^(2/3)")
+	plot!(there, 0.023 .* there.^(exponent), c=:black, w=4, l=:dash, label="t^(2/3)")
 	xlims!(1e-4, 100)
 end
 
