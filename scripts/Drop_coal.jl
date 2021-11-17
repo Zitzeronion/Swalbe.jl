@@ -220,7 +220,7 @@ begin
 	lf = 8
 	p01 = plot(p0)
 	plot!(x_ ,data_merge[1000,:,1], w=3, alpha=0.6, label="t=1000Δt")
-	plot!(x_ ,data_merge[5000,:,1], w=3, alpha=0.6, label="t=7000Δt")
+	plot!(x_ ,data_merge[5000,:,1], w=3, alpha=0.6, label="t=5000Δt")
 	plot!(x_ ,data_merge[15000,:,1], w=3, alpha=0.6, label="t=15000Δt",
 		  xlims=(150,1024),
 		  # legend=:bottomright,
@@ -251,7 +251,8 @@ Especially the bridge height should likely collapse to a single curve upon resca
 
 $$t_c = \sqrt{\frac{\rho R^3}{\gamma}},$$
 
-which is the initio-capillary time scale.
+where $R$ is the radius of the sphere from which the spherical cap has been cut, $\gamma$ is the surface tension and $\rho$ the density.
+$t_c$ can also be addressed as the initio-capillary time scale.
 "
 
 # ╔═╡ b32505e2-5fc8-48d1-8381-8050a8d292b5
@@ -263,6 +264,20 @@ Computes the viscous time.
 function τν(γ; R=500, η=1/6)
 	time_c = 0.0
 	time_c = R*η/γ
+	return time_c
+end
+
+# ╔═╡ dd528c10-3a8f-4274-88b5-b70acc5cda59
+function τνtrue(γ; R=1, η=1/6)
+	time_c = 0.0
+	time_c = R*η^3/(γ^2*(π/9)^2)
+	return time_c
+end
+
+# ╔═╡ ca52e4dd-47c3-495f-9569-12b521637bbb
+function τνcap(γ; R=500, η=1)
+	time_c = 0.0
+	time_c = sqrt(R^3*η/γ)
 	return time_c
 end
 
@@ -299,8 +314,18 @@ begin
 	end
 end
 
+# ╔═╡ 7169f761-fab8-4224-984e-9ee360e72563
+begin
+	# Normalize the simulation time step with the viscous time
+	time_norm2 = zeros(length(time_lbm), length(γs))
+	for i in enumerate(γs)
+		time_norm2[:, i[1]] .= time_lbm ./ τνcap(i[2])
+	end
+end
+
 # ╔═╡ 23fd2d46-22c8-4dae-8437-d3fd4628f6c3
-p2 = plot(time_norm, 
+begin
+	p2 = plot(time_norm2, 
 	      bridges ./ sphere_rad, 
 	      xlabel="t/τ", 
 	      ylabel="h₀/R₀", 
@@ -308,7 +333,7 @@ p2 = plot(time_norm,
 	      w = 3, 							# line width
 		  alpha=0.6,
 	      ylims=(2e-4, 2e-1),
-		  xticks=([0.001, 0.01, 0.1, 1, 10], ["10⁻³", "10⁻²", "10⁻¹", "1", "10"]),
+		  xticks=([0.001, 0.1, 10], ["10⁻³", "10⁻¹", "10"]),
 		  st = :samplemarkers, 				# some recipy stuff
 		  step = 1000, 						# density of markers
 		  marker = (8, :auto, 0.6),			# marker size 
@@ -318,24 +343,16 @@ p2 = plot(time_norm,
 	      axis=:log, 
 		  grid=:none,
 	      legend=:topleft)
+	exponent = 2/3
+	there = collect(1e-5:1e-5:10)
+	plot!(there, 0.023 .* there.^(exponent), c=:black, w=4, l=:dash, label="t^(2/3)")
+end
 
 # ╔═╡ 88f037e3-1ec3-4360-84d3-a6c496731c6c
 begin
 	l = @layout[a{0.6h}; b c]
 	all_p = plot(p01, p1, p2, layout = l)
 end
-
-# ╔═╡ 18b6a427-1bfa-4a9a-b7be-ae4438ae8ac2
-begin
-	exponent = 2/3
-	there = collect(1e-5:1e-5:10)
-	plot(p2)
-	plot!(there, 0.023 .* there.^(exponent), c=:black, w=4, l=:dash, label="t^(2/3)")
-	xlims!(1e-4, 100)
-end
-
-# ╔═╡ 9910639f-8dc3-49ad-bfa8-b2543e48b3df
-md"The last plot states that the merge is happening in the viscous regime."
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1542,11 +1559,12 @@ version = "0.9.1+5"
 # ╠═ddcf4747-a3d5-4eaf-8614-c620f37724fc
 # ╠═f7db6fb5-eaa0-4954-8730-89647cc73629
 # ╠═b32505e2-5fc8-48d1-8381-8050a8d292b5
+# ╠═dd528c10-3a8f-4274-88b5-b70acc5cda59
+# ╠═ca52e4dd-47c3-495f-9569-12b521637bbb
 # ╠═842006de-fb79-41be-8af1-459cb7bdde2e
 # ╠═0db816bf-9dc2-43f3-a315-887c9ca68ff4
+# ╠═7169f761-fab8-4224-984e-9ee360e72563
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
-# ╠═18b6a427-1bfa-4a9a-b7be-ae4438ae8ac2
-# ╠═9910639f-8dc3-49ad-bfa8-b2543e48b3df
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
