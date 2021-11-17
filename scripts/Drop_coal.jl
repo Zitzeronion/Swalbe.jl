@@ -213,10 +213,11 @@ It is the data of the run with γ=0.0001."
 
 # ╔═╡ 056f47ed-2be2-4937-aa0c-6a9e353cfa92
 # Data containing the γ=0.0001 simulation
-data_merge[:,:,1]
+data_merge[:,:,1] 
 
 # ╔═╡ f5112422-d08a-4566-9ba7-ee3eed12cc9c
 begin
+	# Time evolution for a single surface tension
 	lf = 8
 	p01 = plot(p0)
 	plot!(x_ ,data_merge[1000,:,1], w=3, alpha=0.6, label="t=1000Δt")
@@ -267,20 +268,6 @@ function τν(γ; R=500, η=1/6)
 	return time_c
 end
 
-# ╔═╡ dd528c10-3a8f-4274-88b5-b70acc5cda59
-function τνtrue(γ; R=1, η=1/6)
-	time_c = 0.0
-	time_c = R*η^3/(γ^2*(π/9)^2)
-	return time_c
-end
-
-# ╔═╡ ca52e4dd-47c3-495f-9569-12b521637bbb
-function τνcap(γ; R=500, η=1)
-	time_c = 0.0
-	time_c = sqrt(R^3*η/γ)
-	return time_c
-end
-
 # ╔═╡ 842006de-fb79-41be-8af1-459cb7bdde2e
 begin
 	γ_h = [0.0001, 0.0005, 0.001, 0.005]
@@ -314,18 +301,9 @@ begin
 	end
 end
 
-# ╔═╡ 7169f761-fab8-4224-984e-9ee360e72563
-begin
-	# Normalize the simulation time step with the viscous time
-	time_norm2 = zeros(length(time_lbm), length(γs))
-	for i in enumerate(γs)
-		time_norm2[:, i[1]] .= time_lbm ./ τνcap(i[2])
-	end
-end
-
 # ╔═╡ 23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 begin
-	p2 = plot(time_norm2, 
+	p2 = plot(time_norm, 
 	      bridges ./ sphere_rad, 
 	      xlabel="t/τ", 
 	      ylabel="h₀/R₀", 
@@ -1559,11 +1537,8 @@ version = "0.9.1+5"
 # ╠═ddcf4747-a3d5-4eaf-8614-c620f37724fc
 # ╠═f7db6fb5-eaa0-4954-8730-89647cc73629
 # ╠═b32505e2-5fc8-48d1-8381-8050a8d292b5
-# ╠═dd528c10-3a8f-4274-88b5-b70acc5cda59
-# ╠═ca52e4dd-47c3-495f-9569-12b521637bbb
 # ╠═842006de-fb79-41be-8af1-459cb7bdde2e
 # ╠═0db816bf-9dc2-43f3-a315-887c9ca68ff4
-# ╠═7169f761-fab8-4224-984e-9ee360e72563
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
 # ╟─00000000-0000-0000-0000-000000000001
