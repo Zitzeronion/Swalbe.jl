@@ -115,14 +115,24 @@ With the exclusion of **ThinViscoelasticFilms** every above mentioned project ha
 However due to this generality it can become quite complex to set up a simulation for a thin film problem.
 Especially concerning the Navier-Stokes solvers one uses a *sledge hammer to crack a nut*.
 
-# Workflow
+# Use Case
 
-The usage of `Swalbe.jl` is best show given a simple physical example.
-A long studied problem is the coalescence of two sessile droplets [@eggers1999coalescence; @PhysRevLett.111.144502; @PhysRevLett.109.184502; @PhysRevLett.95.164503].
-Assuming radial symmetry the problem can be studied using the one dimensional thin film equation.
+One interesting problem is the coalescence of liquid droplets, see references [@eggers1999coalescence; @PhysRevLett.111.144502; @PhysRevLett.109.184502; @PhysRevLett.95.164503].
+The underlying idea is that two droplets close to each other will coalesce into a single one to minimize surface area and therefore energy.
+The dynamics of this process can usually be explained using a self-similarity solution of the thin film equation.
+Recently Hack et al. [@PhysRevLett.124.194502] have shown that this self-similarity solutions can also be observed in the coalesence of liquid lenses.
+Liquid lenses are droplets of a fluid that is placed on the interface of another fluid, similar oil drops on a water surface.
+Assuming a large affinity between the liquids, i.e. small contact angles, the problem can be treated with an approach fairly similar to the thin film eqaution.
+Let us now try to recreat this experiments with `Swalbe.j`.
+Doing so we make two assumptions, first being that the lenses are symmetric in the z-axis, around their centers.
+Second since two liquids are in contact with each other the force due to substrate friction should vanish, meaning the slip length should $\approx\infty$.
 
-The workflow is then as follows:
-The easiest approach is to write a function that contains the fluid dynamic solver with the addition of the performed measurements.
+This experiment has been performed using the *Pluto* notebook [Drop_coal.jl](https://gitlab-public.fz-juelich.de/compflu/swalbe.jl/-/blob/Datastructs_n_runfunctions-/scripts/Drop_coal.jl).
+
+
+![Coalesence of liquid lenses in the low viscosity regime. The upper panel shows the time evolution for a single experiment (lowest surface tension). In the lower left panel we plot the evolution of the bridge height for all surface tension values. To the right we normalize the data with characteristic quantities and show that the bridge height grows as $\propto t^{2/3}$. \label{fig:coalesence}](drop_coal.png)
+
+
 
 # Acknowledgements
 

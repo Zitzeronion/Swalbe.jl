@@ -28,11 +28,15 @@
     @testset "No height gradient" begin
         nograd = ones(5,5)
         state.height .= 1.0
-        sys2 = Swalbe.SysConst(Lx=5, Ly=5, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0)
+        sys2 = Swalbe.SysConst(Lx=5, Ly=5, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2)
         Swalbe.filmpressure!(res, nograd, 1.0, 1/2, 3, 2, 0.1, 0.0)
         Swalbe.filmpressure!(state, sys2, 1/2)
         for i in eachindex(res)
             @test res[i] .≈ -2(0.1^2-0.1) atol=1e-10
+            @test state.pressure[i] .≈ -2(0.1^2-0.1) atol=1e-10
+        end
+        Swalbe.filmpressure!(state, sys2)
+        for i in eachindex(res)
             @test state.pressure[i] .≈ -2(0.1^2-0.1) atol=1e-10
         end
     end
@@ -88,7 +92,7 @@ end
     sys = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.1)
     state = Swalbe.Sys(sys)
     state.height .= collect(1.0:30)
-    sys2 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0)
+    sys2 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2)
     state2 = Swalbe.Sys(sys2)
     # Without the struct
     f = collect(1.0:30)
@@ -123,6 +127,10 @@ end
         for i in eachindex(res)
             # Now the result comprisses of two components the disjoining potential and the laplace term.
             @test res[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+            @test state.pressure[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
+        end
+        Swalbe.filmpressure!(state2, sys2)
+        for i in eachindex(res)
             @test state.pressure[i] .≈ -1(sol[i] + 20((0.1/f[i])^3-(0.1/f[i])^2)) atol=1e-10
         end
     end

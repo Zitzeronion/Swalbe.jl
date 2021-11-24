@@ -65,6 +65,46 @@ end
     h∇p!(state)
 
 Computation of the pressure gradient multiplied with the height.
+
+# Mathematics
+
+The pressure gradient (``\\nabla p``) is **the** driving force of the standard thin film equation `` \\partial_t h = (M(h)\\nabla p)``.
+Our approach however does not solve the thin film equation directly,
+Instead we have to add the pressure gradient as a force which is given as
+
+`` F_{film} = -\\frac{1}{\\rho_0} h \\nabla p_{film}, ``
+
+where the term ``p_{film}`` describes the film pressure 
+
+`` p_{film} = -\\gamma [\\Delta h - \\Pi(h)] .``
+
+As such it is the combination of a laplacian term that minimizes the surface area as well as a interfacial potential between substrate and fluid.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10), "CPU");
+
+julia> state.pressure .= reshape(collect(1:100),10,10);
+
+julia> Swalbe.h∇p!(state)
+
+julia> @test all(state.h∇px[1,:] .== -4.0) # at boundary
+Test Passed
+
+julia> @test all(state.h∇px[2,:] .== 1.0) # inside
+Test Passed
+
+```
+
+# References
+
+- [Zitz, Scagliarini and Harting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
+- [Craster, Matar](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.81.1131)
+- [Oron, Davis and Bankoff](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.69.931)
+
+See also: [`Swalbe.filmpressure!`](@ref)
 """
 function h∇p!(state::State)
     fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
@@ -113,7 +153,24 @@ Computations of force due to thermal fluctuations.
 
 # Mathematics
 
-TBD
+The classical thin film equation is an equation without thermal noise which is defined as
+
+``\\partial_t h = \\nabla\\cdot(M(h)\\nabla p).``
+
+Classically thermal excitations are neglected for thin film flows.
+It is of course possible to introduce for example an envolving surface tension or viscosity but both do not account for e.g. the spectrum of thermal capillary waves.
+The reason for this short coming is the complex from the thin film equation takes if derived from the Landau-Lifshitz Navier-Stokes equation.
+One addition term due to the stochastic stress tensor makes it somewhat impossible to solve the eqaution self-consistently.
+However Grün et al. showed that it is not nessary to use the full stochastic stress tensor, but simple a multiplicative noise term
+
+``\\partial_t h = \\nabla\\cdot[M(h)(\\nabla p + \\sigma \\mathcal{N}], ``
+
+where ``\\sigma`` and ``\\mathcal{N}`` are a dimensionless temperture and a gaussian white noise.
+Similar to the pressure gradient the addition of this term is introduced as force in our model
+
+`` F_{fluc} = \\frac{1}{\\rho_0}\\sqrt{2k_BT\\mu\\alpha_{\\delta}(h)}\\mathcal{N},``
+
+with ``\\alpha_{\\delta}(h)`` being the force generated due to substrate slip. 
 
 # Examples
 ```jldoctest
@@ -140,6 +197,7 @@ Test Passed
 - [Mecke, Rauscher](https://iopscience.iop.org/article/10.1088/0953-8984/17/45/042/meta)
 - [Davidovitch, Moro and Stone](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.95.244505)
 
+See also: [`Swalbe.slippage!`](@ref)
 """ 
 function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     randn!(fluc_x)
@@ -166,9 +224,50 @@ function thermal!(fluc, height, kᵦT, μ, δ)
 end
 
 """
+   inclination!(α, state)
+
+Force that mimics the effect of an inclined plate.
+
+Simple model to add a body force on the fluid that should mimic the effect of an inclined plate.
+The model includes a smoothing `tanh` function to absorb shocks which might occure.
+    
+# Arguments
+
+-`α :: Vector`: Force vector that both hosts direction of the force as well as strength
+-`state::State`: Lattice Boltzmann state of the fluid, here we need the `state.Fx`, `state.Fy` fields
+-`t::Int`: Time step, used for the smoothing `tanh` factor
+-`tstart::Int`: Time delay at which the `tanh` becomes positve
+-`tsmooth::Int`: Time interval over which the `tanh` is smeared
+
+# Mathematics
+
+This body force is simply force strength time the mass of the fluid or even simpler the height (assuming ρ=1).
+Thus the force becomes
+
+`` \\mathbf{F} = \\mathbf{\\alpha} h \\tanh\\bigg(\\frac{t-t_0}{t_s}\\bigg),``
+
+with ``t_0`` being the time lag at which the `tanh` changes sign and ``t_s`` is width of interval between -1 and 1.
+
+See also: [Swalbe.run_dropletforced](@ref)
+"""
+function inclination!(α::Vector, state::State; t=1000, tstart=0, tsmooth=1)
+    state.Fx .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+    state.Fy .+= state.height .* α[2] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+
+    return nothing
+end
+
+function inclination!(α::Vector, state::State_1D; t=1000, tstart=0, tsmooth=1)
+    state.F .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+
+    return nothing
+end
+"""
     update_rho()
 
 Time evolution of the `active` field rho.
+
+TODO: @Tilmann!
 """
 function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
     lap_rho, grad_rho, lap_h, grad_h = view_four(differentials)

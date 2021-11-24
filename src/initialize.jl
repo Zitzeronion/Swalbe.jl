@@ -1,9 +1,31 @@
+abstract type LBM_state end
+
 """
     SysConst{T}
 
 Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
+
+# Arguments
+
+- `Lx :: Int`: Length of the lattice sides in x-direction
+- `Ly :: Int`: Length of the lattice sides in y-direction
+- `Tmax :: Int`: Number of lattice Boltzmann time iterations
+- `tdump :: Int`: Dumping interval for e.g. data output
+- `τ :: T`: BGK relaxation rate 
+- `cₛ :: T`: Lattice speed of sound, every physical velocity needs to be smaller than this! 
+- `μ :: T`: Kinematic fluid viscosity
+- `δ :: T`: Slip length, defines how far the **no-slip** condition is interpolated into the substrate
+- `kbt :: T`: Thermal energy of the film, works with small values ≈ 10^(-7)
+- `γ :: T`: Surface tension
+- `n :: Int`: Greater exponent of the two used for the powerlaw in the disjoining pressure
+- `m :: Int`: Smaller exponent of the two used for the powerlaw in the disjoining pressure
+- `hmin :: T`: Height value at which the disjoining pressure functional vanishes
+- `hcrit :: T`: Numerical stabilizer for the disjoining pressure term
+- `θ :: T`: Contact angle in multiples of π
+- `g :: T`: gravitational acceleration, usually neglected in thin film simulations
+
 """
-@with_kw struct SysConst{T}
+Base.@kwdef struct SysConst{T}
     # Lattice
     Lx :: Int = 256
     Ly :: Int = 256
@@ -21,6 +43,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
     m :: Int = 3
     hmin :: T = 0.1
     hcrit :: T = 0.05
+    θ :: T = 1/9
     g :: T = 0.0
 end
 
@@ -28,8 +51,27 @@ end
     SysConst_1D{T}
 
 Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
+
+# Arguments
+
+- `L :: Int`: Number of lattice points
+- `Tmax :: Int`: Number of lattice Boltzmann time iterations
+- `tdump :: Int`: Dumping interval for e.g. data output
+- `τ :: T`: BGK relaxation rate 
+- `cₛ :: T`: Lattice speed of sound, every physical velocity needs to be smaller than this! 
+- `μ :: T`: Kinematic fluid viscosity
+- `δ :: T`: Slip length, defines how far the **no-slip** condition is interpolated into the substrate
+- `kbt :: T`: Thermal energy of the film, works with small values ≈ 10^(-7)
+- `γ :: T`: Surface tension
+- `n :: Int`: Greater exponent of the two used for the powerlaw in the disjoining pressure
+- `m :: Int`: Smaller exponent of the two used for the powerlaw in the disjoining pressure
+- `hmin :: T`: Height value at which the disjoining pressure functional vanishes
+- `hcrit :: T`: Numerical stabilizer for the disjoining pressure term
+- `θ :: T`: Contact angle in multiples of π
+- `g :: T`: gravitational acceleration, usually neglected in thin film simulations
+
 """
-@with_kw struct SysConst_1D{T}
+Base.@kwdef struct SysConst_1D{T}
     # Lattice
     L :: Int = 256
     Tmax :: Int = 1000
@@ -46,6 +88,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
     m :: Int = 3
     hmin :: T = 0.1
     hcrit :: T = 0.05
+    θ :: T = 1/9
     g :: T = 0.0
 end
 
@@ -53,8 +96,27 @@ end
     State{T, N}
 
 Data structure that stores all arrays for a given simulation.
+
+# Arguments
+
+- `fout :: Array{T,N}`: Output distribution function
+- `ftemp :: Array{T,N}`: Temporary distribution function, only used if `sys.τ ≠ 1`
+- `feq :: Array{T,N}`: Equilibrium distribution function
+- `height :: Matrix{T}`: Field that stores the scalar height values
+- `velx :: Matrix{T}`: Field that stores the x-component of the velocity vector
+- `vely :: Matrix{T}`: Field that stores the y-component of the velocity vector
+- `vsq :: Matrix{T}`: Field that stores the velocity squared, used in `equilibrium!`
+- `pressure :: Matrix{T}`: Pressure distribution computed using the `filmpressure!` function
+- `Fx :: Matrix{T}`: Total force acting on the fluid, x-component
+- `Fy :: Matrix{T}`: Total force acting on the fluid, y-component
+- `slipx :: Matrix{T}`: Friction force due to substrate slip, x-component
+- `slipy :: Matrix{T}`: Friction force due to substrate slip, y-component
+- `h∇px :: Matrix{T}`: Pressure gradient times the height, x-component
+- `h∇py :: Matrix{T}`: Pressure gradient times the height, y-component
+- `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
+
 """
-@with_kw struct State{T, N}
+Base.@kwdef struct State{T, N} <: LBM_state
     # Distribution functions
     fout :: Array{T, N}
     ftemp :: Array{T, N}
@@ -74,13 +136,33 @@ Data structure that stores all arrays for a given simulation.
     h∇py :: Matrix{T} 
     dgrad :: Array{T,N} 
 end
+
 """
     CuState
 
 Data structure that stores all arrays for a given simulation.
 Specific for GPU computing using `CUDA.jl`
+
+# Arguments
+
+- `fout :: Array{T,N}`: Output distribution function
+- `ftemp :: Array{T,N}`: Temporary distribution function, only used if `sys.τ ≠ 1`
+- `feq :: Array{T,N}`: Equilibrium distribution function
+- `height :: Matrix{T}`: Field that stores the scalar height values
+- `velx :: Matrix{T}`: Field that stores the x-component of the velocity vector
+- `vely :: Matrix{T}`: Field that stores the y-component of the velocity vector
+- `vsq :: Matrix{T}`: Field that stores the velocity squared, used in `equilibrium!`
+- `pressure :: Matrix{T}`: Pressure distribution computed using the `filmpressure!` function
+- `Fx :: Matrix{T}`: Total force acting on the fluid, x-component
+- `Fy :: Matrix{T}`: Total force acting on the fluid, y-component
+- `slipx :: Matrix{T}`: Friction force due to substrate slip, x-component
+- `slipy :: Matrix{T}`: Friction force due to substrate slip, y-component
+- `h∇px :: Matrix{T}`: Pressure gradient times the height, x-component
+- `h∇py :: Matrix{T}`: Pressure gradient times the height, y-component
+- `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
+
 """
-struct CuState
+struct CuState <: LBM_state
     # Distribution functions
     fout :: CuArray
     ftemp :: CuArray
@@ -105,8 +187,21 @@ end
     State_1D{T, N}
 
 Data structure that stores all arrays for a given simulation.
+
+# Arguments
+
+- `fout :: Matrix{T}`: Output distribution function
+- `ftemp :: Matrix{T}`: Temporary distribution function, only used if `sys.τ ≠ 1`
+- `feq :: Matrix{T}`: Equilibrium distribution function
+- `height :: Vector{T}`: Field that stores the scalar height values
+- `vel :: Vector{T}`: Field that stores the velocity
+- `pressure :: Vector{T}`: Pressure distribution computed using the `filmpressure!` function
+- `F :: Vector{T}`: Total force acting on the fluid
+- `slip :: Vector{T}`: Friction force due to substrate slip
+- `h∇p :: Vector{T}`: Pressure gradient times the height
+- `dgrad :: Matrix{T}`: Dummy allocation to store shifted arrays using `circshift!`
 """
-@with_kw struct State_1D{T}
+Base.@kwdef struct State_1D{T} <: LBM_state
     # Distribution functions
     fout :: Matrix{T}
     ftemp :: Matrix{T}
@@ -127,6 +222,13 @@ end
     Sys(sysc, device, exotic)
 
 Mostly allocations of arrays used to run a simulation, but all within one function :)
+
+# Arguments
+
+- `sysc :: SysConst`: Needed for the lattice dimensions, `Lx` and `Ly`
+- `device :: String`: Use either `CPU` for computation of a CPU or `GPU` for computation on the GPU 
+- `exotic :: Bool`: If true thermal fluctuations can be computed and saved to the `fthermalx` and `fthermaly` field
+- `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
 """
 function Sys(sysc::SysConst, device::String, exotic::Bool, T)
     if device == "CPU"
@@ -233,6 +335,17 @@ function Sys(sysc::SysConst, device::String; T=Float64)
     end
 end
 
+"""
+    Sys(sysc, exotic, T)
+
+Mostly allocations of arrays used to run a simulation, but all within one function :)
+
+# Arguments
+
+- `sysc :: SysConst_1D`: Needed for the lattice dimensions, `L` 
+- `exotic :: Bool`: If true thermal fluctuations can be computed and saved to the `fthermalx` and `fthermaly` field
+- `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
+"""
 function Sys(sysc::SysConst_1D, exotic::Bool, T)
     # Meso
     fout = zeros(sysc.L, 3)
