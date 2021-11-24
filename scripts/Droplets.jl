@@ -73,6 +73,8 @@ end
 γs = [0.00001, 0.00005, 0.0001, 0.0005]
 # Large array that contains the simulation data
 data_merge = zeros(20000, 1024, length(γs))
+# Drop radii
+sphere_rad = 500.0
 # Loop different surface tension values
 for γ in enumerate(γs)
     sys = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=50.0, γ=γ[2])
