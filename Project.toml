@@ -1,7 +1,7 @@
 name = "Swalbe"
 uuid = "1073fb09-a5e2-4e80-8bde-f3562efda53f"
 authors = ["Zitzeronion <physiknerd@gmail.com>"]
-version = "0.4.0"
+version = "0.3.0"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
