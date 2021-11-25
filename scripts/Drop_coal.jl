@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.1
+# v0.17.2
 
 using Markdown
 using InteractiveUtils
@@ -109,36 +109,31 @@ function run_drop_coal(
     θ₀=1/9,  
     verbos=true, 
     dump = 100, 
-    fluid=zeros(sys.Tmax÷dump, sys.L),
-    T=Float64
+    fluid=zeros(sys.Tmax÷dump, sys.L)
 )
     println("Simulating droplet coalecense")
-    fout, ftemp, feq, height, vel, pressure, dgrad, F, slip, h∇p, thermal = Swalbe.Sys(sys, true, T)
+    state = Swalbe.Sys(sys)
     drop_cent = (sys.L/3, 2*sys.L/3)
-    height .= twodroplets(sys.L, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
-    Swalbe.equilibrium!(feq, height, vel)
-    ftemp .= feq
+    state.height .= twodroplets(sys.L, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+    Swalbe.equilibrium!(state)
     println("Starting the lattice Boltzmann time loop")
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
             mass = 0.0
-            mass = sum(height)
+            mass = sum(state.height)
             if verbos
-                println("Time step $t bridge height is $(round(height[Int(sys.L/2)], digits=3))")
+                println("Time step $t bridge height is $(round(state.height[Int(sys.L/2)], digits=3))")
             end
         end
-        # Film pressure with rho field
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θ₀, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇p, pressure, dgrad, height)
-        Swalbe.slippage!(slip, height, vel, sys.δ, sys.μ)
-        Swalbe.thermal!(thermal, height, sys.kbt, sys.μ, sys.δ)
-        # Here we a force that is like pull of an inclined plane
-        F .= h∇p .+ slip .+ thermal 
-        Swalbe.equilibrium!(feq, height, vel)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -F)
-        Swalbe.moments!(height, vel, fout)
-        # Make a snaphot of the configuration
-        Swalbe.snapshot!(fluid, height, t, dumping = dump)
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.F .= -state.h∇p .- state.slip
+        Swalbe.equilibrium!(state)
+        Swalbe.BGKandStream!(state)
+        Swalbe.moments!(state)
+        
+        Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
     end
 
     return fluid# height, vel, rho
@@ -195,7 +190,7 @@ begin
 	# Sphere radius
 	sphere_rad = 500
 	# Different surface tension values
-	γs = [0.0001, 0.0005, 0.001, 0.005]
+	γs = [0.00008, 0.0003, 0.0006, 0.0008]
 	# Large array that contains the simulation data
 	data_merge = zeros(20000, 1024, length(γs))
 	# Loop different surface tension values
@@ -268,6 +263,18 @@ function τν(γ; R=500, η=1/6)
 	return time_c
 end
 
+# ╔═╡ c951c26d-a3df-4b33-b5a3-6a1972075bcd
+"""
+	tstar(γ, R, η)
+
+Computes some non-dim time.
+"""
+function tstar(γ; R=500, ρ=1, θ=1/9)
+	time_c = 0.0
+	time_c = R^3*ρ*sinpi(θ)^3/γ
+	return time_c
+end
+
 # ╔═╡ 842006de-fb79-41be-8af1-459cb7bdde2e
 begin
 	γ_h = [0.0001, 0.0005, 0.001, 0.005]
@@ -290,6 +297,15 @@ begin
               guidefont = (15),	# label font and size
 			  grid=:none
 	         )
+end
+
+# ╔═╡ 08f3bd99-fcb7-4ef9-be0f-4c205c79df24
+begin
+	# Normalize the simulation time step with the viscous time
+	time_norm2 = zeros(length(time_lbm), length(γs))
+	for i in enumerate(γs)
+		time_norm2[:, i[1]] .= time_lbm ./ tstar(i[2])
+	end
 end
 
 # ╔═╡ 0db816bf-9dc2-43f3-a315-887c9ca68ff4
@@ -340,7 +356,7 @@ Swalbe = "1073fb09-a5e2-4e80-8bde-f3562efda53f"
 
 [compat]
 Plots = "~1.22.6"
-Swalbe = "~0.2.0"
+Swalbe = "~1.0.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -883,9 +899,9 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [[Libffi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "761a393aeccd6aa92ec3515e428c26bf99575b3b"
+git-tree-sha1 = "0b4a5d71f3e5200a7dff793393e09dfc2d874290"
 uuid = "e9f186c6-92d2-5b65-8a66-fee21dc1b490"
-version = "3.2.2+0"
+version = "3.2.2+1"
 
 [[Libgcrypt_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgpg_error_jll", "Pkg"]
@@ -1250,9 +1266,9 @@ version = "0.6.3"
 
 [[Swalbe]]
 deps = ["BSON", "CUDA", "DataFrames", "FileIO", "JLD2", "LazySets", "Parameters", "Random", "Revise", "Statistics"]
-git-tree-sha1 = "b2c462e52e6a2b220c8ccb67d4ce26a59c61a3a3"
+git-tree-sha1 = "b7cc26d63f598239153e748091d524f55b5ab574"
 uuid = "1073fb09-a5e2-4e80-8bde-f3562efda53f"
-version = "0.2.0"
+version = "1.0.0"
 
 [[TOML]]
 deps = ["Dates"]
@@ -1537,7 +1553,9 @@ version = "0.9.1+5"
 # ╠═ddcf4747-a3d5-4eaf-8614-c620f37724fc
 # ╠═f7db6fb5-eaa0-4954-8730-89647cc73629
 # ╠═b32505e2-5fc8-48d1-8381-8050a8d292b5
+# ╠═c951c26d-a3df-4b33-b5a3-6a1972075bcd
 # ╠═842006de-fb79-41be-8af1-459cb7bdde2e
+# ╠═08f3bd99-fcb7-4ef9-be0f-4c205c79df24
 # ╠═0db816bf-9dc2-43f3-a315-887c9ca68ff4
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
