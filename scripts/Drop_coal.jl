@@ -10,18 +10,19 @@ using Plots, Swalbe
 # ╔═╡ 993b8d98-0f13-4ac5-80d8-3ebd1b64f59b
 md"# Droplet coalescence
 
-Simple show case for the dynamics of two coalescing droplets.
-The simulation is performed within the quasi two-dimensional system.
-Everything is contained in the **Swalbe.jl** package.
-However for convenience some further functions are defined below.
+A fairly simple show case is the dynamics of two coalescing sessile droplets.
+The simulation is performed within the quasi two-dimensional (fast prototyping)  system.
+Everything, besides the visualization with **Plots.jl**, is contained in the **Swalbe.jl** package.
+However for convenience we define two more functions.
+The first one contains the simulation, so we can run it with different parameters just by switching input arguments.
+The second one is for data analysis.
 
-## Some functions
+## Experiment and analysis functions
 
 - The fluid dynamics simulation `run_drop_coal()`
-- The initial condition `twodroplets()`
 - Computation of the bridge height `brdige_height()`
 
-For convenience below is the definition of a `recipe` for plots using markers.
+One minor addition, for convenience we use a `recipe` that works quite similar to *matplotlibs* `markevery` function.
 
 "
 
@@ -53,49 +54,6 @@ For convenience below is the definition of a `recipe` for plots using markers.
     y := sy
 end
 
-# ╔═╡ 1a4f65bf-6a0b-4eb3-babf-28a2dd88e90b
-# The function that generates the initial state of the droplets
-function twodroplets(L; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(L/3,2L/3))
-    dum = zeros(L)
-    dum2 = zeros(L)
-    height = zeros(L)
-    # area = 2π * radius^2 * (1- cospi(θ))
-    @inbounds for i in 1:L
-        circ = sqrt((i-center[1])^2)
-        if circ <= r₁
-            dum[i] = (cos(asin(circ/r₁)) - cospi(θ₁)) * r₁
-        else    
-            dum[i] = 0.05
-        end
-    end
-    
-    @inbounds for i in 1:L
-        circ2 = sqrt((i-center[2])^2)
-        if circ2 <= r₂
-            dum2[i] = (cos(asin(circ2/r₂)) - cospi(θ₂)) * r₂
-        else    
-            dum2[i] = 0.05
-        end
-    end
-
-    @inbounds for i in 1:L
-        if dum[i] < 0
-            dum[i] = 0.05
-        end
-        if dum2[i] < 0
-            dum2[i] = 0.05
-        end
-    end
-
-    height .= dum .+ dum2 .- 0.05
-    @inbounds for i in 1:L
-        if height[i] < 0
-            height[i] = 0.05
-        end
-    end
-    return height
-end
-
 # ╔═╡ 301aecbc-a5fc-4cea-8a1e-7ca130377e93
 """
     run_drop_coal()
@@ -114,7 +72,7 @@ function run_drop_coal(
     println("Simulating droplet coalecense")
     state = Swalbe.Sys(sys)
     drop_cent = (sys.L/3, 2*sys.L/3)
-    state.height .= twodroplets(sys.L, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+    state.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
     Swalbe.equilibrium!(state)
     println("Starting the lattice Boltzmann time loop")
     for t in 1:sys.Tmax
@@ -136,12 +94,16 @@ function run_drop_coal(
         Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
     end
 
-    return fluid# height, vel, rho
+    return fluid
     
 end
 
 # ╔═╡ 518b7204-1301-4a54-8332-ead4f8619cb0
-# function that collects the height of the bridige and returns it as a list
+"""
+	bridge_height()
+
+Function that tracks the height or thickness at single well defined lattice point.
+"""
 function bridge_height(data; t1=100, t_dur=size(data)[1], pos=size(data)[2]÷2)
     bridge_h = []
     for i in 1:t_dur
@@ -164,26 +126,31 @@ end
 # ╔═╡ b417f463-46e5-421d-8d3b-974532274c3d
 md"## Initial condition
 
-The plot below describes the initial condition of our simulation.
-Two droplets that are barely touching with an contact angle of 30 degrees.
+The plot below describes the initial condition of our numerical experiment.
+Two droplets that are barely touching with an contact angle θ of 20° (or π/9).
 
-Due to surface tension we expect that these two droplets will merge into a single one.
-A single droplet does have less surface area than two smaller ones."
+Due to surface tension (γ) we expect that these two droplets will coalesce into a single one.
+That is because a single droplet does have less surface area than two smaller ones and therefore it is an energetically favorable state."
 
 # ╔═╡ 31fb4367-50e9-46d9-ad41-e0fc309549b4
 begin
+	# The initial configuration of the numerical experiment
 	rad = 500
-	h = twodroplets(1024, r₁=rad, r₂=rad)
+	h = Swalbe.two_droplets(Swalbe.SysConst_1D(L=1024), r₁=rad, r₂=rad)
 	x_ = 1:1024
 	p0 = plot(x_ , h, w=3, aspect_ratio=7, label="Initial conf.", xlabel="x [Δx]", ylabel="h(x)")
 	ylims!(0,40)
 end
 
 # ╔═╡ 684e5cd8-aeae-411b-81e1-342df09d1bd8
-md"## Simulation
+md"## Experiment
 
-We start the simulation simply by calling the function that we wrote above `run_drop_coal()`.
-The data will be saved to an array the contains n-time steps and the whole height field."
+We start the numerical experiment or simulation by simply calling the function that we defined before: `run_drop_coal()`.
+
+The data will be saved to an array the contains n-time steps and the whole height field.
+Something that is only possible with numerical simulations is to change parameters at will.
+We do this by changing the surface tension γ of our test liquid.
+Of course changing the contact angle θ or the kinematic viscosity ν would as well be possible."
 
 # ╔═╡ 5f2202d7-f217-4fec-8669-b34bfcbf5008
 begin
@@ -191,24 +158,40 @@ begin
 	sphere_rad = 500
 	# Different surface tension values
 	γs = [0.00008, 0.0003, 0.0006, 0.0008]
-	# Large array that contains the simulation data
+	# Array that contains the simulation data
 	data_merge = zeros(20000, 1024, length(γs))
 	# Loop different surface tension values
 	for γ in enumerate(γs)
+		# System parameter, δ=50 can still considered small to medium slippage
 		sys = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=50.0, γ=γ[2])
+		# The experiment
 		data_merge[:,:,γ[1]] = run_drop_coal(sys, r₁=sphere_rad, r₂=sphere_rad)
 	end
 end
 
 # ╔═╡ 03a2f622-202a-4847-bf20-2a072eb9f592
-md"### Output
+md"### Data
 
-Here is an example of the output that was generated during the simulation.
-It is the data of the run with γ=0.0001."
+Below is an example of the data that was generated during the simulation.
+We saved all `Tmax` time steps of all `L` lattice points in `data_merge[:,:,γ]` where we can specifying the desired `γ` value in the last column of the array.
+Displayed is the data of the run with γ=0.00008, or simply the first run.
+
+Here a short word of caution.
+[The lattice Boltzmann method](https://link.springer.com/book/10.1007/978-3-319-44649-3) is not perfect, it is easy to programm and scales well.
+One of the downsides however is the fact that this method is derived from the [Boltzmann equation](https://en.wikipedia.org/wiki/Boltzmann_equation).
+Therefore trying to make sense of these surface tension values is not too helpful.
+Interpreting results in terms of **SI** units is often not the best way.
+Personally I like to work with dimensionless numbers and relevant length and time scales.
+
+Instead of adding **SI** units to the plots we normalize with characteristic quantities of the experiment."
 
 # ╔═╡ 056f47ed-2be2-4937-aa0c-6a9e353cfa92
-# Data containing the γ=0.0001 simulation
+# Data containing the γ=0.00008 simulation
 data_merge[:,:,1] 
+
+# ╔═╡ b35ee645-1220-4132-a9da-3097ade07dcd
+md"Since a plot says more than several columns of the dataset here a plot of three different time steps.
+The initial kink between the two droplets is quickly smoothed out and the bridge height h₀ is growing."
 
 # ╔═╡ f5112422-d08a-4566-9ba7-ee3eed12cc9c
 begin
@@ -221,8 +204,8 @@ begin
 		  xlims=(150,1024),
 		  # legend=:bottomright,
 		  legendfontsize = lf,			# legend font size
-          tickfont = (14),	# tick font and size
-          guidefont = (15),	# label font and size
+          tickfont = (14),				# tick font and size
+          guidefont = (15),				# label font and size
 		  grid=:none)
 end
 
@@ -230,7 +213,9 @@ end
 md"### Under the bridge
 
 The next point on the list is to measure the evolution of the bridge height h₀.
-Luckily this is a fairly easy task, since by definition the two droplets touch each other at the middle of the one-dimensional substrate."
+We expect that the height will grow according to some power law, in fact $h_0(t) = t^{\alpha}$ with $\alpha = 2/3$.
+
+Luckily this is a fairly easy task, since by definition the touching point of the droplets is at the center of the substrate."
 
 # ╔═╡ ddcf4747-a3d5-4eaf-8614-c620f37724fc
 begin
@@ -241,49 +226,53 @@ begin
 end
 
 # ╔═╡ f7db6fb5-eaa0-4954-8730-89647cc73629
-md"Now there is data about the evolution of thickness of the film and about the single point where the two droplets from a bridge and start to coalesce.
+md"Now there are two data sets
+- Film thicknesses: $h(t,x)$
+- bridge heights: $h_0(t,γ)$ 
 
-Especially the bridge height should likely collapse to a single curve upon rescaling with 
+Especially the bridge heights should likely collapse to a single curve upon rescaling with a characteristic time scale $\tau$ which we define as
 
-$$t_c = \sqrt{\frac{\rho R^3}{\gamma}},$$
+$$\tau = \frac{\mu R}{\gamma},$$
 
-where $R$ is the radius of the sphere from which the spherical cap has been cut, $\gamma$ is the surface tension and $\rho$ the density.
-$t_c$ can also be addressed as the initio-capillary time scale.
-"
+where $R$ is the radius of the sphere from which the spherical cap has been cut, $\gamma$ is the surface tension and $\mu$ is the liquids viscosity.
+This time scale can be understood as a capillary time scale, see [Zitz et al.](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)."
 
 # ╔═╡ b32505e2-5fc8-48d1-8381-8050a8d292b5
 """
-	τν(γ, R, η)
+	τ(γ, R, μ)
 
-Computes the viscous time.
+Computes a characteristic time scale.
 """
-function τν(γ; R=500, η=1/6)
+function τ(γ; R=500, μ=1/6)
 	time_c = 0.0
-	time_c = R*η/γ
+	time_c = R*μ/γ
 	return time_c
 end
 
-# ╔═╡ c951c26d-a3df-4b33-b5a3-6a1972075bcd
-"""
-	tstar(γ, R, η)
+# ╔═╡ e4cc9ddc-cf63-47ba-8b13-ddf9265c8338
+md"## Results
+In the following we show the results collected.
+First being the evolution of the bridge height h₀(t).
+This information may not be too insightful, because the data is given in terms of lattice Boltzmann units (l.b.u.).
+To overcome this issue we have two natural scales.
+On the one hand a time scale defined by **τ** and on the other hand a length scale given by the spheres radii **R**.
 
-Computes some non-dim time.
-"""
-function tstar(γ; R=500, ρ=1, θ=1/9)
-	time_c = 0.0
-	time_c = R^3*ρ*sinpi(θ)^3/γ
-	return time_c
-end
+- τ ... time
+- R ... length
+
+In the plot below we see that *pure* data spans four different curves, based on their respective surface tensions.
+"
 
 # ╔═╡ 842006de-fb79-41be-8af1-459cb7bdde2e
 begin
-	γ_h = [0.0001, 0.0005, 0.001, 0.005]
+	labels_gamma = ["γ=0.00008" "γ=0.0003" "γ=0.0006" "γ=0.0008"]
+	γ_h = [0.00008, 0.0003, 0.0006, 0.0008]
 	time_lbm = 100:100:2000000
 	p1 = plot(time_lbm, 
 		      bridges, 
 		      xlabel="t [Δt]", 
 		      ylabel="h₀", 
-		      label=["γ=0.0001" "γ=0.0005" "γ=0.001" "γ=0.005"], 
+		      label=labels_gamma, 
 			  xticks=([0:1000000:2000000;], ["0", "1×10⁶", "2×10⁶"]),
 		      xlims=(0,2100000),
 			  ylims=(0, 40),
@@ -299,23 +288,29 @@ begin
 	         )
 end
 
-# ╔═╡ 08f3bd99-fcb7-4ef9-be0f-4c205c79df24
-begin
-	# Normalize the simulation time step with the viscous time
-	time_norm2 = zeros(length(time_lbm), length(γs))
-	for i in enumerate(γs)
-		time_norm2[:, i[1]] .= time_lbm ./ tstar(i[2])
-	end
-end
+# ╔═╡ 96b773b7-e158-47c4-b25c-75e4fef655b8
+md"In the box below the lattice Boltzmann time steps are normalized and nondimensionalized with τ."
 
 # ╔═╡ 0db816bf-9dc2-43f3-a315-887c9ca68ff4
 begin
 	# Normalize the simulation time step with the viscous time
 	time_norm = zeros(length(time_lbm), length(γs))
 	for i in enumerate(γs)
-		time_norm[:, i[1]] .= time_lbm ./ τν(i[2])
+		time_norm[:, i[1]] .= time_lbm ./ τ(i[2])
 	end
 end
+
+# ╔═╡ 6451c7dd-344f-41d1-a869-7a733ad5b2b1
+md"With the normalized time we can plot the data of the bridge height h₀ again.
+Interestingly now the data *collapses* to a single master curve, independent of our parameters.
+
+Another interesting obeservation is that the curve has a straight part in the **loglog** scale, which means that the data follows a powerlaw.
+Luckily for us the exponent of the powerlaw α is exactly the one that we want to observe for a partially wetting substrate with small contact angle (θ < π/2).
+
+$$\alpha = 2/3.$$
+
+The black dashed line in the plot below.
+"
 
 # ╔═╡ 23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 begin
@@ -323,11 +318,11 @@ begin
 	      bridges ./ sphere_rad, 
 	      xlabel="t/τ", 
 	      ylabel="h₀/R₀", 
-	      label=["γ=0.0001" "γ=0.0005" "γ=0.001" "γ=0.005"], 
+	      label=labels_gamma, 
 	      w = 3, 							# line width
 		  alpha=0.6,
 	      ylims=(2e-4, 2e-1),
-		  xticks=([0.001, 0.1, 10], ["10⁻³", "10⁻¹", "10"]),
+		  xticks=([0.00001,0.001, 0.1, 10], ["10⁻⁵", "10⁻³", "10⁻¹", "10"]),
 		  st = :samplemarkers, 				# some recipy stuff
 		  step = 1000, 						# density of markers
 		  marker = (8, :auto, 0.6),			# marker size 
@@ -342,11 +337,21 @@ begin
 	plot!(there, 0.023 .* there.^(exponent), c=:black, w=4, l=:dash, label="t^(2/3)")
 end
 
+# ╔═╡ b1de636a-81c7-410c-8767-153a1b9a3079
+md"## Conclusion
+
+Two sessile droplets placed next to each other on a partially wetting substrate are coalescing into a single one. 
+The dynamics of this process, the growth of the bridge height h₀, can be explained with a powerlaw.
+Interestingly the data of the different surface tensions γ can be collapsed to a single master curve upon rescaling."
+
 # ╔═╡ 88f037e3-1ec3-4360-84d3-a6c496731c6c
 begin
 	l = @layout[a{0.6h}; b c]
 	all_p = plot(p01, p1, p2, layout = l)
 end
+
+# ╔═╡ 85104c76-b2fc-4813-8205-34de12792e0c
+#savefig(all_p, "..\\paper\\drop_coal.png")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1539,7 +1544,6 @@ version = "0.9.1+5"
 # ╟─993b8d98-0f13-4ac5-80d8-3ebd1b64f59b
 # ╟─645c6e07-c565-4f44-b29a-d9737fde9222
 # ╠═301aecbc-a5fc-4cea-8a1e-7ca130377e93
-# ╠═1a4f65bf-6a0b-4eb3-babf-28a2dd88e90b
 # ╠═518b7204-1301-4a54-8332-ead4f8619cb0
 # ╟─69f24d80-6181-476c-bd01-a336edf6b8a5
 # ╟─b417f463-46e5-421d-8d3b-974532274c3d
@@ -1548,16 +1552,20 @@ version = "0.9.1+5"
 # ╠═5f2202d7-f217-4fec-8669-b34bfcbf5008
 # ╟─03a2f622-202a-4847-bf20-2a072eb9f592
 # ╠═056f47ed-2be2-4937-aa0c-6a9e353cfa92
+# ╟─b35ee645-1220-4132-a9da-3097ade07dcd
 # ╠═f5112422-d08a-4566-9ba7-ee3eed12cc9c
 # ╟─5cbbb115-47d8-4cb6-9d68-77c391425e86
 # ╠═ddcf4747-a3d5-4eaf-8614-c620f37724fc
 # ╠═f7db6fb5-eaa0-4954-8730-89647cc73629
 # ╠═b32505e2-5fc8-48d1-8381-8050a8d292b5
-# ╠═c951c26d-a3df-4b33-b5a3-6a1972075bcd
+# ╟─e4cc9ddc-cf63-47ba-8b13-ddf9265c8338
 # ╠═842006de-fb79-41be-8af1-459cb7bdde2e
-# ╠═08f3bd99-fcb7-4ef9-be0f-4c205c79df24
+# ╟─96b773b7-e158-47c4-b25c-75e4fef655b8
 # ╠═0db816bf-9dc2-43f3-a315-887c9ca68ff4
+# ╟─6451c7dd-344f-41d1-a869-7a733ad5b2b1
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
+# ╟─b1de636a-81c7-410c-8767-153a1b9a3079
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
+# ╠═85104c76-b2fc-4813-8205-34de12792e0c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
