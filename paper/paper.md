@@ -96,43 +96,61 @@ Upon contacting the authors it should be possible to have access to a working ve
 
 Wilczek et al. used [**DUNE**](https://www.dune-project.org/) to study the dynamics of an ensemble of sliding drops in ref. [@PhysRevLett.119.204501].
 DUNE is a software suite written in *C++* that solves partial differential equations with a grid based approach [@sander2020dune].
-Of course DUNE is not limited to the problem of thin film flows, interested readers may visit the projects home page.
+Therefore DUNE is not limited to the problem of thin film flows, interested readers may visit the project's home page.
 
-Another open source package with similar functionality that is or, given the last publication added, was used to solve thin film problems is [**oomph-lib**](http://oomph-lib.maths.man.ac.uk/doc/html/index.html).
-oomph-lib is a software to solve differential equations, as such similar to DUNE its capabilities are not limited to thin film flows.
+Another open source package with similar functionality that is used to solve thin film problems is [**oomph-lib**](http://oomph-lib.maths.man.ac.uk/doc/html/index.html).
+oomph-lib uses both *Fortran* as well *C* components to solve differential equations.
+The library's emphasis however are fluid dynamic problems as can be seen from refs. [@heil2015flow; @pihler2015displacement; @pihler2013modelling].
+Of course, similar to DUNE, its capabilities are not limited to thin film problems.
 
-Given the nature of the thin film problem one can as well use classical Navier-Stokes solvers with appropriate initial and boundary conditions.
+Given the nature of the thin film problem one can, as well, use classical Navier-Stokes solvers with appropriate initial and boundary conditions.
 What comes to mind here is for example [**OpenFOAM**](https://www.openfoam.com/) a widely used open source CFD software with an active community.
-One further example would be the [**basilisk**](http://basilisk.fr) software suit. 
-Written in C it is the successor of [**GERRIS**](http://gfs.sourceforge.net/wiki/index.php/Main_Page) and used a solver for partial differential equations with emphasis on fluid dynamic problems.
-Within same category one can find other lattice Boltzmann packages, to name a few: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/) or some smaller project [**STLBM**](https://gitlab.com/unigehpfs/stlbm). 
+Another example utilizing a Navier-Stokes solver would be the [**basilisk**](http://basilisk.fr) software library, which is written in C and is the successor of [**GERRIS**](http://gfs.sourceforge.net/wiki/index.php/Main_Page).
 
-There is of course proprietary software, e.g. [**COMSOL**](https://www.comsol.com/) which can as well be used to simulate thin film dynamics.
+Lattice Boltzmann solvers offer another category to approximate the Navier-Stokes equation.
+Starting point of this method is not the Navier-Stokes equation but the Boltzmann equation.
+Using the Chapman-Enskog expansion [@Chapman; @Enskog], it can be shown that the resulting system of equations revcovers to the Navier-Stokes equation.
+The method is straightforward to implement and several small to large projects can be found with OSI-approved license. 
+To name just a few examples: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/) or some smaller project [**STLBM**](https://gitlab.com/unigehpfs/stlbm). 
+
+Proprietary software, e.g. [**COMSOL**](https://www.comsol.com/) can as well be used to simulate thin film dynamics.
 Wedershoven et al. used COMSOL to study the rupture of a thin film due to laser irradiation [@doi:10.1063/1.4863318].
 Berendsen et al. from the same group simulated the dynamics an impinging air jet has on a thin film using COMSOL [@doi:10.1021/la301353f].
 
 With the exclusion of **ThinViscoelasticFilms** every above mentioned project has a much wider purpose than *just* solving the thin film equation.
-However due to this generality it can become quite complex to set up a simulation for a thin film problem.
+However due to the generality of most libraries it can become quite complex to set up a simulation for a thin film problem.
 Especially concerning the Navier-Stokes solvers one uses a *sledge hammer to crack a nut*.
 
 # Use Case
 
-One interesting problem is the coalescence of liquid droplets, see references [@eggers1999coalescence; @PhysRevLett.111.144502; @PhysRevLett.109.184502; @PhysRevLett.95.164503].
-The underlying idea is that two droplets close to each other will coalesce into a single one to minimize surface area and therefore energy.
-The dynamics of this process can usually be explained using a self-similarity solution of the thin film equation.
-Recently Hack et al. [@PhysRevLett.124.194502] have shown that this self-similarity solutions can also be observed in the coalesence of liquid lenses.
-Liquid lenses are droplets of a fluid that is placed on the interface of another fluid, similar oil drops on a water surface.
-Assuming a large affinity between the liquids, i.e. small contact angles, the problem can be treated with an approach fairly similar to the thin film eqaution.
-Let us now try to recreat this experiments with `Swalbe.j`.
-Doing so we make two assumptions, first being that the lenses are symmetric in the z-axis, around their centers.
-Second since two liquids are in contact with each other the force due to substrate friction should vanish, meaning the slip length should $\approx\infty$.
+An interesting problem in the domain of thin liquid films is the coalescence of sessile droplets, see references [@eggers1999coalescence; @PhysRevLett.111.144502; @PhysRevLett.109.184502; @PhysRevLett.95.164503].
+The underlying idea is that two droplets placed on a hydrophilic substrate in close contact to each other will coalesce into a single droplet to minimize their surface area and therefore energy.
+The dynamics of this process can be explained using a self-similarity solution of the thin film equation.
+In fact, that the bridge height, the point that connects the two droplets, has to grow with a power law.
+We now show how to perform that simulation with the help of the `Swalbe.jl` package.
+The goal will be to observe a growth of the bridge height as 
+\begin{equation}\label{eq:powerlaw}
+    h_0(t) = k t^{\alpha},
+\end{equation}
+where the exponent $\alpha$ should be $2/3$ [@doi:10.1063/1.5119014; @doi:10.1063/1.4824108].
+This experiment has been performed using the *Pluto* notebook [Drop_coal.jl](https://jugit.fz-juelich.de/compflu/swalbe.jl/-/blob/JOSS/scripts/Drop_coal.jl).
 
-This experiment has been performed using the *Pluto* notebook [Drop_coal.jl](https://gitlab-public.fz-juelich.de/compflu/swalbe.jl/-/blob/Datastructs_n_runfunctions-/scripts/Drop_coal.jl).
+Just to outline the most important steps towards the simulation:
 
+1. Define the initial conditions of the simulation: ``Swalbe.two_droplets`` 
+2. Define a function that performs the experiment: ``run_drop_coal()``
+3. Run the experiment with varying parameters: 
+```julia
+for γ in enumerate(γs)
+		# System parameter, δ=50 can still considered small to medium slippage (δ ≈ max(height))
+		sys = Swalbe.SysConst_1D(L=1024, Tmax=2000000, δ=50.0, γ=γ[2])
+		# The experiment
+		data_merge[:,:,γ[1]] = run_drop_coal(sys, r₁=sphere_rad, r₂=sphere_rad)
+end
+```
 
-![Coalesence of liquid lenses in the low viscosity regime. The upper panel shows the time evolution for a single experiment (lowest surface tension). In the lower left panel we plot the evolution of the bridge height for all surface tension values. To the right we normalize the data with characteristic quantities and show that the bridge height grows as $\propto t^{2/3}$. \label{fig:coalesence}](drop_coal.png)
-
-
+4. Display the results: 
+![Coalescenc of sessile droplets on a partially wetting substrate. The upper panel shows the time evolution for a single experiment (lowest surface tension). In the lower left panel we plot the evolution of the bridge height for the four different surface tensions. To the right we normalize the data with characteristic quantities and show that the bridge height grows as $\propto t^{2/3}$. \label{fig:coalesence}](drop_coal.png)
 
 # Acknowledgements
 
