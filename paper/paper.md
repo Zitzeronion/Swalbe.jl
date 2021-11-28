@@ -150,6 +150,7 @@ end
 ```
 
 4. Display the results: 
+
 ![Coalescenc of sessile droplets on a partially wetting substrate. The upper panel shows the time evolution for a single experiment (lowest surface tension). In the lower left panel we plot the evolution of the bridge height for the four different surface tensions. To the right we normalize the data with characteristic quantities and show that the bridge height grows as $\propto t^{2/3}$. \label{fig:coalesence}](drop_coal.png)
 
 # Acknowledgements
