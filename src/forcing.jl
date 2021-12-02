@@ -223,6 +223,30 @@ function thermal!(fluc, height, kᵦT, μ, δ)
     return nothing
 end
 
+function thermal!(state::State_thermal, sys::SysConst)
+    randn!(state.kbtx)
+    randn!(state.kbty)
+    state.kbtx .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
+                    (2 .* state.height.^2 .+
+                     6 .* state.height .* sys.δ .+
+                     3 .* sys.δ^2))
+    state.kbty .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
+                    (2 .* state.height.^2 .+
+                     6 .* state.height .* sys.δ .+
+                     3 .* sys.δ^2))
+    return nothing
+end
+# With thermal state
+function thermal!(state::State_thermal_1D, sys::SysConst_1D)
+    randn!(state.kbt)
+    state.kbt .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
+                  (2 .* state.height.^2 .+
+                   6 .* state.height .* sys.δ .+
+                   3 .* sys.δ^2))
+    
+    return nothing
+end
+
 """
    inclination!(α, state)
 

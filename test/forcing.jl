@@ -113,12 +113,32 @@
         @test mean(f2) ≈ 0.0 atol=1e-2
         @test var(f1) ≈ vartest atol=vartest/10
         @test var(f2) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst(Lx=50, Ly=50, kbt=0.01)
+        state = Swalbe.Sys(sys, "CPU", kind="thermal")    
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbtx) ≈ 0.0 atol=1e-2
+        @test mean(state.kbty) ≈ 0.0 atol=1e-2
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+        # More thermal energy
         vartest = 0.2/11
         Swalbe.thermal!(f1, f2, ones(50,50), 0.1, 1/6, 1.0)
         @test mean(f1) ≈ 0.0 atol=1e-2
         @test mean(f2) ≈ 0.0 atol=1e-2
         @test var(f1) ≈ vartest atol=vartest/10
         @test var(f2) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst(Lx=50, Ly=50, kbt=0.1)
+        state = Swalbe.Sys(sys, "CPU", kind="thermal")    
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbtx) ≈ 0.0 atol=1e-2
+        @test mean(state.kbty) ≈ 0.0 atol=1e-2
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+
+        
+
     end
     @testset "Thermal 1D" begin
         f1D = ones(100000)
@@ -126,10 +146,22 @@
         Swalbe.thermal!(f1D, ones(100000), 0.01, 1/6, 1.0)
         @test mean(f1D) ≈ 0.0 atol=1e-2
         @test var(f1D) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst_1D(L=100000,δ=1.0,kbt=0.01)
+        state = Swalbe.Sys(sys, kind="thermal")
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbt) ≈ 0.0 atol=1e-2
+        @test var(state.kbt) ≈ vartest atol=vartest/10
         vartest = 0.2/11
         Swalbe.thermal!(f1D, ones(100000), 0.1, 1/6, 1.0)
         @test mean(f1D) ≈ 0.0 atol=1e-2
         @test var(f1D) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst_1D(L=100000,δ=1.0,kbt=0.1)
+        state = Swalbe.Sys(sys, kind="thermal")
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbt) ≈ 0.0 atol=1e-2
+        @test var(state.kbt) ≈ vartest atol=vartest/10
     end
 
     @testset "rho update" begin

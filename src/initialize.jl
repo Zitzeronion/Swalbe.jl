@@ -137,6 +137,29 @@ Base.@kwdef struct State{T, N} <: LBM_state
     dgrad :: Array{T,N} 
 end
 
+Base.@kwdef struct State_thermal{T, N} <: LBM_state
+    # Distribution functions
+    fout :: Array{T, N}
+    ftemp :: Array{T, N}
+    feq :: Array{T, N} 
+    # Macroscopic variables and moments 
+    height :: Matrix{T} 
+    velx :: Matrix{T} 
+    vely :: Matrix{T}  
+    vsq :: Matrix{T} 
+    pressure :: Matrix{T} 
+    # Forces and a dummy for the gradient
+    Fx :: Matrix{T} 
+    Fy :: Matrix{T} 
+    slipx :: Matrix{T} 
+    slipy :: Matrix{T} 
+    h∇px :: Matrix{T} 
+    h∇py :: Matrix{T} 
+    kbtx :: Matrix{T} 
+    kbty :: Matrix{T} 
+    dgrad :: Array{T,N} 
+end
+
 """
     CuState
 
@@ -183,6 +206,29 @@ struct CuState <: LBM_state
     dgrad :: CuArray
 end
 
+struct CuState_thermal <: LBM_state
+    # Distribution functions
+    fout :: CuArray
+    ftemp :: CuArray
+    feq :: CuArray 
+    # Macroscopic variables and moments 
+    height :: CuArray
+    velx :: CuArray
+    vely :: CuArray
+    vsq :: CuArray
+    pressure :: CuArray
+    # Forces and a dummy for the gradient
+    Fx :: CuArray 
+    Fy :: CuArray 
+    slipx :: CuArray
+    slipy :: CuArray 
+    h∇px :: CuArray 
+    h∇py :: CuArray 
+    kbtx :: CuArray 
+    kbty :: CuArray
+    dgrad :: CuArray
+end
+
 """
     State_1D{T, N}
 
@@ -217,6 +263,22 @@ Base.@kwdef struct State_1D{T} <: LBM_state
     dgrad :: Matrix{T} 
 end
 
+Base.@kwdef struct State_thermal_1D{T} <: LBM_state
+    # Distribution functions
+    fout :: Matrix{T}
+    ftemp :: Matrix{T}
+    feq :: Matrix{T} 
+    # Macroscopic variables and moments 
+    height :: Vector{T} 
+    vel :: Vector{T} 
+    pressure :: Vector{T} 
+    # Forces and a dummy for the gradient
+    F :: Vector{T} 
+    slip :: Vector{T}
+    h∇p :: Vector{T}
+    kbt :: Vector{T}
+    dgrad :: Matrix{T} 
+end
 
 """
     Sys(sysc, device, exotic)
@@ -289,49 +351,99 @@ function Sys(sysc::SysConst, device::String, exotic::Bool, T)
     end
 end
 
-function Sys(sysc::SysConst, device::String; T=Float64)
-    if device == "CPU"
-        dyn = State{T, 3}(
-            fout = zeros(sysc.Lx, sysc.Ly, 9),
-            ftemp = zeros(sysc.Lx, sysc.Ly, 9),
-            feq = zeros(sysc.Lx, sysc.Ly, 9),
-            height = ones(sysc.Lx, sysc.Ly),
-            velx = zeros(sysc.Lx, sysc.Ly),
-            vely = zeros(sysc.Lx, sysc.Ly),
-            vsq = zeros(sysc.Lx, sysc.Ly),
-            pressure = zeros(sysc.Lx, sysc.Ly),
-            dgrad = zeros(sysc.Lx, sysc.Ly, 8),
-            Fx = zeros(sysc.Lx, sysc.Ly),
-            Fy = zeros(sysc.Lx, sysc.Ly),
-            slipx = zeros(sysc.Lx, sysc.Ly),
-            slipy = zeros(sysc.Lx, sysc.Ly),
-            h∇px = zeros(sysc.Lx, sysc.Ly),
-            h∇py = zeros(sysc.Lx, sysc.Ly)
-        )
-        return dyn
-    elseif device == "GPU"
-        dyn = CuState(
-            # Distribution functions
-            CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
-            # Macro
-            CUDA.ones(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            # For gradients
-            CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
-            # Forces
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly),
-            CUDA.zeros(T, sysc.Lx, sysc.Ly)
-        )
-        return dyn
+function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
+    if kind == "simple"
+        if device == "CPU"
+            dyn = State{T, 3}(
+                fout = zeros(sysc.Lx, sysc.Ly, 9),
+                ftemp = zeros(sysc.Lx, sysc.Ly, 9),
+                feq = zeros(sysc.Lx, sysc.Ly, 9),
+                height = ones(sysc.Lx, sysc.Ly),
+                velx = zeros(sysc.Lx, sysc.Ly),
+                vely = zeros(sysc.Lx, sysc.Ly),
+                vsq = zeros(sysc.Lx, sysc.Ly),
+                pressure = zeros(sysc.Lx, sysc.Ly),
+                dgrad = zeros(sysc.Lx, sysc.Ly, 8),
+                Fx = zeros(sysc.Lx, sysc.Ly),
+                Fy = zeros(sysc.Lx, sysc.Ly),
+                slipx = zeros(sysc.Lx, sysc.Ly),
+                slipy = zeros(sysc.Lx, sysc.Ly),
+                h∇px = zeros(sysc.Lx, sysc.Ly),
+                h∇py = zeros(sysc.Lx, sysc.Ly)
+            )
+            return dyn
+        elseif device == "GPU"
+            dyn = CuState(
+                # Distribution functions
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+                # Macro
+                CUDA.ones(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                # For gradients
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
+                # Forces
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly)
+            )
+            return dyn
+        end
+    elseif kind == "thermal"
+        if device == "CPU"
+            dyn = State_thermal{T, 3}(
+                fout = zeros(sysc.Lx, sysc.Ly, 9),
+                ftemp = zeros(sysc.Lx, sysc.Ly, 9),
+                feq = zeros(sysc.Lx, sysc.Ly, 9),
+                height = ones(sysc.Lx, sysc.Ly),
+                velx = zeros(sysc.Lx, sysc.Ly),
+                vely = zeros(sysc.Lx, sysc.Ly),
+                vsq = zeros(sysc.Lx, sysc.Ly),
+                pressure = zeros(sysc.Lx, sysc.Ly),
+                dgrad = zeros(sysc.Lx, sysc.Ly, 8),
+                Fx = zeros(sysc.Lx, sysc.Ly),
+                Fy = zeros(sysc.Lx, sysc.Ly),
+                slipx = zeros(sysc.Lx, sysc.Ly),
+                slipy = zeros(sysc.Lx, sysc.Ly),
+                h∇px = zeros(sysc.Lx, sysc.Ly),
+                h∇py = zeros(sysc.Lx, sysc.Ly),
+                kbtx = zeros(sysc.Lx, sysc.Ly),
+                kbty = zeros(sysc.Lx, sysc.Ly)
+            )
+            return dyn
+        elseif device == "GPU"
+            dyn = CuState_thermal(
+                # Distribution functions
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 9),
+                # Macro
+                CUDA.ones(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                # For gradients
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
+                # Forces
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                CUDA.zeros(T, sysc.Lx, sysc.Ly)
+            )
+            return dyn
+        end
     end
 end
 
@@ -372,19 +484,35 @@ function Sys(sysc::SysConst_1D, exotic::Bool, T)
     
 end
 
-function Sys(sysc::SysConst_1D; T=Float64)
-    dyn = State_1D{T}(
-        fout = zeros(sysc.L, 3),
-        ftemp = zeros(sysc.L, 3),
-        feq = zeros(sysc.L, 3),
-        height = ones(sysc.L),
-        vel = zeros(sysc.L),
-        pressure = zeros(sysc.L),
-        dgrad = zeros(sysc.L, 2),
-        F = zeros(sysc.L),
-        slip = zeros(sysc.L),
-        h∇p = zeros(sysc.L),
-    )
+function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
+    if kind == "simple"
+        dyn = State_1D{T}(
+            fout = zeros(sysc.L, 3),
+            ftemp = zeros(sysc.L, 3),
+            feq = zeros(sysc.L, 3),
+            height = ones(sysc.L),
+            vel = zeros(sysc.L),
+            pressure = zeros(sysc.L),
+            dgrad = zeros(sysc.L, 2),
+            F = zeros(sysc.L),
+            slip = zeros(sysc.L),
+            h∇p = zeros(sysc.L),
+        )
+    elseif kind == "thermal"
+        dyn = State_thermal_1D{T}(
+            fout = zeros(sysc.L, 3),
+            ftemp = zeros(sysc.L, 3),
+            feq = zeros(sysc.L, 3),
+            height = ones(sysc.L),
+            vel = zeros(sysc.L),
+            pressure = zeros(sysc.L),
+            dgrad = zeros(sysc.L, 2),
+            F = zeros(sysc.L),
+            slip = zeros(sysc.L),
+            kbt = zeros(sysc.L),
+            h∇p = zeros(sysc.L),
+        )
+    end
     return dyn
     
 end
