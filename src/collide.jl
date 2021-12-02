@@ -111,6 +111,7 @@ function BGKandStream!(state::State, sys::SysConst)
     fo0, fo1, fo2, fo3, fo4, fo5, fo6, fo7, fo8 = viewdists(state.fout)
 
     omeg = 1-1/sys.τ
+
     # Collision for the nine populations
     # Zeroth, no forcing!
     fo0 .= omeg .* ft0 .+ 1/sys.τ .* fe0
