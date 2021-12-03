@@ -291,7 +291,7 @@ end
 
 Time evolution of the `active` field rho.
 
-TODO: @Tilmann!
+TODO: @Tilman!
 """
 function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
     lap_rho, grad_rho, lap_h, grad_h = view_four(differentials)
