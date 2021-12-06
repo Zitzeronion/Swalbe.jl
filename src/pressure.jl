@@ -117,7 +117,7 @@ function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
     return nothing
 end
 # Film pressure with the state struct
-function filmpressure!(state::State, sys::SysConst, θ)
+function filmpressure!(state::LBM_state_2D, sys::SysConst, θ)
     hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height, (1,0))
@@ -140,7 +140,7 @@ function filmpressure!(state::State, sys::SysConst, θ)
     return nothing
 end
 # With sys.θ
-function filmpressure!(state::State, sys::SysConst)
+function filmpressure!(state::LBM_state_2D, sys::SysConst)
     hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height, (1,0))

@@ -165,7 +165,7 @@ function equilibrium!(state::State, sys::SysConst)
     return nothing
 end
 # Dispatch without gravity and state struct
-function equilibrium!(state::State)
+function equilibrium!(state::LBM_state_2D)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.feq) 
     # Some constants, gravity and weights

@@ -1,4 +1,6 @@
 abstract type LBM_state end
+abstract type LBM_state_2D <: LBM_state end
+abstract type LBM_state_1D <: LBM_state end
 
 """
     SysConst{T}
@@ -116,7 +118,7 @@ Data structure that stores all arrays for a given simulation.
 - `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
 
 """
-Base.@kwdef struct State{T, N} <: LBM_state
+Base.@kwdef struct State{T, N} <: LBM_state_2D
     # Distribution functions
     fout :: Array{T, N}
     ftemp :: Array{T, N}
@@ -137,7 +139,7 @@ Base.@kwdef struct State{T, N} <: LBM_state
     dgrad :: Array{T,N} 
 end
 
-Base.@kwdef struct State_thermal{T, N} <: LBM_state
+Base.@kwdef struct State_thermal{T, N} <: LBM_state_2D
     # Distribution functions
     fout :: Array{T, N}
     ftemp :: Array{T, N}
@@ -185,7 +187,7 @@ Specific for GPU computing using `CUDA.jl`
 - `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
 
 """
-struct CuState <: LBM_state
+struct CuState <: LBM_state_2D
     # Distribution functions
     fout :: CuArray
     ftemp :: CuArray
@@ -206,7 +208,7 @@ struct CuState <: LBM_state
     dgrad :: CuArray
 end
 
-struct CuState_thermal <: LBM_state
+struct CuState_thermal <: LBM_state_2D
     # Distribution functions
     fout :: CuArray
     ftemp :: CuArray
@@ -247,7 +249,7 @@ Data structure that stores all arrays for a given simulation.
 - `h∇p :: Vector{T}`: Pressure gradient times the height
 - `dgrad :: Matrix{T}`: Dummy allocation to store shifted arrays using `circshift!`
 """
-Base.@kwdef struct State_1D{T} <: LBM_state
+Base.@kwdef struct State_1D{T} <: LBM_state_1D
     # Distribution functions
     fout :: Matrix{T}
     ftemp :: Matrix{T}
@@ -263,7 +265,7 @@ Base.@kwdef struct State_1D{T} <: LBM_state
     dgrad :: Matrix{T} 
 end
 
-Base.@kwdef struct State_thermal_1D{T} <: LBM_state
+Base.@kwdef struct State_thermal_1D{T} <: LBM_state_1D
     # Distribution functions
     fout :: Matrix{T}
     ftemp :: Matrix{T}
@@ -384,15 +386,15 @@ function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
-                # For gradients
-                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
                 # Forces
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
-                CUDA.zeros(T, sysc.Lx, sysc.Ly)
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                # For gradients
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8)
             )
             return dyn
         end
