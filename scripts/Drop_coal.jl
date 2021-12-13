@@ -346,6 +346,7 @@ Interestingly the data of the different surface tensions γ can be collapsed to 
 
 # ╔═╡ 88f037e3-1ec3-4360-84d3-a6c496731c6c
 begin
+	# Collecting results in a single plot
 	l = @layout[a{0.6h}; b c]
 	all_p = plot(p01, p1, p2, layout = l)
 end
@@ -1556,7 +1557,7 @@ version = "0.9.1+5"
 # ╠═f5112422-d08a-4566-9ba7-ee3eed12cc9c
 # ╟─5cbbb115-47d8-4cb6-9d68-77c391425e86
 # ╠═ddcf4747-a3d5-4eaf-8614-c620f37724fc
-# ╠═f7db6fb5-eaa0-4954-8730-89647cc73629
+# ╟─f7db6fb5-eaa0-4954-8730-89647cc73629
 # ╠═b32505e2-5fc8-48d1-8381-8050a8d292b5
 # ╟─e4cc9ddc-cf63-47ba-8b13-ddf9265c8338
 # ╠═842006de-fb79-41be-8af1-459cb7bdde2e
@@ -1566,6 +1567,5 @@ version = "0.9.1+5"
 # ╠═23fd2d46-22c8-4dae-8437-d3fd4628f6c3
 # ╟─b1de636a-81c7-410c-8767-153a1b9a3079
 # ╠═88f037e3-1ec3-4360-84d3-a6c496731c6c
-# ╠═85104c76-b2fc-4813-8205-34de12792e0c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
