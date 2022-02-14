@@ -45,7 +45,7 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     return nothing
 end
 # with state struct
-function slippage!(state::State, sys::SysConst)
+function slippage!(state::LBM_state_2D, sys::SysConst)
     state.slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
     state.slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
     return nothing
@@ -106,7 +106,7 @@ Test Passed
 
 See also: [`Swalbe.filmpressure!`](@ref)
 """
-function h∇p!(state::State)
+function h∇p!(state::LBM_state_2D)
     fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(fip, state.pressure, (1,0))
@@ -223,6 +223,30 @@ function thermal!(fluc, height, kᵦT, μ, δ)
     return nothing
 end
 
+function thermal!(state::State_thermal, sys::SysConst)
+    randn!(state.kbtx)
+    randn!(state.kbty)
+    state.kbtx .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
+                    (2 .* state.height.^2 .+
+                     6 .* state.height .* sys.δ .+
+                     3 .* sys.δ^2))
+    state.kbty .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
+                    (2 .* state.height.^2 .+
+                     6 .* state.height .* sys.δ .+
+                     3 .* sys.δ^2))
+    return nothing
+end
+# With thermal state
+function thermal!(state::State_thermal_1D, sys::SysConst_1D)
+    randn!(state.kbt)
+    state.kbt .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
+                  (2 .* state.height.^2 .+
+                   6 .* state.height .* sys.δ .+
+                   3 .* sys.δ^2))
+    
+    return nothing
+end
+
 """
    inclination!(α, state)
 
@@ -250,7 +274,7 @@ with ``t_0`` being the time lag at which the `tanh` changes sign and ``t_s`` is 
 
 See also: [Swalbe.run_dropletforced](@ref)
 """
-function inclination!(α::Vector, state::State; t=1000, tstart=0, tsmooth=1)
+function inclination!(α::Vector, state::LBM_state_2D; t=1000, tstart=0, tsmooth=1)
     state.Fx .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
     state.Fy .+= state.height .* α[2] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
@@ -267,7 +291,7 @@ end
 
 Time evolution of the `active` field rho.
 
-TODO: @Tilmann!
+TODO: @Tilman!
 """
 function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
     lap_rho, grad_rho, lap_h, grad_h = view_four(differentials)

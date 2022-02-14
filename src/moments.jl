@@ -51,7 +51,7 @@ function moments!(height::Matrix, velx, vely, fout)
     return nothing
 end
 # with new state struct
-function moments!(state::State)
+function moments!(state::LBM_state_2D)
     # Get views of the populations
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
     # Compute the height
@@ -62,6 +62,7 @@ function moments!(state::State)
     return nothing
 end
 
+#=
 function moments!(state::CuState)
     # Get views of the populations
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
@@ -73,6 +74,7 @@ function moments!(state::CuState)
     state.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.height
     return nothing
 end
+=#
 
 function moments!(height, vel, fout)
     # Get views of the populations

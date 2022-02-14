@@ -104,13 +104,14 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     return nothing
 end
 # With State struct
-function BGKandStream!(state::State, sys::SysConst)
+function BGKandStream!(state::LBM_state_2D, sys::SysConst)
     # All distribution functions
     fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdists(state.feq)
     ft0, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8 = viewdists(state.ftemp)
     fo0, fo1, fo2, fo3, fo4, fo5, fo6, fo7, fo8 = viewdists(state.fout)
 
     omeg = 1-1/sys.τ
+
     # Collision for the nine populations
     # Zeroth, no forcing!
     fo0 .= omeg .* ft0 .+ 1/sys.τ .* fe0
@@ -178,7 +179,7 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy)
     return nothing
 end
 # Explicit version for the case τ = 1, with state struct
-function BGKandStream!(state::State)
+function BGKandStream!(state::LBM_state_2D)
     # All distribution functions
     fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdists(state.feq)
     ft0, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8 = viewdists(state.ftemp)

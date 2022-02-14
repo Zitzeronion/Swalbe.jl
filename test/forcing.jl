@@ -26,7 +26,8 @@
         @test all(fx .== 0.1/11)
         @test all(fy .== 0.0)
         # At some point I have to find out how to use all() with atol 
-        @test state.slipx[1,1] ≈ 0.1/11 # atol=1e-8
+        # Thanks to Tilman for the tip!
+        @test all(isapprox.(state.slipx, 0.1/11; atol=1e-8))
         @test all(state.slipy .== 0.0)
         # Velocity in y
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), fill(0.1,5,5), 1.0, 1/6)
@@ -36,7 +37,7 @@
         @test all(fx .== 0.0)
         @test all(fy .== 0.1/11)
         @test all(state.slipx .== 0.0)
-        @test state.slipy[1,1] ≈ 0.1/11 # atol=1e-8
+        all(isapprox.(state.slipy, 0.1/11; atol=1e-8))
         # Velocity
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 1.0, 1/6)
         state.velx .= -0.1
@@ -44,8 +45,8 @@
         Swalbe.slippage!(state, sys)
         @test all(fx .== -0.1/11)
         @test all(fy .== 0.1/11)
-        @test state.slipx[1,1] ≈ -0.1/11 
-        @test state.slipy[1,1] ≈ 0.1/11
+        @test all(isapprox.(state.slipx, -0.1/11; atol=1e-8))
+        @test all(isapprox.(state.slipy, 0.1/11; atol=1e-8))
         # No slip
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 0.0, 1/6)
         state.velx .= -0.1
@@ -54,8 +55,8 @@
         Swalbe.slippage!(state, sys2)
         @test all(fx .== -0.1/2)
         @test all(fy .== 0.1/2)
-        @test state.slipx[1,1] ≈ -0.1/2
-        @test state.slipy[1,1] ≈ 0.1/2
+        @test all(isapprox.(state.slipx, -0.1/2; atol=1e-8))
+        @test all(isapprox.(state.slipy, 0.1/2; atol=1e-8))
     end
 
 
@@ -71,7 +72,8 @@
         state1D.slip .= 0.0
         Swalbe.slippage!(state1D, sys1D)
         @test all(f1 .== 0.1/11)
-        @test state1D.slip[1] ≈ 0.1/11
+        @test all(isapprox.(state1D.slip, 0.1/11; atol=1e-8))
+
         # No slip
         Swalbe.slippage!(f1, ones(30), fill(-0.1,30), 0.0, 1/6)
         state1D.vel .= -0.1
@@ -79,7 +81,7 @@
         sys1D2 = Swalbe.SysConst_1D(L=30, δ=0.0)
         Swalbe.slippage!(state1D, sys1D2)
         @test all(f1 .== -0.1/2)
-        @test state1D.slip[1] ≈ -0.1/2
+        @test all(isapprox.(state1D.slip, -0.1/2; atol=1e-8))
     end
 
     @testset "Pressure gradient" begin
@@ -113,12 +115,30 @@
         @test mean(f2) ≈ 0.0 atol=1e-2
         @test var(f1) ≈ vartest atol=vartest/10
         @test var(f2) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst(Lx=50, Ly=50, kbt=0.01)
+        state = Swalbe.Sys(sys, "CPU", kind="thermal")    
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbtx) ≈ 0.0 atol=1e-2
+        @test mean(state.kbty) ≈ 0.0 atol=1e-2
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+        # More thermal energy
         vartest = 0.2/11
         Swalbe.thermal!(f1, f2, ones(50,50), 0.1, 1/6, 1.0)
         @test mean(f1) ≈ 0.0 atol=1e-2
         @test mean(f2) ≈ 0.0 atol=1e-2
         @test var(f1) ≈ vartest atol=vartest/10
         @test var(f2) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst(Lx=50, Ly=50, kbt=0.1)
+        state = Swalbe.Sys(sys, "CPU", kind="thermal")    
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbtx) ≈ 0.0 atol=1e-2
+        @test mean(state.kbty) ≈ 0.0 atol=1e-2
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+        @test var(state.kbtx) ≈ vartest atol=vartest/10
+
     end
     @testset "Thermal 1D" begin
         f1D = ones(100000)
@@ -126,10 +146,22 @@
         Swalbe.thermal!(f1D, ones(100000), 0.01, 1/6, 1.0)
         @test mean(f1D) ≈ 0.0 atol=1e-2
         @test var(f1D) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst_1D(L=100000,δ=1.0,kbt=0.01)
+        state = Swalbe.Sys(sys, kind="thermal")
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbt) ≈ 0.0 atol=1e-2
+        @test var(state.kbt) ≈ vartest atol=vartest/10
         vartest = 0.2/11
         Swalbe.thermal!(f1D, ones(100000), 0.1, 1/6, 1.0)
         @test mean(f1D) ≈ 0.0 atol=1e-2
         @test var(f1D) ≈ vartest atol=vartest/10
+        # Using structs
+        sys = Swalbe.SysConst_1D(L=100000,δ=1.0,kbt=0.1)
+        state = Swalbe.Sys(sys, kind="thermal")
+        Swalbe.thermal!(state, sys)
+        @test mean(state.kbt) ≈ 0.0 atol=1e-2
+        @test var(state.kbt) ≈ vartest atol=vartest/10
     end
 
     @testset "rho update" begin

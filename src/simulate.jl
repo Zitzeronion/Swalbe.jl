@@ -3,7 +3,7 @@
 
 Time stepping procedure for the lattice Boltzmann state `state` given parameters `sys`
 """
-function time_loop(sys::SysConst, state::State; verbose=false)
+function time_loop(sys::SysConst, state::LBM_state_2D; verbose=false)
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
             mass = 0.0
