@@ -42,11 +42,11 @@ Computes a characteristic time scale for an spinodally dewetting film.
 
 # Mathematics
 
-The charateristic time scale ``t_0`` is set using the surface tension as well as the disjoining pressure ``\Pi(h)`` as 
+The charateristic time scale ``t_0`` is set using the surface tension as well as the disjoining pressure ``\\Pi(h)`` as 
 
-``t_0 = \\frac{3}{\\gamma h_0^3 q_0^4}, \\quad q_0 = \\frac{\\Pi'(h_0)}{2\\gamma}, ``
+`` t_0 = \\frac{3}{\\gamma h_0^3 q_0^4}, \\quad q_0 = \\frac{\\Pi'(h_0)}{2\\gamma}, ``
 
-where ``\Pi'(h_0) = \frac{\partial\Pi}{\partial h}\bigg|_{h_0}`` is the derivative of the disjoining pressure with respect to some characteristic height.
+where ``\\Pi'(h_0) = \\frac{\\partial\\Pi}{\\partial h}\\bigg|_{h_0}`` is the derivative of the disjoining pressure with respect to some characteristic height.
 
 
 # References
