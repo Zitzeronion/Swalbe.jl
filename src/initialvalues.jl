@@ -55,6 +55,8 @@ julia> height = Swalbe.singledroplet(ones(100,100), rad, θ, (50,50));
 
 julia> @test maximum(height) == rad * (1 - cospi(θ)) # Simple geometry
 Test Passed
+  Expression: maximum(height) == rad * (1 - cospi(θ))
+   Evaluated: 25.0 == 25.0
 
 julia> argmax(height) # Which is constistent with the center!
 CartesianIndex(50, 50)
@@ -133,6 +135,8 @@ julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
 
 julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) atol=0.01 # Simple geometry
 Test Passed
+  Expression: ≈(maximum(height), rad * (1 - cospi(θ)), atol = 0.01)
+   Evaluated: ≈(13.178960261768571, 13.180194846605358; atol = 0.01)
 
 ```
 
@@ -333,10 +337,13 @@ julia> θ, P = Swalbe.ellipsepattern(ones(100,100), θ₀); # per default the ce
 
 julia> @test θ[1,1] == θ₀
 Test Passed
+  Expression: θ[1, 1] == θ₀
+   Evaluated: 0.1111111111111111 == 0.1111111111111111
 
 julia> @test θ[50,50] == θ₀ + 1/36 # The default increment, is about 5 degrees.
 Test Passed
-
+  Expression: θ[50, 50] == θ₀ + 1 / 36
+   Evaluated: 0.1388888888888889 == 0.1388888888888889
 ```
 
 # References

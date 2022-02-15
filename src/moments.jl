@@ -26,12 +26,15 @@ julia> Swalbe.moments!(height,velx,vely,fout)
 
 julia> @test all(height .== 1.1)
 Test Passed
+  Expression: all(height .== 1.1)
 
 julia> @test all(velx .== 0.1/1.1)
 Test Passed
+  Expression: all(velx .== 0.1 / 1.1)
 
 julia> @test all(vely .== 0.0)
 Test Passed
+  Expression: all(vely .== 0.0)
 ```
 
 # References

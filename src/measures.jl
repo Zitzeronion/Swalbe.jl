@@ -39,29 +39,15 @@ Computes a characteristic time scale for an spinodally dewetting film.
 - `γ :: Float64`: surface tension value
 - `μ :: Float64`: kinematic viscosity, same as dynamic for ρ=1
 - `θ :: Float64`: highest contact angle given as radiant, e.g. θ=π/9 for 20 degrees
-e
+
 # Mathematics
 
+The charateristic time scale ``t_0`` is set using the surface tension as well as the disjoining pressure ``\Pi(h)`` as 
 
+``t_0 = \\frac{3}{\\gamma h_0^3 q_0^4}, \\quad q_0 = \\frac{\\Pi'(h_0)}{2\\gamma}, ``
 
-# Examples
-```jldoctest
-julia> using Swalbe, Statistics, Test
+where ``\Pi'(h_0) = \frac{\partial\Pi}{\partial h}\bigg|_{h_0}`` is the derivative of the disjoining pressure with respect to some characteristic height.
 
-julia> x = ones(50,50); y = ones(50,50); h = ones(50,50);
-
-julia> Swalbe.thermal!(x, y, h, 0.1, 1/6, 1)
-
-julia> @test mean(x) ≈ 0.0 atol=1e-2
-Test Passed
-
-julia> @test mean(y) ≈ 0.0 atol=1e-2
-Test Passed
-
-julia> @test var(x) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
-Test Passed
-
-```
 
 # References
 
@@ -103,10 +89,11 @@ julia> Swalbe.snapshot!(snapshot,h2,20,dumping=10)
 
 julia> @test all(h1 .== reshape(snapshot[1,:],5,5))
 Test Passed
+  Expression: all(h1 .== reshape(snapshot[1, :], 5, 5))
 
 julia> @test all(h2 .== reshape(snapshot[2,:],5,5))
 Test Passed
-
+  Expression: all(h2 .== reshape(snapshot[2, :], 5, 5))
 ```
 # References
 

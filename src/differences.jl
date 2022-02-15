@@ -242,6 +242,7 @@ julia> f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewneighbors(ftest);
 
 julia> @test all(f3 .== ftest[:,:,3])
 Test Passed
+  Expression: all(f3 .== ftest[:, :, 3])
 
 ```
 
@@ -275,6 +276,7 @@ julia> f1, f2 = Swalbe.viewneighbors_1D(ftest);
 
 julia> @test all(f2 .== ftest[:,2])
 Test Passed
+  Expression: all(f2 .== ftest[:, 2])
 
 ```
 

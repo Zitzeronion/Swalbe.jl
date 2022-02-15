@@ -1,7 +1,7 @@
 using Documenter, Swalbe
 
 # doctest(Swalbe; manual = false)
-
+DocMeta.setdocmeta!(Swalbe, :DocTestSetup, :(using Swalbe); recursive=true)
 makedocs(;
     modules=[Swalbe],
     authors="Zitzeronion <physiknerd@gmail.com>",
