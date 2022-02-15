@@ -62,20 +62,6 @@ function moments!(state::LBM_state_2D)
     return nothing
 end
 
-#=
-function moments!(state::CuState)
-    # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
-    # Compute the height
-    # TODO: figuring out this new CUDA problem, seems `sum!` is broken
-    sum!(state.height, state.fout)[:,:,1]
-    # and the velocities (as simple as possible)
-    state.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.height
-    state.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.height
-    return nothing
-end
-=#
-
 function moments!(height, vel, fout)
     # Get views of the populations
     f0, f1, f2 = Swalbe.viewdists_1D(fout) 
