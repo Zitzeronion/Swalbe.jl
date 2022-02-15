@@ -104,6 +104,9 @@ h = Swalbe.run_rayleightaylor(sys, "CPU"; h₀=1.0, ϵ=0.01, verbos=true)
 
 Further examples can be found in the tutorials section of the documentation: [Tutorials](https://zitzeronion.github.io/Swalbe.jl/dev/tutorials/)
 
+Some development for this solver was performed under the priority program **[SPP2171-Dynamic Wetting of Flexible, Adaptive, and Switchable Surfaces](https://www.uni-muenster.de/SPP2171/index.html)**. 
+On the homepage of the SPP in the resources' section we supply a simple tutorial for the [coalescence of droplets](https://www.uni-muenster.de/imperia/md/content/SPP2171/droplet_coalescence_tutorial.html) using a [**Pluto**](https://github.com/fonsp/Pluto.jl) notebook.
+
 ## How to **support and contribute**
 
 Leave a star if you like the idea of the project and/or the content of the
