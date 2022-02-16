@@ -230,6 +230,20 @@ function filmpressure!(state::State_1D, sys::SysConst_1D)
     state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
     return nothing
 end
+# With spatial varying surface tension
+function filmpressure!(state::State_gamma_1D, sys::SysConst_1D)
+    hip, him = viewneighbors_1D(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, 1)
+    circshift!(him, state.height, -1)
+    
+    state.pressure .= -state.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
+                 .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                  .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
+
+    state.pressure .-= state.γ .* (hip .- 2 .* state.height .+ him)
+    return nothing
+end
 
 # Paolo active matter model
 function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit; Gamma=0.0)

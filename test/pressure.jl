@@ -83,6 +83,10 @@ end
     state.height .= collect(1.0:30)
     sys2 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2)
     state2 = Swalbe.Sys(sys2)
+    sys3 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=0.0)
+    state3 = Swalbe.Sys(sys3, kind="gamma")
+    state3.γ .= sys3.γ
+    state3.height .= collect(1.0:30)
     # Without the struct
     f = collect(1.0:30)
     f_float = collect(1.0f0:30.0f0)
@@ -91,34 +95,41 @@ end
     @testset "No contact angle" begin
         Swalbe.filmpressure!(res, f, dummy, 1.0, 0.0, 3, 2, 0.1, 0.1)
         Swalbe.filmpressure!(state, sys, 0.0)
+        Swalbe.filmpressure!(state3, sys3)
         # println("My result: $res")
         sol = zeros(30)
         sol[1] = 30
         sol[end] = -30
-        @test all(res .== -sol)
-        @test all(state.pressure .== -sol)
+        for i in [res, state.pressure, state3.pressure]
+            @test all(i .== -sol)
+        end
+        # @test all(state.pressure .== -sol)
     end
     @testset "No height gradient" begin
         nograd = ones(30)
         state2.height .= 1.0
+        state3.height .= 1.0
         Swalbe.filmpressure!(res, nograd, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
         Swalbe.filmpressure!(state2, sys2, 1/2)
-        @test all(isapprox.(res, -2(0.1^2-0.1); atol=1e-10))
-        @test all(isapprox.(state2.pressure, -2(0.1^2-0.1); atol=1e-10))
+        sys3 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2)
+        Swalbe.filmpressure!(state3, sys3)
+        for i in [res, state2.pressure, state3.pressure]
+            @test all(isapprox.(i, -2(0.1^2-0.1); atol=1e-10))
+        end
         
     end
     @testset "Gradient and contact angle" begin
         Swalbe.filmpressure!(res, f, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
         Swalbe.filmpressure!(state, sys2, 1/2)
+        sys3 = Swalbe.SysConst_1D(L=30, n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2)
+        state3.height .= collect(1.0:30)
+        Swalbe.filmpressure!(state3, sys3)
         sol = zeros(30)
         sol[1] = 30
         sol[end] = -30
-        @test all(isapprox.(res, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
-        @test all(isapprox.(state.pressure, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
-        # TODO: Fix me
-        # state2.height .= sol
-        # Swalbe.filmpressure!(state2, sys2)
-        # @test all(isapprox.(state2.pressure, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
+        for i in [res, state.pressure, state3.pressure]
+            @test all(isapprox.(i, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
+        end
         
     end
 end

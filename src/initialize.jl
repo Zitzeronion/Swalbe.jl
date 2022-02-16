@@ -1,6 +1,15 @@
+# Parent type for all LBM states 
 abstract type LBM_state end
+# Derived type for 2D LBM states
 abstract type LBM_state_2D <: LBM_state end
+# Derived type for 1D LBM states
 abstract type LBM_state_1D <: LBM_state end
+
+# Parent type for system specific constants
+abstract type Consts end
+
+
+
 
 """
     SysConst{T}
@@ -27,7 +36,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 - `g :: T`: gravitational acceleration, usually neglected in thin film simulations
 
 """
-Base.@kwdef struct SysConst{T}
+Base.@kwdef struct SysConst{T} <: Consts
     # Lattice
     Lx :: Int = 256
     Ly :: Int = 256
@@ -73,7 +82,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 - `g :: T`: gravitational acceleration, usually neglected in thin film simulations
 
 """
-Base.@kwdef struct SysConst_1D{T}
+Base.@kwdef struct SysConst_1D{T} <: Consts
     # Lattice
     L :: Int = 256
     Tmax :: Int = 1000
@@ -263,6 +272,23 @@ Base.@kwdef struct State_1D{T} <: LBM_state_1D
     slip :: Vector{T}
     h∇p :: Vector{T}
     dgrad :: Matrix{T} 
+end
+
+Base.@kwdef struct State_gamma_1D{T} <: LBM_state_1D
+    # Distribution functions
+    fout :: Matrix{T}
+    ftemp :: Matrix{T}
+    feq :: Matrix{T} 
+    # Macroscopic variables and moments 
+    height :: Vector{T} 
+    vel :: Vector{T} 
+    pressure :: Vector{T} 
+    # Forces and a dummy for the gradient
+    F :: Vector{T} 
+    slip :: Vector{T}
+    h∇p :: Vector{T}
+    dgrad :: Matrix{T} 
+    γ :: Vector{T}
 end
 
 Base.@kwdef struct State_thermal_1D{T} <: LBM_state_1D
@@ -457,7 +483,7 @@ Mostly allocations of arrays used to run a simulation, but all within one functi
 # Arguments
 
 - `sysc :: SysConst_1D`: Needed for the lattice dimensions, `L` 
-- `exotic :: Bool`: If true thermal fluctuations can be computed and saved to the `fthermalx` and `fthermaly` field
+- `exotic :: Bool`: If true thermal fluctuations can be computed
 - `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
 """
 function Sys(sysc::SysConst_1D, exotic::Bool, T)
@@ -513,6 +539,20 @@ function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
             slip = zeros(sysc.L),
             kbt = zeros(sysc.L),
             h∇p = zeros(sysc.L),
+        )
+    elseif kind == "gamma"
+        dyn = State_gamma_1D{T}(
+            fout = zeros(sysc.L, 3),
+            ftemp = zeros(sysc.L, 3),
+            feq = zeros(sysc.L, 3),
+            height = ones(sysc.L),
+            vel = zeros(sysc.L),
+            pressure = zeros(sysc.L),
+            dgrad = zeros(sysc.L, 2),
+            F = zeros(sysc.L),
+            slip = zeros(sysc.L),
+            h∇p = zeros(sysc.L),
+            γ = zeros(sysc.L)
         )
     end
     return dyn
