@@ -5,14 +5,15 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 52725098-857a-4301-b86b-d9cd819de541
-using DrWatson
-
-# ╔═╡ 005b7402-df13-410c-88e1-69fec65b5ff0
-# Because I am working on a local branch
-@quickactivate :Swalbe
-
-# ╔═╡ f75e02be-8f28-11ec-16ae-8bc62cd08643
-using Plots, DataFrames, FileIO
+begin
+    import Pkg
+    # activate the shared project environment
+    Pkg.activate(Base.current_project())
+    # instantiate, i.e. make sure that all packages are downloaded
+    Pkg.instantiate()
+	
+    using Plots, DataFrames, FileIO, Swalbe
+end
 
 # ╔═╡ bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 md"# Coalescence of sessile droplets
@@ -258,8 +259,6 @@ end
 # ╔═╡ Cell order:
 # ╟─bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 # ╠═52725098-857a-4301-b86b-d9cd819de541
-# ╠═005b7402-df13-410c-88e1-69fec65b5ff0
-# ╠═f75e02be-8f28-11ec-16ae-8bc62cd08643
 # ╟─54427765-643f-44fe-84e1-c7c67b2cfe0d
 # ╠═eda3dc93-7626-42eb-82a6-b8615bd0f477
 # ╠═bcb187be-9a59-46ce-aebe-74e7003077d8
