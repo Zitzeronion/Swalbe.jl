@@ -287,7 +287,7 @@ function BGKandStream!(state::State_1D, sys::SysConst_1D)
     return nothing
 end
 
-function BGKandStream!(state::State_1D)
+function BGKandStream!(state::T) where {T<:LBM_state_1D}
     # All distribution functions
     fe0, fe1, fe2 = viewdists_1D(state.feq)
     ft0, ft1, ft2 = viewdists_1D(state.ftemp)

@@ -75,7 +75,7 @@ function moments!(height, vel, fout)
     return nothing
 end
 
-function moments!(state::State_1D)
+function moments!(state::T) where {T<:LBM_state_1D}
     # Get views of the populations
     f0, f1, f2 = Swalbe.viewdists_1D(state.fout) 
     # Compute the height

@@ -56,7 +56,7 @@ function slippage!(slip, height, vel, δ, μ)
     return nothing
 end
 # with state struct
-function slippage!(state::State_1D, sys::SysConst_1D)
+function slippage!(state::T, sys::SysConst_1D) where {T<:LBM_state_1D}
     state.slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height.^2 .+ 6*sys.δ .* state.height .+ 3*sys.δ^2 )
     return nothing
 end
@@ -127,7 +127,7 @@ function h∇p!(state::LBM_state_2D)
     return nothing
 end
 # One dimensional implementation
-function h∇p!(state::State_1D)
+function h∇p!(state::T) where {T<:LBM_state_1D}
     fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
     circshift!(fip, state.pressure, 1)
