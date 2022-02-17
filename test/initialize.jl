@@ -46,6 +46,7 @@
     @test isa(h∇py, Array{Float64, 2})
     
     dyn = Swalbe.Sys(sys, "CPU")
+    @test isa(dyn, Swalbe.State)
     # Struct should do what I expect, hopefully
     @test sys.Lx == 25
     @test sys.Ly == 26
@@ -85,6 +86,8 @@
     @test isa(fthermal, Vector{Float64})
     
     dyn = Swalbe.Sys(sys1d)
+    @test typeof(dyn) == Swalbe.State_1D{Float64}
+    @test typeof(dyn) <: Swalbe.LBM_state_1D
     # Struct should do what I expect, hopefully
     @test sys1d.L == 25
     @test sys1d.Tmax == 1000

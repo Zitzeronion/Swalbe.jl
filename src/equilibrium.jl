@@ -240,8 +240,8 @@ function equilibrium!(state::State_1D, sys::SysConst_1D)
     
     return nothing
 end
-
-function equilibrium!(state::State_1D)
+# More general version of the above
+function equilibrium!(state::T) where {T<:LBM_state_1D}
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(state.feq) 
     
