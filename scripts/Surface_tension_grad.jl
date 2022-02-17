@@ -1,7 +1,39 @@
 using DrWatson 
 @quickactivate :Swalbe
-using DataFrames, FileIO
+using Plots, DataFrames, FileIO
 
+# Constants
+L = 1024
+x = collect(1:L)
+γ = zeros(4,L)
+γ₀ = 0.0001
+smooth = abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (L÷10))))
+
+# Surface tension functions
+function gamma_curves!(x; x0=γ₀, ϵ=0.1)
+    x[1,:] .= x0
+	x[2,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
+	x[3,1:L÷2] .= x0
+	x[2,L÷2+1:L] .= x0 - x0 * ϵ
+	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
+	x[4,:] .= x0 .* smooth .+ (1 .- smooth) .* x0 .*(1 - ϵ) 
+end
+
+# Initial state
+rad = 500
+h = Swalbe.two_droplets(Swalbe.SysConst_1D(L=1024), r₁=rad, r₂=rad)
+p0 = plot(collect(1:1024), h, 
+		  w=3, 
+		  aspect_ratio=7, 
+		  label="Initial conf.", 
+		  xlabel="x [Δx]", 
+		  ylabel="h(x)",
+		  legendfontsize = 14,			# legend font size
+          tickfont = (14),	# tick font and size
+          guidefont = (15))
+ylims!(0,40)
+
+# Run function to perform the experiments
 function run_(
     sys::Swalbe.SysConst_1D,
     gamma::Vector;
@@ -42,3 +74,22 @@ function run_(
     
 end
 
+# Define a SysConst and try if the simulation runs
+sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
+l = run_(sys, fill(2e-4, 1024), r₁=rad, r₂=rad)
+
+# Loop through the different surface tensions and disjoining pressure terms
+gamma_curves!(γ, x0=2e-4)
+data = zeros(40000, L, 8)
+for i in 1:8
+    k = 0
+    if i < 5
+        sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
+        k = i
+    else
+        sys = Swalbe.SysConst_1D(L=1024, n=3, m=2, Tmax=4000000, δ=50.0)
+        k = i - 4
+    end 
+    data[:,:,k] = run_(sys, γ[k,:], r₁=rad, r₂=rad)
+    println("Done with iteration $i")
+end

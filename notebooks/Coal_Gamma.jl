@@ -235,7 +235,7 @@ end
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
 	sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-	data_merge[:,:,γ[1]] = run_(sys, fill(1e-4, 1024), r₁=rad, r₂=rad)
+	l = run_(sys, fill(1e-4, 1024), r₁=rad, r₂=rad)
 end
 
 # ╔═╡ c2753149-8036-49d6-86e0-ea3d8fccf7cf
