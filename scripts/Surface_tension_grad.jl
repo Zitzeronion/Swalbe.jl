@@ -79,7 +79,7 @@ sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
 l = run_(sys, fill(2e-4, 1024), r₁=rad, r₂=rad)
 
 # Loop through the different surface tensions and disjoining pressure terms
-gamma_curves!(γ, x0=2e-4)
+gamma_curves!(γ, x0=2e-4, )
 data = zeros(40000, L, 8)
 for i in 1:8
     k = 0
@@ -93,3 +93,10 @@ for i in 1:8
     data[:,:,k] = run_(sys, γ[k,:], r₁=rad, r₂=rad)
     println("Done with iteration $i")
 end
+
+p1 = plot(data[100,:,1], label="t100"); plot!(data[10000, :, 1], label="1e6"); plot!(data[40000, :, 1], label="t4e6")
+p2 = plot(data[100,:,2], label="t100"), plot!(data[10000, :, 2], label="1e6"); plot!(data[40000, :, 2], label="t4e6")
+p3 = plot(data[100,:,3], label="t100"); plot!(data[10000, :, 3], label="1e6"); plot!(data[40000, :, 3], label="t4e6")
+p4 = plot(data[100,:,4], label="t100"); plot!(data[10000, :, 4], label="1e6"); plot!(data[40000, :, 4], label="t4e6")
+
+plot(p1, p2, p3, p4, layout = (2, 2), legend = false)
