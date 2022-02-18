@@ -329,7 +329,7 @@ function ∇γ!(state::State_gamma_1D)
     circshift!(fim, state.γ, -1)
     
     # In the end it is just a weighted sum...
-    state.∇γ .= 3/2 .* (state.γ .* -0.5 .* (fip .- fim))
+    state.∇γ .= 3/2 .* ((fip .- fim) ./ 2.0)
     return nothing
 end
 

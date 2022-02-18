@@ -4,23 +4,24 @@ using Swalbe
 L = 1024
 x = collect(1:L)
 γ = zeros(4,L)
-ε = 0.02
-γ₀ = 0.0001
+ε = 0.2
+γ₀ = 0.001
 γ_bar = (γ₀ + (γ₀ - ε))/2
 Δγ = ε
 sl = L÷10
 
 # Surface tension functions
-function gamma_curves!(x; x0=γ₀, ϵ=0.02, L=L, sl=sl)
-	function smooth(x, L, sl)
-		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (sl))))
+function gamma_curves!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
 	end
-	x[1,:] .= x0
-	x[2,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
-	x[3,1:L÷2] .= x0
-	x[3,L÷2+1:L] .= x0 - x0 * ϵ
+	out[1,:] .= x0
+	out[2,:] .= x0 .* (1 .- ϵ .* l ./ L)
+	out[3,1:L÷2] .= x0
+	out[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	x[4,:] .= x0 .* smooth(x[3,:], L, sl) .+ (1 .- smooth(x[3,:], L, sl)) .* x0 .*(1 - ϵ) 
+	out[4,:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
+	return nothing
 end
 
 # Initial state
@@ -67,7 +68,7 @@ function run_(
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         Swalbe.∇γ!(state)
-        state.F .= -state.h∇p .- state.slip .- state.γ
+        state.F .= -state.h∇p .- state.slip .+ state.∇γ
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
@@ -80,9 +81,9 @@ function run_(
 end
 
 # Define a SysConst and try if the simulation runs
-sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
+sys = Swalbe.SysConst_1D(L=1024, Tmax=400000, δ=10.0)
 gamma_curves!(γ, x0=1e-4)
-l = run_(sys, γ[2,:], r₁=rad, r₂=rad)
+l = run_(sys, γ[1,:], r₁=490, r₂=rad)
 
 # Loop through the different surface tensions and disjoining pressure terms
 data = zeros(40000, L, 8)
