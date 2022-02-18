@@ -553,7 +553,7 @@ function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
             F = zeros(sysc.L),
             slip = zeros(sysc.L),
             h∇p = zeros(sysc.L),
-            γ = zeros(sysc.L)
+            γ = zeros(sysc.L),
             ∇γ = zeros(sysc.L)
         )
     end
