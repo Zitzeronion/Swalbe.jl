@@ -85,24 +85,25 @@ begin
 	L = 1024
 	x = collect(1:L)
 	γ = zeros(4,L)
-	ε = 0.02
-	γ₀ = 0.0001
+	ε = 0.2
+	γ₀ = 0.001
 	γ_bar = (γ₀ + (γ₀ - ε))/2
 	Δγ = ε
 	sl = L÷10
 end
 
 # ╔═╡ bcb187be-9a59-46ce-aebe-74e7003077d8
-function gamma_curves!(x; x0=γ₀, ϵ=0.02, L=L, sl=sl)
-	function smooth(x, L, sl)
-		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (sl))))
+function gamma_curves!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
 	end
-	x[1,:] .= x0
-	x[2,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
-	x[3,1:L÷2] .= x0
-	x[3,L÷2+1:L] .= x0 - x0 * ϵ
+	out[1,:] .= x0
+	out[2,:] .= x0 .* (1 .- ϵ .* l ./ L)
+	out[3,1:L÷2] .= x0
+	out[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	x[4,:] .= x0 .* smooth(x[3,:], L, sl) .+ (1 .- smooth(x[3,:], L, sl)) .* x0 .*(1 - ϵ) 
+	out[4,:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
+	return nothing
 end
 
 # ╔═╡ 677ff3cc-4037-4b19-a521-dbca74a635a7
@@ -142,7 +143,7 @@ md"Below is a plot of the three choices of $\gamma(x)$ normalized with the chara
 # ╔═╡ 708f54fc-0bd4-4577-85ec-4faf38029c2f
 begin
 	smap = 50
-	plot(collect(1:L), γ[1,:] ./ γ₀, 
+	plot(collect(1:L), γ[2,:] ./ γ₀, 
 		 w=3, 
 		 st = :samplemarkers,
 		 step = smap, 						
@@ -154,13 +155,13 @@ begin
          tickfont = (14),	# tick font and size
          guidefont = (15)	# label font and size
 		 )
-	plot!(collect(1:L), γ[2,:] ./ γ₀, 
+	plot!(collect(1:L), γ[3,:] ./ γ₀, 
 		  w=3, 
 		  label="step",
 		  st = :samplemarkers,
 		  step = smap, 						
 		  marker = (8, :auto, 0.6),)
-	plot!(collect(1:L), γ[3,:] ./ γ₀, 
+	plot!(collect(1:L), γ[4,:] ./ γ₀, 
 		  w=3, 
 		  label="tanh",
 	      st = :samplemarkers,
@@ -236,32 +237,51 @@ function run_(
         
         Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
     end
-
+	println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
     return fluid
     
 end
 
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
-	data = zeros(4, 40000, 1024)
-	sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
+	data = zeros(4, 1000, 1024)
+	sys = Swalbe.SysConst_1D(L=1024, n=3, m=2, Tmax=100000, δ=1.0)
 	for i in 1:4
 	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+		println("Done with iteration $i")
 	end
 end
 
 # ╔═╡ c5118d35-2015-49ee-889a-2e3040e906eb
 begin
-	t1 = 5000
-	t2 = 15000
-	t3 = 40000
-	plot(data[1, t1, :], label="γ=const. t=$(t1*100)", xlabel="x", ylabel="h")
-	plot!(data[1, t2, :], label="γ=const. t=$(t2*100)", xlabel="x", ylabel="h")
-	plot!(data[1, t3, :], label="γ=const. t=$(t3*100)", xlabel="x", ylabel="h")
+	t1 = 100
+	t2 = 500
+	t3 = 1000
+	plot(data[1, t1, :], label="γ=lin. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[1, t2, :], label="γ=lin. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[1, t3, :], label="γ=lin. t=$(t3*100)", xlabel="x", ylabel="h")
+	ylims!(0,15)
+	xlims!(472,552)
 end
 
 # ╔═╡ 6922371e-4418-46ae-9f39-7690f78e8b45
+begin
+	plot(data[3, t1, :], label="γ=hea. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[3, t2, :], label="γ=hea. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[3, t3, :], label="γ=hea. t=$(t3*100)", xlabel="x", ylabel="h")
+	ylims!(0,15)
+	xlims!(472,552)
+end
 
+# ╔═╡ f992a3c6-8eca-47e6-bedb-1a2486b1a04e
+begin
+	func = 4
+	plot(data[4, t1, :], label="γ=smo. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[4, t2, :], label="γ=smo. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[4, t3, :], label="γ=smo. t=$(t3*100)", xlabel="x", ylabel="h")
+	ylims!(0,15)
+	xlims!(472,552)
+end
 
 # ╔═╡ Cell order:
 # ╠═bb534270-0e59-4c41-a825-fd6dc0fb4a7e
@@ -272,7 +292,7 @@ end
 # ╠═677ff3cc-4037-4b19-a521-dbca74a635a7
 # ╟─c4236e13-fca3-4350-adf7-b98c7bde8a0a
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
-# ╟─708f54fc-0bd4-4577-85ec-4faf38029c2f
+# ╠═708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
 # ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
@@ -280,3 +300,4 @@ end
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
 # ╠═c5118d35-2015-49ee-889a-2e3040e906eb
 # ╠═6922371e-4418-46ae-9f39-7690f78e8b45
+# ╠═f992a3c6-8eca-47e6-bedb-1a2486b1a04e

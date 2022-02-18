@@ -323,10 +323,6 @@ end
 Computes the gradient of a spatially resolved surface tension field.
 """
 function ∇γ!(state::State_gamma_1D)
-    # No need for computation if surface tension is constant
-    if maximum(state.γ) == minimum(state.γ)
-        return nothing
-    end
     fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
     circshift!(fip, state.γ, 1)
