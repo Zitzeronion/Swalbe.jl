@@ -283,12 +283,13 @@ Base.@kwdef struct State_gamma_1D{T} <: LBM_state_1D
     height :: Vector{T} 
     vel :: Vector{T} 
     pressure :: Vector{T} 
+    γ :: Vector{T}
     # Forces and a dummy for the gradient
     F :: Vector{T} 
     slip :: Vector{T}
     h∇p :: Vector{T}
+    ∇γ :: Vector{T}
     dgrad :: Matrix{T} 
-    γ :: Vector{T}
 end
 
 Base.@kwdef struct State_thermal_1D{T} <: LBM_state_1D
@@ -553,6 +554,7 @@ function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
             slip = zeros(sysc.L),
             h∇p = zeros(sysc.L),
             γ = zeros(sysc.L)
+            ∇γ = zeros(sysc.L)
         )
     end
     return dyn

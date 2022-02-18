@@ -1,22 +1,26 @@
-using DrWatson 
-@quickactivate :Swalbe
 using Plots, DataFrames, FileIO
-
+using Swalbe
 # Constants
 L = 1024
 x = collect(1:L)
 γ = zeros(4,L)
+ε = 0.02
 γ₀ = 0.0001
-smooth = abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (L÷10))))
+γ_bar = (γ₀ + (γ₀ - ε))/2
+Δγ = ε
+sl = L÷10
 
 # Surface tension functions
-function gamma_curves!(x; x0=γ₀, ϵ=0.1)
-    x[1,:] .= x0
+function gamma_curves!(x; x0=γ₀, ϵ=0.02, L=L, sl=sl)
+	function smooth(x, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (sl))))
+	end
+	x[1,:] .= x0
 	x[2,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
 	x[3,1:L÷2] .= x0
-	x[2,L÷2+1:L] .= x0 - x0 * ϵ
+	x[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	x[4,:] .= x0 .* smooth .+ (1 .- smooth) .* x0 .*(1 - ϵ) 
+	x[4,:] .= x0 .* smooth(x[3,:], L, sl) .+ (1 .- smooth(x[3,:], L, sl)) .* x0 .*(1 - ϵ) 
 end
 
 # Initial state
@@ -62,7 +66,8 @@ function run_(
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
-        state.F .= -state.h∇p .- state.slip
+        Swalbe.∇γ!(state)
+        state.F .= -state.h∇p .- state.slip .- state.γ
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
@@ -76,10 +81,10 @@ end
 
 # Define a SysConst and try if the simulation runs
 sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-l = run_(sys, fill(2e-4, 1024), r₁=rad, r₂=rad)
+gamma_curves!(γ, x0=1e-4)
+l = run_(sys, γ[2,:], r₁=rad, r₂=rad)
 
 # Loop through the different surface tensions and disjoining pressure terms
-gamma_curves!(γ, x0=2e-4, )
 data = zeros(40000, L, 8)
 for i in 1:8
     k = 0

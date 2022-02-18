@@ -12,7 +12,7 @@ begin
     # instantiate, i.e. make sure that all packages are downloaded
     Pkg.instantiate()
 	
-    using Plots, DataFrames, FileIO, Swalbe
+    using Plots, Revise, DataFrames, FileIO, Swalbe
 end
 
 # ╔═╡ bb534270-0e59-4c41-a825-fd6dc0fb4a7e
@@ -83,19 +83,26 @@ We store the three $\gamma$ functions in a single array and will loop through th
 # ╔═╡ eda3dc93-7626-42eb-82a6-b8615bd0f477
 begin
 	L = 1024
-	x = zeros(L)
-	γ = zeros(3,L)
+	x = collect(1:L)
+	γ = zeros(4,L)
+	ε = 0.02
 	γ₀ = 0.0001
-	smooth = abs.(1 .- (0.5 .+ 0.5 .* tanh.((collect(1:L) .- L÷2) ./ (L÷10))))
+	γ_bar = (γ₀ + (γ₀ - ε))/2
+	Δγ = ε
+	sl = L÷10
 end
 
 # ╔═╡ bcb187be-9a59-46ce-aebe-74e7003077d8
-function gamma_curves!(x; x0=γ₀, ϵ=0.1)
-	x[1,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
-	x[2,1:L÷2] .= x0
-	x[2,L÷2+1:L] .= x0 - x0 * ϵ
+function gamma_curves!(x; x0=γ₀, ϵ=0.02, L=L, sl=sl)
+	function smooth(x, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (sl))))
+	end
+	x[1,:] .= x0
+	x[2,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
+	x[3,1:L÷2] .= x0
+	x[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	x[3,:] .= x0 .* smooth .+ (1 .- smooth) .* x0 .*(1 - ϵ) 
+	x[4,:] .= x0 .* smooth(x[3,:], L, sl) .+ (1 .- smooth(x[3,:], L, sl)) .* x0 .*(1 - ϵ) 
 end
 
 # ╔═╡ 677ff3cc-4037-4b19-a521-dbca74a635a7
@@ -221,7 +228,8 @@ function run_(
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
-        state.F .= -state.h∇p .- state.slip
+		Swalbe.∇γ!(state)
+        state.F .= -state.h∇p .- state.slip .- state.∇γ
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
@@ -235,29 +243,28 @@ end
 
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
+	data = zeros(4, 40000, 1024)
 	sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-	l = run_(sys, fill(1e-4, 1024), r₁=rad, r₂=rad)
+	for i in 1:4
+	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+	end
 end
 
-# ╔═╡ c2753149-8036-49d6-86e0-ea3d8fccf7cf
+# ╔═╡ c5118d35-2015-49ee-889a-2e3040e906eb
 begin
-	# Sphere radius
-	# sphere_rad = 500
-	# Different surface tension values
-	# γs = [0.00008, 0.0003, 0.0006, 0.0008]
-	# Array that contains the simulation data
-	# data_merge = zeros(20000, 1024, length(γs))
-	# Loop different surface tension values
-	#for γ in enumerate(γs)
-		# System parameter, δ=50 can still considered small to medium slippage
-		# sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-		# The experiment
-		# data_merge[:,:,γ[1]] = run_drop_coal(sys, r₁=sphere_rad, r₂=sphere_rad)
-	# end
+	t1 = 5000
+	t2 = 15000
+	t3 = 40000
+	plot(data[1, t1, :], label="γ=const. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[1, t2, :], label="γ=const. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[1, t3, :], label="γ=const. t=$(t3*100)", xlabel="x", ylabel="h")
 end
+
+# ╔═╡ 6922371e-4418-46ae-9f39-7690f78e8b45
+
 
 # ╔═╡ Cell order:
-# ╟─bb534270-0e59-4c41-a825-fd6dc0fb4a7e
+# ╠═bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 # ╠═52725098-857a-4301-b86b-d9cd819de541
 # ╟─54427765-643f-44fe-84e1-c7c67b2cfe0d
 # ╠═eda3dc93-7626-42eb-82a6-b8615bd0f477
@@ -267,8 +274,9 @@ end
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
 # ╟─708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
-# ╠═09a80dac-0cd5-42f3-9676-e412a58f58db
-# ╠═ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
+# ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
+# ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
 # ╠═547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
-# ╠═c2753149-8036-49d6-86e0-ea3d8fccf7cf
+# ╠═c5118d35-2015-49ee-889a-2e3040e906eb
+# ╠═6922371e-4418-46ae-9f39-7690f78e8b45

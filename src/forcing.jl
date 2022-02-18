@@ -318,6 +318,26 @@ function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
 end
 
 """
+    surface_tension_gradient!(state)
+
+Computes the gradient of a spatially resolved surface tension field.
+"""
+function ∇γ!(state::State_gamma_1D)
+    # No need for computation if surface tension is constant
+    if maximum(state.γ) == minimum(state.γ)
+        return nothing
+    end
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.γ, 1)
+    circshift!(fim, state.γ, -1)
+    
+    # In the end it is just a weighted sum...
+    state.∇γ .= 3/2 .* (state.γ .* -0.5 .* (fip .- fim))
+    return nothing
+end
+
+"""
     view_four()
 
 Splits a chuck of memory in four equivalent chucks
