@@ -55,6 +55,7 @@ function run_(
     state.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
     Swalbe.equilibrium!(state)
     state.γ .= gamma
+    Swalbe.∇γ!(state)
     println("Starting the lattice Boltzmann time loop")
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
@@ -67,23 +68,21 @@ function run_(
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
-        Swalbe.∇γ!(state)
-        state.F .= -state.h∇p .- state.slip .+ state.∇γ
+        state.F .= -state.h∇p .- state.slip .- state.∇γ
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
         
         Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
     end
-
-    return fluid
+    return fluid, state.∇γ, state.γ
     
 end
 
 # Define a SysConst and try if the simulation runs
 sys = Swalbe.SysConst_1D(L=1024, Tmax=400000, δ=10.0)
 gamma_curves!(γ, x0=1e-4)
-l = run_(sys, γ[1,:], r₁=490, r₂=rad)
+l, hm, gr = run_(sys, γ[2,:], r₁=492, r₂=rad)
 
 # Loop through the different surface tensions and disjoining pressure terms
 data = zeros(40000, L, 8)
