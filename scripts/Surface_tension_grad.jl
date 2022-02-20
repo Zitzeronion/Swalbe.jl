@@ -1,22 +1,27 @@
-using DrWatson 
-@quickactivate :Swalbe
 using Plots, DataFrames, FileIO
-
+using Swalbe
 # Constants
 L = 1024
 x = collect(1:L)
 γ = zeros(4,L)
-γ₀ = 0.0001
-smooth = abs.(1 .- (0.5 .+ 0.5 .* tanh.((x .- L÷2) ./ (L÷10))))
+ε = 0.2
+γ₀ = 0.001
+γ_bar = (γ₀ + (γ₀ - ε))/2
+Δγ = ε
+sl = L÷10
 
 # Surface tension functions
-function gamma_curves!(x; x0=γ₀, ϵ=0.1)
-    x[1,:] .= x0
-	x[2,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
-	x[3,1:L÷2] .= x0
-	x[2,L÷2+1:L] .= x0 - x0 * ϵ
+function gamma_curves!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
+	end
+	out[1,:] .= x0
+	out[2,:] .= x0 .* (1 .- ϵ .* l ./ L)
+	out[3,1:L÷2] .= x0
+	out[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	x[4,:] .= x0 .* smooth .+ (1 .- smooth) .* x0 .*(1 - ϵ) 
+	out[4,:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
+	return nothing
 end
 
 # Initial state
@@ -50,7 +55,8 @@ function run_(
     drop_cent = (sys.L/3, 2*sys.L/3)
     state.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
     Swalbe.equilibrium!(state)
-    # state.γ .= gamma
+    state.γ .= gamma
+    Swalbe.∇γ!(state)
     println("Starting the lattice Boltzmann time loop")
     for t in 1:sys.Tmax
         if t % sys.tdump == 0
@@ -63,24 +69,23 @@ function run_(
         Swalbe.filmpressure!(state, sys, γ=gamma)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
-        state.F .= -state.h∇p .- state.slip
+        state.F .= -state.h∇p .- state.slip .- state.∇γ
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
         
         Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
     end
-
-    return fluid
+    return fluid, state.∇γ, state.γ
     
 end
 
 # Define a SysConst and try if the simulation runs
-sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-l = run_(sys, fill(2e-4, 1024), r₁=rad, r₂=rad)
+sys = Swalbe.SysConst_1D(L=1024, Tmax=400000, δ=10.0)
+gamma_curves!(γ, x0=1e-4)
+l, hm, gr = run_(sys, γ[2,:], r₁=492, r₂=rad)
 
 # Loop through the different surface tensions and disjoining pressure terms
-gamma_curves!(γ, x0=2e-4, )
 data = zeros(40000, L, 8)
 for i in 1:8
     k = 0

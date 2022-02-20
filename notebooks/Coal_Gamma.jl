@@ -12,7 +12,7 @@ begin
     # instantiate, i.e. make sure that all packages are downloaded
     Pkg.instantiate()
 	
-    using Plots, DataFrames, FileIO, Swalbe
+    using Plots, Revise, DataFrames, FileIO, Swalbe
 end
 
 # ╔═╡ bb534270-0e59-4c41-a825-fd6dc0fb4a7e
@@ -83,19 +83,27 @@ We store the three $\gamma$ functions in a single array and will loop through th
 # ╔═╡ eda3dc93-7626-42eb-82a6-b8615bd0f477
 begin
 	L = 1024
-	x = zeros(L)
-	γ = zeros(3,L)
-	γ₀ = 0.0001
-	smooth = abs.(1 .- (0.5 .+ 0.5 .* tanh.((collect(1:L) .- L÷2) ./ (L÷10))))
+	x = collect(1:L)
+	γ = zeros(4,L)
+	ε = 0.2
+	γ₀ = 0.001
+	γ_bar = (γ₀ + (γ₀ - ε))/2
+	Δγ = ε
+	sl = L÷10
 end
 
 # ╔═╡ bcb187be-9a59-46ce-aebe-74e7003077d8
-function gamma_curves!(x; x0=γ₀, ϵ=0.1)
-	x[1,:] .= x0 .* (1 .- ϵ .* collect(1:L) ./ L)
-	x[2,1:L÷2] .= x0
-	x[2,L÷2+1:L] .= x0 - x0 * ϵ
+function gamma_curves!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
+	end
+	out[1,:] .= x0
+	out[2,:] .= x0 .* (1 .- ϵ .* l ./ L)
+	out[3,1:L÷2] .= x0
+	out[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	x[3,:] .= x0 .* smooth .+ (1 .- smooth) .* x0 .*(1 - ϵ) 
+	out[4,:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
+	return nothing
 end
 
 # ╔═╡ 677ff3cc-4037-4b19-a521-dbca74a635a7
@@ -135,7 +143,7 @@ md"Below is a plot of the three choices of $\gamma(x)$ normalized with the chara
 # ╔═╡ 708f54fc-0bd4-4577-85ec-4faf38029c2f
 begin
 	smap = 50
-	plot(collect(1:L), γ[1,:] ./ γ₀, 
+	plot(collect(1:L), γ[2,:] ./ γ₀, 
 		 w=3, 
 		 st = :samplemarkers,
 		 step = smap, 						
@@ -147,13 +155,13 @@ begin
          tickfont = (14),	# tick font and size
          guidefont = (15)	# label font and size
 		 )
-	plot!(collect(1:L), γ[2,:] ./ γ₀, 
+	plot!(collect(1:L), γ[3,:] ./ γ₀, 
 		  w=3, 
 		  label="step",
 		  st = :samplemarkers,
 		  step = smap, 						
 		  marker = (8, :auto, 0.6),)
-	plot!(collect(1:L), γ[3,:] ./ γ₀, 
+	plot!(collect(1:L), γ[4,:] ./ γ₀, 
 		  w=3, 
 		  label="tanh",
 	      st = :samplemarkers,
@@ -221,43 +229,62 @@ function run_(
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
-        state.F .= -state.h∇p .- state.slip
+		Swalbe.∇γ!(state)
+        state.F .= -state.h∇p .- state.slip .- state.∇γ
         Swalbe.equilibrium!(state)
         Swalbe.BGKandStream!(state)
         Swalbe.moments!(state)
         
         Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
     end
-
+	println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
     return fluid
     
 end
 
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
-	sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-	l = run_(sys, fill(1e-4, 1024), r₁=rad, r₂=rad)
+	data = zeros(4, 1000, 1024)
+	sys = Swalbe.SysConst_1D(L=1024, n=3, m=2, Tmax=100000, δ=1.0)
+	for i in 1:4
+	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+		println("Done with iteration $i")
+	end
 end
 
-# ╔═╡ c2753149-8036-49d6-86e0-ea3d8fccf7cf
+# ╔═╡ c5118d35-2015-49ee-889a-2e3040e906eb
 begin
-	# Sphere radius
-	# sphere_rad = 500
-	# Different surface tension values
-	# γs = [0.00008, 0.0003, 0.0006, 0.0008]
-	# Array that contains the simulation data
-	# data_merge = zeros(20000, 1024, length(γs))
-	# Loop different surface tension values
-	#for γ in enumerate(γs)
-		# System parameter, δ=50 can still considered small to medium slippage
-		# sys = Swalbe.SysConst_1D(L=1024, Tmax=4000000, δ=50.0)
-		# The experiment
-		# data_merge[:,:,γ[1]] = run_drop_coal(sys, r₁=sphere_rad, r₂=sphere_rad)
-	# end
+	t1 = 100
+	t2 = 500
+	t3 = 1000
+	plot(data[1, t1, :], label="γ=lin. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[1, t2, :], label="γ=lin. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[1, t3, :], label="γ=lin. t=$(t3*100)", xlabel="x", ylabel="h")
+	ylims!(0,15)
+	xlims!(472,552)
+end
+
+# ╔═╡ 6922371e-4418-46ae-9f39-7690f78e8b45
+begin
+	plot(data[3, t1, :], label="γ=hea. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[3, t2, :], label="γ=hea. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[3, t3, :], label="γ=hea. t=$(t3*100)", xlabel="x", ylabel="h")
+	ylims!(0,15)
+	xlims!(472,552)
+end
+
+# ╔═╡ f992a3c6-8eca-47e6-bedb-1a2486b1a04e
+begin
+	func = 4
+	plot(data[4, t1, :], label="γ=smo. t=$(t1*100)", xlabel="x", ylabel="h")
+	plot!(data[4, t2, :], label="γ=smo. t=$(t2*100)", xlabel="x", ylabel="h")
+	plot!(data[4, t3, :], label="γ=smo. t=$(t3*100)", xlabel="x", ylabel="h")
+	ylims!(0,15)
+	xlims!(472,552)
 end
 
 # ╔═╡ Cell order:
-# ╟─bb534270-0e59-4c41-a825-fd6dc0fb4a7e
+# ╠═bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 # ╠═52725098-857a-4301-b86b-d9cd819de541
 # ╟─54427765-643f-44fe-84e1-c7c67b2cfe0d
 # ╠═eda3dc93-7626-42eb-82a6-b8615bd0f477
@@ -265,10 +292,12 @@ end
 # ╠═677ff3cc-4037-4b19-a521-dbca74a635a7
 # ╟─c4236e13-fca3-4350-adf7-b98c7bde8a0a
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
-# ╟─708f54fc-0bd4-4577-85ec-4faf38029c2f
+# ╠═708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
-# ╠═09a80dac-0cd5-42f3-9676-e412a58f58db
-# ╠═ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
+# ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
+# ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
 # ╠═547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
-# ╠═c2753149-8036-49d6-86e0-ea3d8fccf7cf
+# ╠═c5118d35-2015-49ee-889a-2e3040e906eb
+# ╠═6922371e-4418-46ae-9f39-7690f78e8b45
+# ╠═f992a3c6-8eca-47e6-bedb-1a2486b1a04e

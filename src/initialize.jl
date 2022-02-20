@@ -273,9 +273,21 @@ Base.@kwdef struct State_1D{T} <: LBM_state_1D
 end
 
 Base.@kwdef struct State_gamma_1D{T} <: LBM_state_1D
-    s :: State_1D{T}
+    # Distribution functions
+    fout :: Matrix{T}
+    ftemp :: Matrix{T}
+    feq :: Matrix{T} 
+    # Macroscopic variables and moments 
+    height :: Vector{T} 
+    vel :: Vector{T} 
+    pressure :: Vector{T} 
     γ :: Vector{T}
+    # Forces and a dummy for the gradient
+    F :: Vector{T} 
+    slip :: Vector{T}
+    h∇p :: Vector{T}
     ∇γ :: Vector{T}
+    dgrad :: Matrix{T} 
 end
 
 Base.@kwdef struct State_thermal_1D{T} <: LBM_state_1D
@@ -528,7 +540,8 @@ function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
             F = zeros(sysc.L),
             slip = zeros(sysc.L),
             h∇p = zeros(sysc.L),
-            γ = zeros(sysc.L)
+            γ = zeros(sysc.L),
+            ∇γ = zeros(sysc.L)
         )
     end
     return dyn
