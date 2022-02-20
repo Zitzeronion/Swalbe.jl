@@ -9,7 +9,50 @@ abstract type LBM_state_1D <: LBM_state end
 abstract type Consts end
 
 
+"""
+    SysConst_1D{T}
 
+Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
+
+# Arguments
+
+- `L :: Int`: Number of lattice points
+- `Tmax :: Int`: Number of lattice Boltzmann time iterations
+- `tdump :: Int`: Dumping interval for e.g. data output
+- `τ :: T`: BGK relaxation rate 
+- `cₛ :: T`: Lattice speed of sound, every physical velocity needs to be smaller than this! 
+- `μ :: T`: Kinematic fluid viscosity
+- `δ :: T`: Slip length, defines how far the **no-slip** condition is interpolated into the substrate
+- `kbt :: T`: Thermal energy of the film, works with small values ≈ 10^(-7)
+- `γ :: T`: Surface tension
+- `n :: Int`: Greater exponent of the two used for the powerlaw in the disjoining pressure
+- `m :: Int`: Smaller exponent of the two used for the powerlaw in the disjoining pressure
+- `hmin :: T`: Height value at which the disjoining pressure functional vanishes
+- `hcrit :: T`: Numerical stabilizer for the disjoining pressure term
+- `θ :: T`: Contact angle in multiples of π
+- `g :: T`: gravitational acceleration, usually neglected in thin film simulations
+
+"""
+Base.@kwdef struct SysConst_1D{T} <: Consts
+    # Lattice
+    L :: Int = 256
+    Tmax :: Int = 1000
+    tdump :: Int = Tmax÷10
+    # Collision related
+    τ :: T = 1.0
+    cₛ :: T = 1/sqrt(3.0)
+    μ :: T =  cₛ^2 *( τ - 0.5)
+    # Force related
+    δ :: T = 1.0
+    kbt :: T = 0.0
+    γ :: T = 0.01
+    n :: Int = 9
+    m :: Int = 3
+    hmin :: T = 0.1
+    hcrit :: T = 0.05
+    θ :: T = 1/9
+    g :: T = 0.0
+end
 
 """
     SysConst{T}
@@ -40,51 +83,6 @@ Base.@kwdef struct SysConst{T} <: Consts
     # Lattice
     Lx :: Int = 256
     Ly :: Int = 256
-    Tmax :: Int = 1000
-    tdump :: Int = Tmax÷10
-    # Collision related
-    τ :: T = 1.0
-    cₛ :: T = 1/sqrt(3.0)
-    μ :: T =  cₛ^2 *( τ - 0.5)
-    # Force related
-    δ :: T = 1.0
-    kbt :: T = 0.0
-    γ :: T = 0.01
-    n :: Int = 9
-    m :: Int = 3
-    hmin :: T = 0.1
-    hcrit :: T = 0.05
-    θ :: T = 1/9
-    g :: T = 0.0
-end
-
-"""
-    SysConst_1D{T}
-
-Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
-
-# Arguments
-
-- `L :: Int`: Number of lattice points
-- `Tmax :: Int`: Number of lattice Boltzmann time iterations
-- `tdump :: Int`: Dumping interval for e.g. data output
-- `τ :: T`: BGK relaxation rate 
-- `cₛ :: T`: Lattice speed of sound, every physical velocity needs to be smaller than this! 
-- `μ :: T`: Kinematic fluid viscosity
-- `δ :: T`: Slip length, defines how far the **no-slip** condition is interpolated into the substrate
-- `kbt :: T`: Thermal energy of the film, works with small values ≈ 10^(-7)
-- `γ :: T`: Surface tension
-- `n :: Int`: Greater exponent of the two used for the powerlaw in the disjoining pressure
-- `m :: Int`: Smaller exponent of the two used for the powerlaw in the disjoining pressure
-- `hmin :: T`: Height value at which the disjoining pressure functional vanishes
-- `hcrit :: T`: Numerical stabilizer for the disjoining pressure term
-- `θ :: T`: Contact angle in multiples of π
-- `g :: T`: gravitational acceleration, usually neglected in thin film simulations
-
-"""
-Base.@kwdef struct SysConst_1D{T} <: Consts
-    # Lattice
-    L :: Int = 256
     Tmax :: Int = 1000
     tdump :: Int = Tmax÷10
     # Collision related
@@ -275,37 +273,15 @@ Base.@kwdef struct State_1D{T} <: LBM_state_1D
 end
 
 Base.@kwdef struct State_gamma_1D{T} <: LBM_state_1D
-    # Distribution functions
-    fout :: Matrix{T}
-    ftemp :: Matrix{T}
-    feq :: Matrix{T} 
-    # Macroscopic variables and moments 
-    height :: Vector{T} 
-    vel :: Vector{T} 
-    pressure :: Vector{T} 
-    # Forces and a dummy for the gradient
-    F :: Vector{T} 
-    slip :: Vector{T}
-    h∇p :: Vector{T}
-    dgrad :: Matrix{T} 
+    s :: State_1D{T}
     γ :: Vector{T}
+    ∇γ :: Vector{T}
 end
 
 Base.@kwdef struct State_thermal_1D{T} <: LBM_state_1D
     # Distribution functions
-    fout :: Matrix{T}
-    ftemp :: Matrix{T}
-    feq :: Matrix{T} 
-    # Macroscopic variables and moments 
-    height :: Vector{T} 
-    vel :: Vector{T} 
-    pressure :: Vector{T} 
-    # Forces and a dummy for the gradient
-    F :: Vector{T} 
-    slip :: Vector{T}
-    h∇p :: Vector{T}
+    s :: State_1D{T}
     kbt :: Vector{T}
-    dgrad :: Matrix{T} 
 end
 
 """
