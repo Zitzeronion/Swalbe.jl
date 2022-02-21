@@ -36,7 +36,7 @@
     @testset "Two droplets" begin
         rad = 45
         θ = 1/4
-        sys = Swalbe.SysConst_1D(L=200)
+        sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs())
         height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
         @test isa(height, Vector{Float64})
         @test size(height) == (200,)
