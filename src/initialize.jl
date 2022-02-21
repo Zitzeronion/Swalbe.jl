@@ -2,8 +2,12 @@
 abstract type LBM_state end
 # Derived type for 2D LBM states
 abstract type LBM_state_2D <: LBM_state end
+
+abstract type Expanded_2D <: LBM_state_2D end
 # Derived type for 1D LBM states
 abstract type LBM_state_1D <: LBM_state end
+
+abstract type Expanded_1D <: LBM_state_1D end
 
 # Parent type for system specific constants
 abstract type Consts end
@@ -143,7 +147,7 @@ Data structure that contains State and allocations for thermal fluctuations.
 - `kbty :: Matrix{T}`: Force due to thermal fluctuations, y-component
 
 """
-Base.@kwdef struct State_thermal{T, N} <: LBM_state_2D
+Base.@kwdef struct State_thermal{T, N} <: Expanded_2D
     basestate :: State{T, N}
     kbtx :: Matrix{T} 
     kbty :: Matrix{T}  
@@ -263,7 +267,7 @@ Data structure for resolve surface tension simulation.
 - `γ :: Vector{T}`: Surface tension field
 - `∇γ :: Vector{T}`: Surface tension gardient
 """
-Base.@kwdef struct State_gamma_1D{T} <: LBM_state_1D
+Base.@kwdef struct State_gamma_1D{T} <: Expanded_1D
     basestate :: State_1D{T}
     γ :: Vector{T}
     ∇γ :: Vector{T}
@@ -280,7 +284,7 @@ Data structure for resolve surface tension simulation.
 - `γ :: Vector{T}`: Surface tension field
 - `∇γ :: Vector{T}`: Surface tension gardient
 """
-Base.@kwdef struct State_thermal_1D{T} <: LBM_state_1D
+Base.@kwdef struct State_thermal_1D{T} <: Expanded_1D
     basestate :: State_1D{T}
     kbt :: Vector{T}
 end
