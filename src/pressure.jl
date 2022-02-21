@@ -243,17 +243,18 @@ return nothing
 end
 #=
 # State struct in 1D with sys contact angle
-function filmpressure!(state::State_1D, sys::SysConst_1D)
+function filmpressure!(state::State_1D, sys::SysConst_1D; γ=sys.γ, θ=sys.θ, n=sys.n, m=sys.m, hmin=sys.hmin, hcrit=sys.hcrit)
     hip, him = viewneighbors_1D(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height, 1)
     circshift!(him, state.height, -1)
     
-    state.pressure .= -sys.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                 .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                  .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
+    @. state.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+                         * (power_broad(hmin/(state.height + hcrit), n)
+                          - power_broad(hmin/(state.height + hcrit), m)) 
+                          )
 
-    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
+    state.pressure .-= γ .* (hip .- 2 .* state.height .+ him)
     return nothing
 end
 # With spatial varying surface tension

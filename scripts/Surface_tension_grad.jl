@@ -50,7 +50,8 @@ function run_(
     fluid=zeros(sys.Tmax÷dump, sys.L)
 )
     println("Simulating droplet coalecense with surface tension gardient")
-    state = Swalbe.Sys(sys, kind="gamma")
+    # state = Swalbe.Sys(sys, kind="gamma")
+    state = Swalbe.Sys(sys)
     drop_cent = (sys.L/3, 2*sys.L/3)
     state.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
     Swalbe.equilibrium!(state)
@@ -65,7 +66,7 @@ function run_(
                 println("Time step $t bridge height is $(round(state.height[Int(sys.L/2)], digits=3))")
             end
         end
-        Swalbe.filmpressure!(state, sys)
+        Swalbe.filmpressure!(state, sys, γ=gamma)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.F .= -state.h∇p .- state.slip .- state.∇γ
