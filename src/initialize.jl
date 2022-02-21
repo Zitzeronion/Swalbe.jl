@@ -84,7 +84,7 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 - `s :: Taumucs`: Most of the run time constants
 
 """
-Base.@kwdef struct SysConst{T} <: Consts
+Base.@kwdef struct SysConst_1D{T} <: Consts
     # Lattice
     L :: Int = 256
     param :: Taumucs{T}
