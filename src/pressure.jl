@@ -143,53 +143,7 @@ function filmpressure!(state::Expanded_2D, sys::SysConst;
                    - 10/3 * state.basestate.height)
     return nothing
 end
-# With sys.θ
-#=
-function filmpressure!(state::LBM_state_2D, sys::SysConst)
-    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, (1,0))
-    circshift!(hjp, state.height, (0,1))
-    circshift!(him, state.height, (-1,0))
-    circshift!(hjm, state.height, (0,-1))
-    # Diagonal elements  
-    circshift!(hipjp, state.height, (1,1))
-    circshift!(himjp, state.height, (-1,1))
-    circshift!(himjm, state.height, (-1,-1))
-    circshift!(hipjm, state.height, (1,-1))
-    # First the contact angle parameter part
-    state.pressure .= -sys.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                      .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                      .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
-    # Now the gradient
-    state.pressure .-= sys.γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* state.height)
-    return nothing
-end
 
-# Standard usage parameters
-function filmpressure!(output, f, θ)
-    # Straight elements j+1, i+1, i-1, j-1
-    hip = circshift(f, (1,0))
-    hjp = circshift(f, (0,1))
-    him = circshift(f, (-1,0))
-    hjm = circshift(f, (0,-1))
-    # Diagonal elements  
-    hipjp = circshift(f, (1,1))
-    himjp = circshift(f, (-1,1))
-    himjm = circshift(f, (-1,-1))
-    hipjm = circshift(f, (1,-1))
-    # Disjoining pressure part
-    κ = (1 .- cospi.(θ)) .* 16/0.6 
-
-    output .= -0.01 .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* f) .+ κ .* (power_broad.(0.1./(f .+ 0.05), 9)  
-                                       .- power_broad.(0.1./(f .+ 0.05), 3)))
-    return nothing
-end
-=#
 # One dim implementation
 function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
     hip, him = viewneighbors_1D(dgrad)
@@ -241,37 +195,7 @@ circshift!(him, state.basestate.height, -1)
 @. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
 return nothing
 end
-#=
-# State struct in 1D with sys contact angle
-function filmpressure!(state::State_1D, sys::SysConst_1D; γ=sys.γ, θ=sys.θ, n=sys.n, m=sys.m, hmin=sys.hmin, hcrit=sys.hcrit)
-    hip, him = viewneighbors_1D(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, 1)
-    circshift!(him, state.height, -1)
-    
-    @. state.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
-                         * (power_broad(hmin/(state.height + hcrit), n)
-                          - power_broad(hmin/(state.height + hcrit), m)) 
-                          )
 
-    state.pressure .-= γ .* (hip .- 2 .* state.height .+ him)
-    return nothing
-end
-# With spatial varying surface tension
-function filmpressure!(state::State_gamma_1D, sys::SysConst_1D)
-    hip, him = viewneighbors_1D(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, 1)
-    circshift!(him, state.height, -1)
-    
-    state.pressure .= -state.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                 .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                  .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
-
-    state.pressure .-= state.γ .* (hip .- 2 .* state.height .+ him)
-    return nothing
-end
-=#
 # Paolo active matter model
 function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit; Gamma=0.0)
     hip, him = viewneighbors_1D(dgrad)

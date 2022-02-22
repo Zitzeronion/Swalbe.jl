@@ -8,60 +8,48 @@
     # With arguments struct
     f = reshape(collect(1.0:25),5,5)
     res = zeros(5,5)
-    @testset "No contact angle" begin
-        Swalbe.filmpressure!(res, f, zeros(size(f)[1],size(f)[2],8), 1.0, 0.0, 3, 2, 0.1, 0.1)
-        Swalbe.filmpressure!(state, sys, θ=0.0)
-        Swalbe.filmpressure!(state2, sys, θ=0.0)
-        sol = [-30.0 -5.0 -5.0 -5.0 20;
+    dgrad = zeros(5,5,8)
+    sol = [-30.0 -5.0 -5.0 -5.0 20;
                -25.0 0.0 0.0 0.0 25.0;
                -25.0 0.0 0.0 0.0 25.0;
                -25.0 0.0 0.0 0.0 25.0;
                -20.0 5.0 5.0 5.0 30.0;
                ]
+    @testset "No contact angle" begin
+        Swalbe.filmpressure!(res, f, dgrad, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        Swalbe.filmpressure!(state, sys, θ=0.0)
+        Swalbe.filmpressure!(state2, sys, θ=0.0)
+        
 
         @test all(isapprox.(res, sol; atol=1e-10))
         @test all(isapprox.(state.pressure, sol; atol=1e-10))
+    end
+    @testset "No contact angle circshift!" begin
+        state.height .= reshape(collect(1.0:25),5,5)
+        Swalbe.filmpressure!(state, sys, θ=0.0)
+        Swalbe.filmpressure!(res, f, dgrad, 1.0, 0.0, 3, 2, 0.1, 0.1)
+        
+        @test all(isapprox.(res, sol; atol=1e-10))
+        @test all(isapprox.(state.pressure, sol; atol=1e-10))
+    end
+    @testset "Gradient and contact angle" begin
+        sys2 = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0))
+        Swalbe.filmpressure!(state, sys2, θ=1/2)
+        Swalbe.filmpressure!(state2, sys2, θ=1/2)
+        Swalbe.filmpressure!(res, f, dgrad, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        for i in [res, state.pressure, state2.basestate.pressure]
+            @test all(isapprox.(i, -1 .* (-sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
+        end
     end
     @testset "No height gradient" begin
         nograd = ones(5,5)
         state.height .= 1.0
         sys2 = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2))
-        Swalbe.filmpressure!(res, nograd, zeros(size(nograd)[1],size(nograd)[2],8), 1.0, 1/2, 3, 2, 0.1, 0.0)
+        Swalbe.filmpressure!(res, nograd, dgrad, 1.0, 1/2, 3, 2, 0.1, 0.0)
         Swalbe.filmpressure!(state, sys2, θ=1/2)
-        @test all(isapprox.(res, -2(0.1^2-0.1); atol=1e-10))
-        @test all(isapprox.(state.pressure, -2(0.1^2-0.1); atol=1e-10))
-        Swalbe.filmpressure!(state, sys2)
-        @test all(isapprox.(state.pressure, -2(0.1^2-0.1); atol=1e-10))
-    end
-    @testset "Gradient and contact angle" begin
-        state.height .= reshape(collect(1.0:25),5,5)
-        sys2 = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0))
-        Swalbe.filmpressure!(state, sys2, θ=1/2)
-        Swalbe.filmpressure!(res, f, zeros(size(f)[1],size(f)[2],8), 1.0, 1/2, 3, 2, 0.1, 0.0)
-        sol = [30.0 5.0 5.0 5.0 -20;
-               25.0 0.0 0.0 0.0 -25.0;
-               25.0 0.0 0.0 0.0 -25.0;
-               25.0 0.0 0.0 0.0 -25.0;
-               20.0 -5.0 -5.0 -5.0 -30.0]
-
-        @test all(isapprox.(res, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
-        @test all(isapprox.(state.pressure, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
-        
-    end
-    dgrad = zeros(5,5,8)
-    @testset "No contact angle circshift!" begin
-        state.height .= reshape(collect(1.0:25),5,5)
-        Swalbe.filmpressure!(state, sys, θ=0.0)
-        Swalbe.filmpressure!(res, f, dgrad, 1.0, 0.0, 3, 2, 0.1, 0.1)
-        sol = [-30.0 -5.0 -5.0 -5.0 20;
-               -25.0 0.0 0.0 0.0 25.0;
-               -25.0 0.0 0.0 0.0 25.0;
-               -25.0 0.0 0.0 0.0 25.0;
-               -20.0 5.0 5.0 5.0 30.0;
-               ]
-        
-        @test all(isapprox.(res, sol; atol=1e-10))
-        @test all(isapprox.(state.pressure, sol; atol=1e-10))
+        for i in [res, state.pressure]
+            @test all(isapprox.(i, -2(0.1^2-0.1); atol=1e-10))
+        end
     end
 end
 
@@ -78,21 +66,27 @@ end
     state3.basestate.height .= collect(1.0:30)
     # Without the struct
     f = collect(1.0:30)
-    f_float = collect(1.0f0:30.0f0)
+    sol = zeros(30)
+    sol[1] = 30
+    sol[end] = -30
     res = zeros(30)
     dummy = zeros(30,3)
     @testset "No contact angle" begin
         Swalbe.filmpressure!(res, f, dummy, 1.0, 0.0, 3, 2, 0.1, 0.1)
         Swalbe.filmpressure!(state, sys, θ=0.0)
         Swalbe.filmpressure!(state3, sys3)
-        # println("My result: $res")
-        sol = zeros(30)
-        sol[1] = 30
-        sol[end] = -30
         for i in [res, state.pressure, state3.basestate.pressure]
             @test all(i .== -sol)
         end
-        # @test all(state.pressure .== -sol)
+    end
+    @testset "Gradient and contact angle" begin
+        Swalbe.filmpressure!(res, f, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
+        Swalbe.filmpressure!(state, sys2, θ=1/2)
+        sys3 = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2))
+        Swalbe.filmpressure!(state3, sys3)
+        for i in [res, state.pressure, state3.basestate.pressure]
+            @test all(isapprox.(i, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
+        end
     end
     @testset "No height gradient" begin
         nograd = ones(30)
@@ -105,21 +99,6 @@ end
         for i in [res, state2.pressure, state3.basestate.pressure]
             @test all(isapprox.(i, -2(0.1^2-0.1); atol=1e-10))
         end
-        
-    end
-    @testset "Gradient and contact angle" begin
-        Swalbe.filmpressure!(res, f, dummy, 1.0, 1/2, 3, 2, 0.1, 0.0)
-        Swalbe.filmpressure!(state, sys2, θ=1/2)
-        sys3 = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(n=3, m=2, γ=1.0, hmin=0.1, hcrit=0.0, θ=1/2))
-        state3.basestate.height .= collect(1.0:30)
-        Swalbe.filmpressure!(state3, sys3)
-        sol = zeros(30)
-        sol[1] = 30
-        sol[end] = -30
-        for i in [res, state.pressure, state3.basestate.pressure]
-            @test all(isapprox.(i, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
-        end
-        
     end
 end
 
