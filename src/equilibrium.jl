@@ -96,53 +96,18 @@ function equilibrium!(feq, height, velocityx, velocityy, vsquare, gravity)
     return nothing
 end
 
-# Dispatch without gravity input
-function equilibrium!(feq, height, velocityx, velocityy, vsquare)
-    # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(feq) 
-    # Some constants, gravity and weights
-    w1 = 1/9
-    w5 = 1/36
-
-    vsquare .= velocityx .* velocityx .+ velocityy .* velocityy 
-
-    # Zeroth dist
-    f0 .= height .* (1 .- 2/3 .* vsquare)
-    # First
-    f1 .= w1 .* height .* (3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
-    # Second
-    f2 .= w1 .* height .* (3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
-    # Third
-    f3 .= w1 .* height .* (-3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
-    # Forth
-    f4 .= w1 .* height .* (-3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
-    # Fifth
-    f5 .= w5 .* height .* (3 .* (velocityx .+ velocityy) .+ 
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
-    # Sixth
-    f6 .= w5 .* height .* (3 .* (velocityy .- velocityx) .+ 
-                         4.5 .* (velocityy .- velocityx).^2 .- 1.5 .* vsquare)
-    # Seventh
-    f7 .= w5 .* height .* (-3 .* (velocityx .+ velocityy) .+
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
-    # Eigth
-    f8 .= w5 .* height .* (3 .* (velocityx .- velocityy) .+ 
-                         4.5 .* (velocityx .- velocityy).^2 .- 1.5 .* vsquare)
-    return nothing
-end
-
-function equilibrium!(state::State, sys::SysConst)
+function equilibrium!(state::LBM_state_2D, sys::SysConst; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.feq) 
     # Some constants, gravity and weights
-    g0 = 1.5 * sys.g
+    g0 = 1.5 * g
     w1 = 1/9
     w5 = 1/36
 
     state.vsq .= state.velx .* state.velx .+ state.vely .* state.vely 
 
     # Zeroth dist
-    f0 .= state.height .* (1 .- 5/6 .* sys.g .* state.height .- 2/3 .* state.vsq)
+    f0 .= state.height .* (1 .- 5/6 .* g .* state.height .- 2/3 .* state.vsq)
     # First
     f1 .= w1 .* state.height .* (g0 .* state.height .+ 3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
     # Second
@@ -166,37 +131,38 @@ function equilibrium!(state::State, sys::SysConst)
     return nothing
 end
 # Dispatch without gravity and state struct
-function equilibrium!(state::LBM_state_2D)
+function equilibrium!(state::Expanded_2D, sys::SysConst; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.feq) 
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.basestate.feq) 
     # Some constants, gravity and weights
+    g0 = 1.5 * g
     w1 = 1/9
     w5 = 1/36
 
-    state.vsq .= state.velx .* state.velx .+ state.vely .* state.vely 
+    state.basestate.vsq .= state.basestate.velx .* state.basestate.velx .+ state.basestate.vely .* state.basestate.vely 
 
     # Zeroth dist
-    f0 .= state.height .* (1 .- 2/3 .* state.vsq)
+    f0 .= state.basestate.height .* (1 .- 5/6 .* g .* state.basestate.height .- 2/3 .* state.basestate.vsq)
     # First
-    f1 .= w1 .* state.height .* (3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
+    f1 .= w1 .* state.basestate.height .* (g0 .* state.basestate.height .+ 3 .* state.basestate.velx .+ 4.5 .* state.basestate.velx.^2 .- 1.5 .* state.basestate.vsq)
     # Second
-    f2 .= w1 .* state.height .* (3 .* state.vely .+ 4.5 .* state.vely.^2 .- 1.5 .* state.vsq)
+    f2 .= w1 .* state.basestate.height .* (g0 .* state.basestate.height .+ 3 .* state.basestate.vely .+ 4.5 .* state.basestate.vely.^2 .- 1.5 .* state.basestate.vsq)
     # Third
-    f3 .= w1 .* state.height .* (-3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
+    f3 .= w1 .* state.basestate.height .* (g0 .* state.basestate.height .- 3 .* state.basestate.velx .+ 4.5 .* state.basestate.velx.^2 .- 1.5 .* state.basestate.vsq)
     # Forth
-    f4 .= w1 .* state.height .* (-3 .* state.vely .+ 4.5 .* state.vely.^2 .- 1.5 .* state.vsq)
+    f4 .= w1 .* state.basestate.height .* (g0 .* state.basestate.height .- 3 .* state.basestate.vely .+ 4.5 .* state.basestate.vely.^2 .- 1.5 .* state.basestate.vsq)
     # Fifth
-    f5 .= w5 .* state.height .* (3 .* (state.velx .+ state.vely) .+ 
-                         4.5 .* (state.velx .+ state.vely).^2 .- 1.5 .* state.vsq)
+    f5 .= w5 .* state.basestate.height .* (g0 .* state.basestate.height .+ 3 .* (state.basestate.velx .+ state.basestate.vely) .+ 
+                         4.5 .* (state.basestate.velx .+ state.basestate.vely).^2 .- 1.5 .* state.basestate.vsq)
     # Sixth
-    f6 .= w5 .* state.height .* (3 .* (state.vely .- state.velx) .+ 
-                         4.5 .* (state.vely .- state.velx).^2 .- 1.5 .* state.vsq)
+    f6 .= w5 .* state.basestate.height .* (g0 .* state.basestate.height .+ 3 .* (state.basestate.vely .- state.basestate.velx) .+ 
+                         4.5 .* (state.basestate.vely .- state.basestate.velx).^2 .- 1.5 .* state.basestate.vsq)
     # Seventh
-    f7 .= w5 .* state.height .* (-3 .* (state.velx .+ state.vely) .+
-                         4.5 .* (state.velx .+ state.vely).^2 .- 1.5 .* state.vsq)
+    f7 .= w5 .* state.basestate.height .* (g0 .* state.basestate.height .- 3 .* (state.basestate.velx .+ state.basestate.vely) .+
+                         4.5 .* (state.basestate.velx .+ state.basestate.vely).^2 .- 1.5 .* state.basestate.vsq)
     # Eight
-    f8 .= w5 .* state.height .* (3 .* (state.velx .- state.vely) .+ 
-                         4.5 .* (state.velx .- state.vely).^2 .- 1.5 .* state.vsq)
+    f8 .= w5 .* state.basestate.height .* (g0 .* state.basestate.height .+ 3 .* (state.basestate.velx .- state.basestate.vely) .+ 
+                         4.5 .* (state.basestate.velx .- state.basestate.vely).^2 .- 1.5 .* state.basestate.vsq)
     return nothing
 end
 
@@ -214,42 +180,29 @@ function equilibrium!(feq, height, velocity, gravity)
     return nothing
 end
 
-function equilibrium!(feq, height, velocity)
-    # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2 = viewdists_1D(feq) 
-    
-    # Zeroth dist
-    f0 .= height .* (1 .- velocity.^2)
-    # First
-    f1 .= height .* (0.5 .* velocity .+ 0.5 .* velocity.^2)
-    # Second
-    f2 .= height .* (-0.5 .* velocity .+ 0.5 .* velocity.^2)
-    return nothing
-end
-
-function equilibrium!(state::State_1D, sys::SysConst_1D)
+function equilibrium!(state::State_1D, sys::SysConst_1D; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(state.feq) 
     
     # Zeroth dist
-    f0 .= state.height .* (1 .- 0.5 .* sys.g .* state.height .- state.vel.^2)
+    f0 .= state.height .* (1 .- 0.5 .* g .* state.height .- state.vel.^2)
     # First
-    f1 .= state.height .* (0.25 .* sys.g .* state.height .+ 0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    f1 .= state.height .* (0.25 .* g .* state.height .+ 0.5 .* state.vel .+ 0.5 .* state.vel.^2)
     # Second
-    f2 .= state.height .* (0.25 .* sys.g .* state.height .- 0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    f2 .= state.height .* (0.25 .* g .* state.height .- 0.5 .* state.vel .+ 0.5 .* state.vel.^2)
     
     return nothing
 end
 # More general version of the above
-function equilibrium!(state::T) where {T<:LBM_state_1D}
+function equilibrium!(state::Expanded_1D, sys::SysConst_1D; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2 = viewdists_1D(state.feq) 
+    f0, f1, f2 = viewdists_1D(state.basestate.feq) 
     
     # Zeroth dist
-    f0 .= state.height .* (1 .- state.vel.^2)
+    f0 .= state.basestate.height .* (1 .- 0.5 .* g .* state.basestate.height .- state.basestate.vel.^2)
     # First
-    f1 .= state.height .* (0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    f1 .= state.basestate.height .* (0.25 .* g .* state.basestate.height .+ 0.5 .* state.basestate.vel .+ 0.5 .* state.basestate.vel.^2)
     # Second
-    f2 .= state.height .* (-0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    f2 .= state.basestate.height .* (0.25 .* g .* state.basestate.height .- 0.5 .* state.basestate.vel .+ 0.5 .* state.basestate.vel.^2)
     return nothing
 end
