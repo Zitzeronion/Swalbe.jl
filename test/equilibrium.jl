@@ -132,13 +132,16 @@ end
             @test all(i[:,3] .≈  -0.5 * 0.1 + 0.5 * 0.01)
         end
     end
-    #=
+    
     @testset "Density and gravity and velocity" begin
-        feq = zeros(30,3)
+        Swalbe.equilibrium!(st1, sys, g=0.1)
+        Swalbe.equilibrium!(st2, sys, g=0.1)
         Swalbe.equilibrium!(feq, ones(30), fill(0.1,30), 0.1)
-        @test all(feq[:,1] .== 1.0 - 0.5 * 0.1 - 0.01)
-        @test all(feq[:,2] .≈  0.025 + 0.5 * 0.1 + 0.5 * 0.01)
-        @test all(feq[:,3] .≈  0.025 - 0.5 * 0.1 + 0.5 * 0.01)
+        for i in [feq, st1.feq, st2.basestate.feq]
+            @test all(feq[:,1] .== 1.0 - 0.5 * 0.1 - 0.01)
+            @test all(feq[:,2] .≈  0.025 + 0.5 * 0.1 + 0.5 * 0.01)
+            @test all(feq[:,3] .≈  0.025 - 0.5 * 0.1 + 0.5 * 0.01)
+        end
     end
-    =#
+
 end
