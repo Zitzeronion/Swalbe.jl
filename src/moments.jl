@@ -53,6 +53,16 @@ function moments!(height::Matrix, velx, vely, fout)
     vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
     return nothing
 end
+
+function moments!(height, vel, fout)
+  # Get views of the populations
+  f0, f1, f2 = Swalbe.viewdists_1D(fout) 
+  # Compute the height
+  sum!(height, fout)
+  # and the velocities (as simple as possible)
+  vel .= (f1 .- f2) ./ height
+  return nothing
+end
 # with new state struct
 function moments!(state::LBM_state_2D)
     # Get views of the populations
@@ -65,22 +75,33 @@ function moments!(state::LBM_state_2D)
     return nothing
 end
 
-function moments!(height, vel, fout)
-    # Get views of the populations
-    f0, f1, f2 = Swalbe.viewdists_1D(fout) 
-    # Compute the height
-    sum!(height, fout)
-    # and the velocities (as simple as possible)
-    vel .= (f1 .- f2) ./ height
-    return nothing
+function moments!(state::LBM_state_1D)
+  # Get views of the populations
+  f0, f1, f2 = Swalbe.viewdists_1D(state.fout) 
+  # Compute the height
+  sum!(state.height, state.fout)
+  # and the velocities (as simple as possible)
+  state.vel .= (f1 .- f2) ./ state.height
+  return nothing
 end
 
-function moments!(state::T) where {T<:LBM_state_1D}
-    # Get views of the populations
-    f0, f1, f2 = Swalbe.viewdists_1D(state.fout) 
-    # Compute the height
-    sum!(state.height, state.fout)
-    # and the velocities (as simple as possible)
-    state.vel .= (f1 .- f2) ./ state.height
-    return nothing
+function moments!(state::Expanded_2D)
+  # Get views of the populations
+  f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.basestate.fout) 
+  # Compute the height
+  sum!(state.basestate.height, state.basestate.fout)
+  # and the velocities (as simple as possible)
+  state.basestate.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.basestate.height
+  state.basestate.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.basestate.height
+  return nothing
+end
+
+function moments!(state::Expanded_1D)
+  # Get views of the populations
+  f0, f1, f2 = Swalbe.viewdists_1D(state.basestate.fout) 
+  # Compute the height
+  sum!(state.basestate.height, state.basestate.fout)
+  # and the velocities (as simple as possible)
+  state.basestate.vel .= (f1 .- f2) ./ state.basestate.height
+  return nothing
 end
