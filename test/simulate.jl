@@ -155,15 +155,15 @@
         sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
         h = Swalbe.run_dropletforced(sys, "CPU", radius=35, fx=1e-4)
         # One dim case
-        # TODO fix me
-        # sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=5000, δ=2.0))
-        # # This will return the hydrodynamic moments: h, u, v
-        # mom = Swalbe.run_dropletforced(sys, radius=35, f=1e-4, verbos=false)
-        # # Now check that the center has moved 
-        # @test findmax(mom[1])[2] ≠ Int(sys.L/2)
-        # # Further test that the velocity is not too large
-        # @test all(mom[2] .< 0.1) 
-        # sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
-        # h = Swalbe.run_dropletforced(sys, radius=35, f=1e-4)
+        
+        sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=5000, δ=2.0))
+        # This will return the hydrodynamic moments: h, u, v
+        mom = Swalbe.run_dropletforced(sys, radius=35, f=1e-4, verbos=false)
+        # Now check that the center has moved 
+        @test findmax(mom[1])[2] ≠ Int(sys.L/2)
+        # Further test that the velocity is not too large
+        @test all(mom[2] .< 0.1) 
+        sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
+        h = Swalbe.run_dropletforced(sys, radius=35, f=1e-4)
     end
 end
