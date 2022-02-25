@@ -105,7 +105,7 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
 end
 
 """
-    BGKandStream!(state, sys, τ)
+    BGKandStream!(state, sys; τ=sys.param.τ)
 
 Performs a BGK collision operation with a WFM forcecorrection and a subsequent streaming of the resulting populations.
 
@@ -136,13 +136,13 @@ julia> state.feq[1,1,:] .= 2.0 # To check the streaming process
 
 julia> Swalbe.BGKandStream!(state, sys)
 
-julia> fout[:,:,6] # The value 2 should have moved one down and one to the right!
+julia> state.fout[:,:,6] # The value 2 should have moved one down and one to the right!
 5×5 Matrix{Float64}:
- 1.0  1.0  1.0  1.0  1.0
- 1.0  2.0  1.0  1.0  1.0
- 1.0  1.0  1.0  1.0  1.0
- 1.0  1.0  1.0  1.0  1.0
- 1.0  1.0  1.0  1.0  1.0
+ 0.0  0.0  0.0  0.0  0.0
+ 0.0  2.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0
 
 ```
 
@@ -264,7 +264,7 @@ function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
 end
 
 """
-    BGKandStream!(state, sys; τ)
+    BGKandStream!(state, sys; τ=sys.param.τ)
 
 Performs a BGK collision operation with a WFM forcecorrection and a subsequent streaming of the resulting populations.
 

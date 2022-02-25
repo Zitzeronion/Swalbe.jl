@@ -47,7 +47,7 @@ julia> feq[:,:,1]
  0.91  0.91  0.91  0.91  0.91
  0.91  0.91  0.91  0.91  0.91
 
-julia> Swalbe.equilibrium!(feq, ρ, ux, uy, zeros(5,5)) # Use the dispatch without g.
+julia> Swalbe.equilibrium!(feq, ρ, ux, uy, zeros(5,5), 0.0) # Supply dummy u^2 as well.
 
 julia> @test all(feq[:,:,1] .≈ 1 - 2/3 * 0.01)
 Test Passed
@@ -113,7 +113,7 @@ julia> using Swalbe, Test
 
 julia> sys = Swalbe.SysConst{Float64}(Lx=5, Ly=5, param=Swalbe.Taumucs(g=0.1)); state = Swalbe.Sys(sys, "CPU");
 
-julia> state.vx = fill(0.1,5,5);
+julia> state.velx .= fill(0.1,5,5);
 
 julia> Swalbe.equilibrium!(state, sys) # Supply dummy u^2 as well.
 
@@ -124,6 +124,8 @@ julia> state.feq[:,:,1]
  0.91  0.91  0.91  0.91  0.91
  0.91  0.91  0.91  0.91  0.91
  0.91  0.91  0.91  0.91  0.91
+
+julia> Swalbe.equilibrium!(state, sys, g=0.0) # Without gravity
 
 julia> @test all(state.feq[:,:,1] .≈ 1 - 2/3 * 0.01)
 Test Passed
@@ -176,29 +178,6 @@ Calculation of the equilibrium distribution `feq` for the shallow water lattice 
 - `state :: Expanded_2D`: State data structure
 - `sys :: SysConst`: System constants, contains the value for gravity
 - `g <: Number`: Gravity, default is `sys.param.g`
-
-# Examples
-```jldoctest
-julia> using Swalbe, Test
-
-julia> sys = Swalbe.SysConst{Float64}(Lx=5, Ly=5, param=Swalbe.Taumucs(g=0.1)); state = Swalbe.Sys(sys, "CPU");
-
-julia> state.basestate.vx = fill(0.1,5,5);
-
-julia> Swalbe.equilibrium!(state, sys) # Supply dummy u^2 as well.
-
-julia> state.basestate.feq[:,:,1]
-5×5 Matrix{Float64}:
- 0.91  0.91  0.91  0.91  0.91
- 0.91  0.91  0.91  0.91  0.91
- 0.91  0.91  0.91  0.91  0.91
- 0.91  0.91  0.91  0.91  0.91
- 0.91  0.91  0.91  0.91  0.91
-
-julia> @test all(state.basestate.feq[:,:,1] .≈ 1 - 2/3 * 0.01)
-Test Passed
-  Expression: all(state.basestate.feq[:, :, 1] .≈ 1 - (2 / 3) * 0.01)
-```
 
 """
 function equilibrium!(state::Expanded_2D, sys::SysConst; g=sys.param.g)
@@ -271,7 +250,7 @@ julia> feq[:,1]
 
 julia> @test all(feq[:,1] .≈ 1 - 0.1/2 - 0.01)
 Test Passed
-  Expression: all(feq[:, 1] .≈ 1 - 0.1/2 - 0.01)
+  Expression: all(feq[:, 1] .≈ (1 - 0.1 / 2) - 0.01)
 ```
 
 """

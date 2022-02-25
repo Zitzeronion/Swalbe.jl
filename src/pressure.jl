@@ -49,7 +49,7 @@ julia> h = reshape(collect(1.0:25.0),5,5) # A dummy height field
 
 julia> pressure = zeros(5,5); θ = 0.0; # Fully wetting substrate
 
-julia> Swalbe.filmpressure!(pressure, h, θ) # default γ = 0.01
+julia> Swalbe.filmpressure!(pressure, h, zeros(5,5,8), 0.01, 0.0, 3, 2, 0.1, 0.05) # default γ = 0.01
 
 julia> result = [30.0 5.0 5.0 5.0 -20;
                  25.0 0.0 0.0 0.0 -25.0;
@@ -110,13 +110,13 @@ function filmpressure!(state::LBM_state_2D, sys::SysConst;
     circshift!(himjm, state.height, (-1,-1))
     circshift!(hipjm, state.height, (1,-1))
     # First the contact angle parameter part
-    @. state.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
-                      * (power_broad(hmin/(state.height + hcrit), n)
-                      - power_broad(hmin/(state.height + hcrit), m)) )
+    state.pressure .= -γ .* ((1 - cospi.(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+                      .* (power_broad.(hmin ./ (state.height .+ hcrit), n)
+                      .- power_broad.(hmin ./ (state.height .+ hcrit), m)) )
     # Now the gradient
-    @. state.pressure .-= γ * (2/3 * (hjp + hip + him + hjm) 
-                                 + 1/6 * (hipjp + himjp + himjm + hipjm) 
-                   - 10/3 * state.height)
+    state.pressure .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* state.height)
     return nothing
 end
 
@@ -134,13 +134,13 @@ function filmpressure!(state::Expanded_2D, sys::SysConst;
     circshift!(himjm, state.basestate.height, (-1,-1))
     circshift!(hipjm, state.basestate.height, (1,-1))
     # First the contact angle parameter part
-    @. state.basestate.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
-                      * (power_broad(hmin/(state.basestate.height + hcrit), n)
-                      - power_broad(hmin/(state.basestate.height + hcrit), m)) )
+    state.basestate.pressure .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) * (m - 1) / ((n - m) * hmin) 
+                      .* (power_broad.(hmin ./ (state.basestate.height .+ hcrit), n)
+                      .- power_broad(hmin ./ (state.basestate.height .+ hcrit), m)) )
     # Now the gradient
-    @. state.basestate.pressure .-= γ * (2/3 * (hjp + hip + him + hjm) 
-                                 + 1/6 * (hipjp + himjp + himjm + hipjm) 
-                   - 10/3 * state.basestate.height)
+    state.basestate.pressure .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* state.basestate.height)
     return nothing
 end
 

@@ -129,7 +129,7 @@ This is work in progress, therefore so far it is only available for the lower di
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200);
+julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs());
 
 julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
 
