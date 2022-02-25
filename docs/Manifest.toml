@@ -1,5 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
+julia_version = "1.7.2"
 manifest_format = "2.0"
 
 [[deps.AbstractFFTs]]
@@ -338,9 +339,9 @@ version = "4.7.1"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "62115afed394c016c2d3096c5b85c407b48be96b"
+git-tree-sha1 = "f7f5dd0fb39209f4d28ca59d0d4e24579ad325fe"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.13+1"
+version = "0.0.13+2"
 
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
@@ -592,7 +593,7 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 deps = ["BSON", "CUDA", "DataFrames", "FileIO", "JLD2", "LazySets", "Parameters", "Random", "Revise", "Statistics"]
 path = "C:\\Users\\zitz\\Software_Projects\\Swalbe.jl"
 uuid = "1073fb09-a5e2-4e80-8bde-f3562efda53f"
-version = "1.0.0"
+version = "1.0.1"
 
 [[deps.TOML]]
 deps = ["Dates"]

@@ -63,7 +63,22 @@ function moments!(height, vel, fout)
   vel .= (f1 .- f2) ./ height
   return nothing
 end
-# with new state struct
+
+"""
+    moments!(state::LBM_state_2D)
+
+Computation of the hydrodynamic moments, `height` and `velocity`.
+
+In contrast to `moments!`, this function works with a `state` struct.
+The state can be either a `LBM_state_2D` or `LBM_state_1D`, but also a `Expanded_2D` or `Expanded_1D`.
+For the mathematical description take a look at [`moments!(height, velx, vely, fout)`](@ref).
+
+# References
+
+- [Krüger](https://www.springer.com/gp/book/9783319446479)
+- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
+- [Zitz, Scagliarini and Harting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
+"""
 function moments!(state::LBM_state_2D)
     # Get views of the populations
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 

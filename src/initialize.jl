@@ -15,7 +15,7 @@ abstract type Consts end
 """
     Taumucs{T}
 
-Struct that contains most run time constants, e.g. surface tension `γ` and so on.
+Struct that contains most run time constants, e.g. surface tension `γ`, viscosity `μ` and so on.
 
 # Arguments
 
@@ -33,6 +33,8 @@ Struct that contains most run time constants, e.g. surface tension `γ` and so o
 - `hcrit :: T`: Numerical stabilizer for the disjoining pressure term
 - `θ :: T`: Contact angle in multiples of π
 - `g :: T`: gravitational acceleration, usually neglected in thin film simulations
+
+See also: [`SysConst{T}`](@ref), [`SysConst_1D{T}`](@ref)
 
 """
 Base.@kwdef struct Taumucs{T} <: Consts
@@ -57,13 +59,15 @@ end
 """
     SysConst{T}
 
-Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
+Struct that contains the system size of a two dimensional system and the struct `Taumucs`.
 
 # Arguments
 
 - `Lx :: Int`: Length of the lattice sides in x-direction
 - `Ly :: Int`: Length of the lattice sides in y-direction
 - `s :: Taumucs` : Most of the run time constants
+
+See also: [`SysConst_1D{T}`](@ref), [`Taumucs{T}`](@ref)
 
 """
 Base.@kwdef struct SysConst{T} <: Consts
@@ -76,12 +80,14 @@ end
 """
     SysConst_1D{T}
 
-Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
+Struct that contains the system size of a one dimensional system and the struct `Taumucs`.
 
 # Arguments
 
 - `L :: Int`: Number of lattice points
 - `s :: Taumucs`: Most of the run time constants
+
+See also: [`SysConst{T}`](@ref), [`Taumucs{T}`](@ref)
 
 """
 Base.@kwdef struct SysConst_1D{T} <: Consts
@@ -93,7 +99,7 @@ end
 """
     State{T, N}
 
-Data structure that stores all arrays for a given simulation.
+Data structure for both macroscopic variables and distribution functions.
 
 # Arguments
 
@@ -112,6 +118,8 @@ Data structure that stores all arrays for a given simulation.
 - `h∇px :: Matrix{T}`: Pressure gradient times the height, x-component
 - `h∇py :: Matrix{T}`: Pressure gradient times the height, y-component
 - `dgrad :: Array{T,N}`: Dummy allocation to store shifted arrays using `circshift!`
+
+See also: [`State_thermal{T, N}`](@ref), [`CuState`](@ref), [`State_1D{T, N}`](@ref)
 
 """
 Base.@kwdef struct State{T, N} <: LBM_state_2D
@@ -161,11 +169,11 @@ Specific for GPU computing using `CUDA.jl`
 
 # Arguments
 
-- `fout :: Array{T,N}`: Output distribution function
-- `ftemp :: Array{T,N}`: Temporary distribution function, only used if `sys.τ ≠ 1`
-- `feq :: Array{T,N}`: Equilibrium distribution function
-- `height :: Matrix{T}`: Field that stores the scalar height values
-- `velx :: Matrix{T}`: Field that stores the x-component of the velocity vector
+- `fout :: CuArray{T,N}`: Output distribution function
+- `ftemp :: CuArray{T,N}`: Temporary distribution function, only used if `sys.τ ≠ 1`
+- `feq :: CuArray{T,N}`: Equilibrium distribution function
+- `height :: CuArray{T}`: Field that stores the scalar height values
+- `velx :: CuMatrix{T}`: Field that stores the x-component of the velocity vector
 - `vely :: Matrix{T}`: Field that stores the y-component of the velocity vector
 - `vsq :: Matrix{T}`: Field that stores the velocity squared, used in `equilibrium!`
 - `pressure :: Matrix{T}`: Pressure distribution computed using the `filmpressure!` function
