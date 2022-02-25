@@ -111,9 +111,9 @@ Performs a BGK collision operation with a WFM forcecorrection and a subsequent s
 
 # Arguments
 
-- `state :: LBM_state`: `State` data structure, works for every state related data structure
+- `state <: LBM_state`: `State` data structure, works for every state related data structure
 - `sys :: SysConst`: `SysConst` data structure with τ as parameter
-- `τ :: Float64`: relaxation time
+- `τ :: Float64`: relaxation time, default τ=sys.param.τ
 
 # Examples
     
@@ -224,6 +224,21 @@ function BGKandStream!(state::Expanded_2D, sys::SysConst; τ=sys.param.τ)
     return nothing
 end
 
+"""
+    BGKandStream!(fout, feq, ftemp, F::Vector, τ)
+
+Performs a BGK collision operation with a WFM forcecorrection and a subsequent streaming of the resulting populations.
+
+# Arguments
+
+- `fout :: Array{<:Number,3}`: Streamed distribution after the collision processes
+- `feq :: Array{<:Number,3}`: Equilibrium distribution, computed with equilibrium!
+- `ftemp :: Array{<:Number,3}`: Temporary distribution from the time step before, only useful if `` \\tau \\neq 1``
+- `F :: Vector{<:Number,2}`: Sum of forces acting on the fluid
+- `τ <: Number`: Relaxtion time, if not supplied `` \\tau = 1 `` assumed
+
+See also: [`Swalbe.equilibrium`](@ref)
+"""
 function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     # All distribution functions
     fe0, fe1, fe2 = viewdists_1D(feq)
@@ -248,7 +263,19 @@ function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     return nothing
 end
 
-# with state struct
+"""
+    BGKandStream!(state, sys; τ)
+
+Performs a BGK collision operation with a WFM forcecorrection and a subsequent streaming of the resulting populations.
+
+# Arguments
+
+- `state :: LBM_state_1D`: One dimensional state structure
+- `sys :: SysConst_1D`: System constants which contains τ
+- `τ :: Float64`: Optional, default τ=sys.param.τ
+
+See also: [`Swalbe.equilibrium`](@ref)
+"""
 function BGKandStream!(state::State_1D, sys::SysConst_1D; τ=sys.param.τ)
     # All distribution functions
     fe0, fe1, fe2 = viewdists_1D(state.feq)

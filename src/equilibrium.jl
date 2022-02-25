@@ -96,6 +96,41 @@ function equilibrium!(feq, height, velocityx, velocityy, vsquare, gravity)
     return nothing
 end
 
+"""
+    Equilibrium!(state, sys; g=sys.param.g)
+
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
+
+# Arguments
+
+- `state :: LBM_state_2D`: State data structure
+- `sys :: SysConst`: System constants, contains the value for gravity
+- `g <: Number`: Gravity, default is `sys.param.g`
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> sys = Swalbe.SysConst{Float64}(Lx=5, Ly=5, param=Swalbe.Taumucs(g=0.1)); state = Swalbe.Sys(sys, "CPU");
+
+julia> state.vx = fill(0.1,5,5);
+
+julia> Swalbe.equilibrium!(state, sys) # Supply dummy u^2 as well.
+
+julia> state.feq[:,:,1]
+5×5 Matrix{Float64}:
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+
+julia> @test all(state.feq[:,:,1] .≈ 1 - 2/3 * 0.01)
+Test Passed
+  Expression: all(state.feq[:, :, 1] .≈ 1 - (2 / 3) * 0.01)
+```
+
+"""
 function equilibrium!(state::LBM_state_2D, sys::SysConst; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.feq) 
@@ -130,7 +165,42 @@ function equilibrium!(state::LBM_state_2D, sys::SysConst; g=sys.param.g)
                          4.5 .* (state.velx .- state.vely).^2 .- 1.5 .* state.vsq)
     return nothing
 end
-# Dispatch without gravity and state struct
+
+"""
+    Equilibrium!(state, sys; g=sys.param.g)
+
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
+
+# Arguments
+
+- `state :: Expanded_2D`: State data structure
+- `sys :: SysConst`: System constants, contains the value for gravity
+- `g <: Number`: Gravity, default is `sys.param.g`
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> sys = Swalbe.SysConst{Float64}(Lx=5, Ly=5, param=Swalbe.Taumucs(g=0.1)); state = Swalbe.Sys(sys, "CPU");
+
+julia> state.basestate.vx = fill(0.1,5,5);
+
+julia> Swalbe.equilibrium!(state, sys) # Supply dummy u^2 as well.
+
+julia> state.basestate.feq[:,:,1]
+5×5 Matrix{Float64}:
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+ 0.91  0.91  0.91  0.91  0.91
+
+julia> @test all(state.basestate.feq[:,:,1] .≈ 1 - 2/3 * 0.01)
+Test Passed
+  Expression: all(state.basestate.feq[:, :, 1] .≈ 1 - (2 / 3) * 0.01)
+```
+
+"""
 function equilibrium!(state::Expanded_2D, sys::SysConst; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(state.basestate.feq) 
@@ -166,6 +236,45 @@ function equilibrium!(state::Expanded_2D, sys::SysConst; g=sys.param.g)
     return nothing
 end
 
+"""
+Equilibrium!(feq, height, velocity, gravity)
+
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
+
+# Arguments
+
+- `feq :: Array{<:Number,3}`: Equilibrium distribution function, to be calculated
+- `height :: Array{<:Number,2}`: The height field `` h(\\mathbf{x},t)``
+- `velocity :: Array{<:Number,2}`: x-component of the macroscopic velocity
+- `gravity <: Number`: Strength of the gravitational acceleration in lattice units
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> feq = zeros(10,3); ρ = ones(10); u = fill(0.1,10);
+
+julia> Swalbe.equilibrium!(feq, ρ, u, 0.1) # Supply dummy u^2 as well.
+
+julia> feq[:,1]
+10-element Vector{Float64}:
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+ 0.94
+
+julia> @test all(feq[:,1] .≈ 1 - 0.1/2 - 0.01)
+Test Passed
+  Expression: all(feq[:, 1] .≈ 1 - 0.1/2 - 0.01)
+```
+
+"""
 function equilibrium!(feq, height, velocity, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(feq) 
@@ -180,6 +289,18 @@ function equilibrium!(feq, height, velocity, gravity)
     return nothing
 end
 
+"""
+Equilibrium!(state, sys; g=sys.param.g)
+
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
+
+# Arguments
+
+- `state :: State_1D`: State data structure
+- `sys :: SysConst`: System constants, contains the value for gravity
+- `g <: Number`: Gravity, default is `sys.param.g`
+
+"""
 function equilibrium!(state::State_1D, sys::SysConst_1D; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(state.feq) 
@@ -193,7 +314,19 @@ function equilibrium!(state::State_1D, sys::SysConst_1D; g=sys.param.g)
     
     return nothing
 end
-# More general version of the above
+
+"""
+Equilibrium!(state, sys; g=sys.param.g)
+
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
+
+# Arguments
+
+- `state :: Expanded_1D`: State data structure
+- `sys :: SysConst`: System constants, contains the value for gravity
+- `g <: Number`: Gravity, default is `sys.param.g`
+
+"""
 function equilibrium!(state::Expanded_1D, sys::SysConst_1D; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(state.basestate.feq) 
