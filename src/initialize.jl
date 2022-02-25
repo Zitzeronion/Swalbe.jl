@@ -146,7 +146,7 @@ end
 """
     State_thermal{T, N}
 
-Data structure that contains State and allocations for thermal fluctuations.
+Data structure that contains a `State` and fields for thermal fluctuations.
 
 # Arguments
 
@@ -164,8 +164,9 @@ end
 """
     CuState
 
-Data structure that stores all arrays for a given simulation.
-Specific for GPU computing using `CUDA.jl`
+`State` data structure but for CUDA like memory.
+
+Similar to `CuState_thermal` without the thermal fields.
 
 # Arguments
 
@@ -233,7 +234,7 @@ end
 """
     State_1D{T, N}
 
-Data structure that stores all arrays for a given simulation.
+Data structure that for a one dimensional simulation.
 
 # Arguments
 
@@ -267,7 +268,7 @@ end
 """
     State_gamma_1D{T, N}
 
-Data structure for resolve surface tension simulation.
+`State_1D` data structure with additional fields for surface tension `γ` and `∇γ`.
 
 # Arguments
 
@@ -284,13 +285,13 @@ end
 """
     State_thermal_1D{T, N}
 
-Data structure for resolve surface tension simulation.
+`State_1D` data structure with additional fields for thermal fluctuations (noise).
 
 # Arguments
 
 - `basestate :: State_1D{T}`: Base data structure for one dimensional simulations
-- `γ :: Vector{T}`: Surface tension field
-- `∇γ :: Vector{T}`: Surface tension gardient
+- `kbt :: Vector{T}`: Surface tension field
+
 """
 Base.@kwdef struct State_thermal_1D{T} <: Expanded_1D
     basestate :: State_1D{T}
@@ -298,9 +299,12 @@ Base.@kwdef struct State_thermal_1D{T} <: Expanded_1D
 end
 
 """
-    Sys(sysc, device, exotic)
+    Sys(sysc, device, exotic, T)
 
 Mostly allocations of arrays used to run a simulation, but all within one function :)
+
+Returns not a data structure such as state, but every array.
+Therefore it is somewhat outdated by now (2022).
 
 # Arguments
 
@@ -368,6 +372,20 @@ function Sys(sysc::SysConst, device::String, exotic::Bool, T)
     end
 end
 
+"""
+    Sys(sysc, device; T, kind)
+
+Allocations of arrays used to populate the `State` data structure.
+
+Returns a `State` data structure based on `sysc`, either one dimensional or two dimensional.
+
+# Arguments
+
+- `sysc :: SysConst`: Needed for the lattice dimensions, `Lx` and `Ly`
+- `device :: String`: Use either `CPU` for computation of a CPU or `GPU` for computation on the GPU (GPU can only be used with a two dimensional system)
+- `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
+- `kind :: String`: Indicator for different `State`'s, default value is "simple" which creates a `State` data structure, valid options are ["simple", "thermal"] 
+"""
 function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
     s = State{T, 3}(
             fout = zeros(sysc.Lx, sysc.Ly, 9),
@@ -454,7 +472,9 @@ end
 """
     Sys(sysc, T, kind)
 
-Allocations of arrays used to run a simulation
+Allocations of arrays used to run a one dimensional simulation.
+
+Returns a `State` data structure based on `kind` the struct can be "simple", "thermal" or "gamma".
 
 # Arguments
 
