@@ -47,7 +47,7 @@ julia> feq[1,1,:] .= 2.0 # To check the streaming process
  2.0
  2.0
 
-julia> Swalbe.BGKandStream!(fout, feq, ftemp, zeros(5,5), zeros(5,5))
+julia> Swalbe.BGKandStream!(fout, feq, ftemp, zeros(5,5), zeros(5,5), 1.0)
 
 julia> fout[:,:,6] # The value 2 should have moved one down and one to the right!
 5×5 Matrix{Float64}:
@@ -103,7 +103,51 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     fout .= ftemp
     return nothing
 end
-# With State struct
+
+"""
+    BGKandStream!(state, sys, τ)
+
+Performs a BGK collision operation with a WFM forcecorrection and a subsequent streaming of the resulting populations.
+
+# Arguments
+
+- `state :: LBM_state`: `State` data structure, works for every state related data structure
+- `sys :: SysConst`: `SysConst` data structure with τ as parameter
+- `τ :: Float64`: relaxation time
+
+# Examples
+    
+```jldoctest
+julia> using Swalbe
+
+julia> sys = Swalbe.SysConst{Float64}(Lx=5, Ly=5, param=Swalbe.Taumucs()); state = Swalbe.Sys(sys, "CPU");
+
+julia> state.feq[1,1,:] .= 2.0 # To check the streaming process 
+9-element view(::Array{Float64, 3}, 1, 1, :) with eltype Float64:
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+ 2.0
+
+julia> Swalbe.BGKandStream!(state, sys)
+
+julia> fout[:,:,6] # The value 2 should have moved one down and one to the right!
+5×5 Matrix{Float64}:
+ 1.0  1.0  1.0  1.0  1.0
+ 1.0  2.0  1.0  1.0  1.0
+ 1.0  1.0  1.0  1.0  1.0
+ 1.0  1.0  1.0  1.0  1.0
+ 1.0  1.0  1.0  1.0  1.0
+
+```
+
+See also: [`Swalbe.equilibrium`](@ref)
+"""
 function BGKandStream!(state::LBM_state_2D, sys::SysConst; τ=sys.param.τ)
     # All distribution functions
     fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdists(state.feq)
@@ -179,8 +223,6 @@ function BGKandStream!(state::Expanded_2D, sys::SysConst; τ=sys.param.τ)
     state.basestate.fout .= state.basestate.ftemp
     return nothing
 end
-
-
 
 function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     # All distribution functions
