@@ -88,30 +88,6 @@ function time_loop(sys::SysConst, state::LBM_state_2D, f::Function, measure::Vec
     end
     return state, measure
 end
-# Time loop with snapshots saved
-function time_loop(sys::SysConst, state::State, θ, data::Matrix; verbose=false)
-    for t in 1:sys.param.Tmax
-        if t % sys.param.tdump == 0
-            mass = 0.0
-            mass = sum(state.height)
-            if verbose
-                println("Time step $t mass is $(round(mass, digits=3))")
-            end
-        end
-        Swalbe.filmpressure!(state, sys, θ=θ)
-        Swalbe.h∇p!(state)
-        Swalbe.slippage!(state, sys)
-        state.Fx .= -state.h∇px .- state.slipx
-        state.Fy .= state.h∇py .+ state.slipy
-        Swalbe.equilibrium!(state, sys)
-        Swalbe.BGKandStream!(state, sys)
-        Swalbe.moments!(state)
-        
-        Swalbe.snapshot!(data, state.height, t, dumping = sys.param.tdump)
-        
-    end
-    return state
-end
 
 function time_loop(sys::SysConst_1D, state::State_1D; verbose=false)
     for t in 1:sys.param.Tmax
@@ -196,28 +172,6 @@ function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure; verb
     return state, measure
 end
 
-function time_loop(sys::SysConst_1D, state::State_1D, data::Matrix; verbose=false)
-    for t in 1:sys.param.Tmax
-        if t % sys.param.tdump == 0
-            mass = 0.0
-            mass = sum(state.height)
-            if verbose
-                println("Time step $t mass is $(round(mass, digits=3))")
-            end
-        end
-        Swalbe.filmpressure!(state, sys)
-        Swalbe.h∇p!(state)
-        Swalbe.slippage!(state, sys)
-        state.F .= -state.h∇p .- state.slip
-        Swalbe.equilibrium!(state, sys)
-        Swalbe.BGKandStream!(state, sys)
-        Swalbe.moments!(state)
-        
-        Swalbe.snapshot!(data, state.height, t, dumping = sys.param.tdump)
-        
-    end
-    return data
-end
 """
     run_flat(Sys::SysConst, device::String)
 

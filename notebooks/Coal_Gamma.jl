@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.0
+# v0.18.1
 
 using Markdown
 using InteractiveUtils
@@ -86,7 +86,7 @@ begin
 	x = collect(1:L)
 	γ = zeros(4,L)
 	ε = 0.2
-	γ₀ = 0.001
+	γ₀ = 0.0001
 	γ_bar = (γ₀ + (γ₀ - ε))/2
 	Δγ = ε
 	sl = L÷10
@@ -177,7 +177,7 @@ The thickness of the two droplets is given by $h(x)$, with a touching point in t
 	begin
 	# The initial configuration of the numerical experiment
 	rad = 500
-	h = Swalbe.two_droplets(Swalbe.SysConst_1D(L=1024), r₁=rad, r₂=rad)
+	h = Swalbe.two_droplets(Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs()), r₁=rad, r₂=rad)
 	p0 = plot(collect(1:1024), h, 
 		      w=3, 
 		      aspect_ratio=7, 
@@ -209,43 +209,45 @@ function run_(
     θ₀=1/9,  
     verbos=true, 
     dump = 100, 
-    fluid=zeros(sys.Tmax÷dump, sys.L)
+    fluid=zeros(sys.param.Tmax÷dump, sys.L)
 )
     println("Simulating droplet coalecense with surface tension gardient")
     state = Swalbe.Sys(sys, kind="gamma")
     drop_cent = (sys.L/3, 2*sys.L/3)
-    state.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
-    Swalbe.equilibrium!(state)
+    state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+    Swalbe.equilibrium!(state, sys)
     state.γ .= gamma
+	Swalbe.∇γ!(state)
     println("Starting the lattice Boltzmann time loop")
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
+    for t in 1:sys.param.Tmax
+        if t % sys.param.tdump == 0
             mass = 0.0
-            mass = sum(state.height)
+            mass = sum(state.basestate.height)
             if verbos
-                println("Time step $t bridge height is $(round(state.height[Int(sys.L/2)], digits=3))")
+                println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-20:sys.L÷2+20]), digits=3))")
             end
         end
-        Swalbe.filmpressure!(state, sys)
+        Swalbe.filmpressure!(state, sys, γ=gamma)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
-		Swalbe.∇γ!(state)
-        state.F .= -state.h∇p .- state.slip .- state.∇γ
-        Swalbe.equilibrium!(state)
-        Swalbe.BGKandStream!(state)
+        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .- state.∇γ
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state, sys)
         Swalbe.moments!(state)
         
-        Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
+        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
     end
-	println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
+	# println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
     return fluid
     
 end
 
+# ╔═╡ f0f554f6-d9ab-4eba-a186-a07f481904cb
+sys = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=100000, δ=10.0))
+
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
 	data = zeros(4, 1000, 1024)
-	sys = Swalbe.SysConst_1D(L=1024, n=3, m=2, Tmax=100000, δ=1.0)
 	for i in 1:4
 	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
 		println("Done with iteration $i")
@@ -294,9 +296,10 @@ end
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
 # ╠═708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
-# ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
+# ╠═09a80dac-0cd5-42f3-9676-e412a58f58db
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
 # ╠═547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
+# ╠═f0f554f6-d9ab-4eba-a186-a07f481904cb
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
 # ╠═c5118d35-2015-49ee-889a-2e3040e906eb
 # ╠═6922371e-4418-46ae-9f39-7690f78e8b45
