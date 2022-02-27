@@ -254,36 +254,30 @@ begin
 	end
 end
 
+# ╔═╡ a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
+function plot_data(data, k, t1, t2, t3)
+	plot(data[k, t1, :], label="γ=lin. t=$(t1*100)", line = (:auto, 4), xlabel="x", ylabel="h", xlims=(472, 552))
+	for i in [t2, t3]
+		plot!(data[k, i, :], label="γ=lin. t=$(i*100)", line = (:auto, 4))
+	end
+	ylims!(0,15)
+end
+
 # ╔═╡ c5118d35-2015-49ee-889a-2e3040e906eb
 begin
 	t1 = 100
 	t2 = 500
 	t3 = 1000
-	plot(data[1, t1, :], label="γ=lin. t=$(t1*100)", xlabel="x", ylabel="h")
-	plot!(data[1, t2, :], label="γ=lin. t=$(t2*100)", xlabel="x", ylabel="h")
-	plot!(data[1, t3, :], label="γ=lin. t=$(t3*100)", xlabel="x", ylabel="h")
-	ylims!(0,15)
-	xlims!(472,552)
+	
+	plot_data(data, 1, t1, t2, t3)
+
 end
 
 # ╔═╡ 6922371e-4418-46ae-9f39-7690f78e8b45
-begin
-	plot(data[3, t1, :], label="γ=hea. t=$(t1*100)", xlabel="x", ylabel="h")
-	plot!(data[3, t2, :], label="γ=hea. t=$(t2*100)", xlabel="x", ylabel="h")
-	plot!(data[3, t3, :], label="γ=hea. t=$(t3*100)", xlabel="x", ylabel="h")
-	ylims!(0,15)
-	xlims!(472,552)
-end
+plot_data(data, 3, t1, t2, t3)
 
 # ╔═╡ f992a3c6-8eca-47e6-bedb-1a2486b1a04e
-begin
-	func = 4
-	plot(data[4, t1, :], label="γ=smo. t=$(t1*100)", xlabel="x", ylabel="h")
-	plot!(data[4, t2, :], label="γ=smo. t=$(t2*100)", xlabel="x", ylabel="h")
-	plot!(data[4, t3, :], label="γ=smo. t=$(t3*100)", xlabel="x", ylabel="h")
-	ylims!(0,15)
-	xlims!(472,552)
-end
+plot_data(data, 4, t1, t2, t3)
 
 # ╔═╡ Cell order:
 # ╟─bb534270-0e59-4c41-a825-fd6dc0fb4a7e
@@ -301,6 +295,7 @@ end
 # ╠═547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
 # ╠═f0f554f6-d9ab-4eba-a186-a07f481904cb
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
+# ╠═a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
 # ╠═c5118d35-2015-49ee-889a-2e3040e906eb
 # ╠═6922371e-4418-46ae-9f39-7690f78e8b45
 # ╠═f992a3c6-8eca-47e6-bedb-1a2486b1a04e
