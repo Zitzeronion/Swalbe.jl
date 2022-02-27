@@ -232,7 +232,7 @@ Things I have looked into so far are
 - [Rayleigh-Taylor instability](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 - Dewetting thin films
 - [Dewetting of fluctuating thin films](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801)
-- Dewetting on switchable substrates
+- [Dewetting on switchable substrates]()
 
 Things I have not yet looked into
 
@@ -247,5 +247,3 @@ First of all leave a star if you like the idea of the project and/or the content
 Second you can support the project by actively using it and raising [issues](https://github.com/Zitzeronion/Swalbe.jl/issues).
 Help is always very welcome, if you want to contribute open a [**PR**](https://github.com/Zitzeronion/Swalbe.jl/pulls) or raise an [issue](https://github.com/Zitzeronion/Swalbe.jl/issues) with a feature request (and if possible with a way how to include it).
 Feel free to DM me on [Twitter](https://twitter.com/Zitzero) if you have questions, I try to answer them all timely.
-
-
