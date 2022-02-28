@@ -303,10 +303,16 @@ What we hope to observe is that the bridge does not grow for the step like surfa
 
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
-	data = zeros(4, 1000, 1024)
 	sys = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=100000, δ=10.0))
+	data = zeros(4, 1000, 1024)
+	df = DataFrame()
 	for i in 1:4
-	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+		save_file = "..\\data\\Drop_coalescence\\gamma_$(gamma_labels)_tmax_$(sys.param.Tmax)_v2.jld2"
+		if isfile(save_file)
+			df[gamma_labels[i]] = load(save_file)
+		else
+	 		data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+		end
 		println("Done with iteration $i")
 	end
 end
