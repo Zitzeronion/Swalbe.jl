@@ -12,7 +12,7 @@ begin
     # instantiate, i.e. make sure that all packages are downloaded
     Pkg.instantiate()
 	
-    using Plots, Revise, DataFrames, FileIO, Swalbe
+    using Plots, Revise, DataFrames, FileIO, Swalbe, DataFramesMeta
 end
 
 # ╔═╡ bb534270-0e59-4c41-a825-fd6dc0fb4a7e
@@ -275,22 +275,43 @@ But first we have to perform the experiments.
 "
 
 # ╔═╡ a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
-function plot_data(data; k=1, t1=100, t2=500, t3=1000, lab="lin", leg=true)
-	plot(data[k, t1, :], 
-		 label="γ=$(lab) t=$(t1*100)", 
-		 line = (:auto, 4), 
-		 xlabel="x", 
-		 ylabel="h",
-		 legendfontsize=14,
-		 guidefont = (18, :black), 
-		 tickfont = (12, :black),
-		 legend= leg,
-		 xlims=(472, 552))
-	
-	for i in [t2, t3]
-		plot!(data[k, i, :], label="γ=$(lab) t=$(i*100)", line = (:auto, 4))
+function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
+	tarray = 100:100:1000000000
+	if isa(data, Array) 
+		plot(data[k, t1, :], 
+			label="γ=$(gamma_labels[k]) t=$(tarray[t1])", 
+			line = (:auto, 4), 
+			xlabel="x", 
+			ylabel="h",
+			legendfontsize=14,
+			guidefont = (18, :black), 
+			tickfont = (12, :black),
+			legend= leg,
+			xlims=(472, 552)
+		)
+		for i in [t2, t3]
+			plot!(data[k, i, :], label="γ=$(gamma_labels[k]) t=$(tarray[i])", line = (:auto, 4))
+		end
+		ylims!(0,15)
+	elseif isa(data, Swalbe.SysConst_1D)
+		save_file = "..\\data\\Drop_coalescence\\gamma_$(gamma_labels[k])_tmax_$(data.param.Tmax).jld2"
+		df = load(save_file) |> DataFrame
+		plot(df[!, Symbol("h_$(tarray[t1])")], 
+			label="γ=$(gamma_labels[k]) t=$(tarray[t1])", 
+			line = (:auto, 4), 
+			xlabel="x", 
+			ylabel="h",
+			legendfontsize=14,
+			guidefont = (18, :black), 
+			tickfont = (12, :black),
+			legend= leg,
+			xlims=(472, 552)
+		)
+		for i in [t2, t3]
+			plot!(df[!, Symbol("h_$(tarray[i])")], label="γ=$(gamma_labels[k]) t=$(tarray[i])", line = (:auto, 4))
+		end
+		ylims!(0,15)
 	end
-	ylims!(0,15)
 end
 
 # ╔═╡ 2f6e1154-eaff-4c20-9fac-290474f45f0b
@@ -304,15 +325,12 @@ What we hope to observe is that the bridge does not grow for the step like surfa
 # ╔═╡ 2edc58c6-4ee0-4c5e-8013-311e81820c4c
 begin
 	sys = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=100000, δ=10.0))
+	
 	data = zeros(4, 1000, 1024)
-	df = DataFrame()
+	
 	for i in 1:4
-		save_file = "..\\data\\Drop_coalescence\\gamma_$(gamma_labels)_tmax_$(sys.param.Tmax)_v2.jld2"
-		if isfile(save_file)
-			df[gamma_labels[i]] = load(save_file)
-		else
-	 		data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
-		end
+	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+
 		println("Done with iteration $i")
 	end
 end
@@ -328,47 +346,151 @@ But we will come back to this."
 
 # ╔═╡ 35541b43-a834-4f01-ad0d-fa11be9af74b
 begin
-	p11=plot_data(data, k=1, lab="default")
-	p12=plot_data(data, k=2, lab="linear")
-	p13=plot_data(data, k=3, lab="step")
-	p14=plot_data(data, k=4, lab="tanh")
+	p11=plot_data(data, k=1)
+	p12=plot_data(data, k=2)
+	p13=plot_data(data, k=3)
+	p14=plot_data(data, k=4)
 	plot(p11, p12, p13, p14, legend = false)
 end
 
 # ╔═╡ b164e7ec-eaa8-4f2a-b35a-6ac01fd12875
 md"### Second sweep
 
-Now that we are, at least to some degree, happy with the short time evolution of the bridge and thus the (non)coalescence process, we collect more data and move towards longer evolutions.
+Now that we are, at least to some degree, happy with the short time evolution of the bridges and thus the (non)coalescence process, we move on to collect more data, especially towards later stages of the coalescence process.
 
-This is what do in the second sweep, instead of stopping after 10⁵ time steps, we take up 5x10⁶ time steps into consideration.
+This is what we do in the second sweep. 
+Instead of stopping after 10⁵ time steps, we take up 5x10⁶ time steps into consideration.
+Okay but what does a single time step mean?
+The short answer to that question is, it means nothing.
+To make sense of this time steps we use characteristic time scales and match them with our parameters. 
+We proceed in a similar matter for the lenght scale. 
+thus we have $\tau$ and $l$ with defining equations,
+
+$\tau = \frac{r\mu}{\gamma},$
+
+where $\tau$ is the time scale of viscos relaxation and thus $t/\tau$ is nondimensional.
+For the length scale we get quite naturally
+
+$l = r,$
+
+where $r$ is the base radius of the droplet.
+The numerical values therefore are
+
+| Parameter   |      Value      | 
+|:----------:|:-------------:|
+| μ |  1/6 |
+| γ₀ | 10⁻⁴ |
+| l | 171 |
+| τ | 285000 | 
+
+The value of $\tau$ can now be used to make sense of our time steps.
+In our second sweep we simulate for 5×10⁶ time steps and in terms of nondimensional time up to 17.5[t/τ].
+A single time step therefor creates the increment of 3.5×10⁻⁶ in terms of t/τ.
+Which is quite cool because for scaling laws we can cover a huge range in time, from 10⁻⁵ up to 10.
 "
+
+# ╔═╡ 9e714346-0e8d-4de5-85b4-4ede3e275834
+"""
+	tau_vr(;r₀=171, μ=1/6, γ=γ₀)
+
+Computation of the viscous relaxation time.
+"""
+function tau_vr(;r₀=171, μ=1/6, γ=γ₀)
+	return r₀ * μ / γ
+end
+
+# ╔═╡ a2389b72-c460-4026-8676-b3b0fb4acdc2
+"""
+	tau_ic(;ρ=1, r₀=171, γ=γ₀)
+
+Computation of the inertio-capillary time.
+"""
+function tau_ic(;ρ=1, r₀=171, γ=γ₀)
+	return sqrt(ρ*r₀^3/γ)
+end
 
 # ╔═╡ 9e567d24-9636-467a-b491-ed9bdc584854
 begin
 	sys2 = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=5000000, δ=1.0))
+	# Memory
 	data2 = zeros(4, 50000, 1024)
+	df2 = DataFrame()
+	# Time
+	time = 100:100:size(data2)[2]*100
+	# Loop over γ
 	for i in 1:4
-	 	data2[i, :, :] = run_(sys2, γ[i, :], r₁=rad, r₂=rad)
-		println("Done with iteration $i")
+		# Check if there is already a file created
+		save_file = "..\\data\\Drop_coalescence\\gamma_$(gamma_labels[i])_tmax_$(sys2.param.Tmax).jld2"
+		# If so just read it from disc
+		if isfile(save_file)
+			tmp = load(save_file) |> DataFrame
+			tmp.nablaG .= gamma_labels[i]
+			df2 = vcat(df2, tmp)
+		# If not, compute the evolution of the droplet coalescence
+		else
+	 		data2[i, :, :] = run_(sys2, γ[i, :], r₁=rad, r₂=rad)
+			# Think about storing them on the disc
+			df_fluid = Dict()
+			# Loop through the time once more
+			for t in 1:size(data2)[2]
+		        df_fluid["h_$(time[t])"] = data2[i,t,:]
+		    end
+			# Add a surface tension field label
+			df_fluid["nablaG"] = fill(gamma_labels[i], 1024)
+			# Save it
+			println("Writing file $(gamma_labels[i]) to disk")
+			save("..\\data\\Drop_coalescence\\gamma_$(gamma_labels[i])_tmax_$(sys2.param.Tmax).jld2", df_fluid)
+		end
+		# Print that you are done
+		println("Done with iteration $(gamma_labels[i])")
 	end
 end
 
 # ╔═╡ 19772481-02f9-4091-bfc9-e2853e64d4d6
-md"Two things come imideatly to mind, first being the now pronounced asymmetry around the center on the right.
+md"#### Results - Inspection
+
+Two things come to mind imideatly, first being the now pronounced asymmetry around the center for the experiments on right.
 In the lower right this asymmetry manifest itself already at the time step of the orange curve.
 
 The second eyecatcher is the evolution of the lower left.
 Similar to the short experiments the neck is not growing, but moves towards the region of higher surface tension.
-
+Therefor, the trend of noncoalescing with the step function surface tension is in fact a stable one.
+The two droplets keep apart for the entirety of the experiments.
 "
 
 # ╔═╡ 0d7c9262-ff25-46bd-9833-bddfd7f958f9
 begin
-	p1=plot_data(data2, k=1, t2=5000, t3=45000, lab="default")
-	p2=plot_data(data2, k=2, t2=5000, t3=45000, lab="linear")
-	p3=plot_data(data2, k=3, t2=5000, t3=45000, lab="step")
-	p4=plot_data(data2, k=4, t2=5000, t3=45000, lab="tanh")
+	p1=plot_data(sys2, k=1, t2=5000, t3=45000)
+	p2=plot_data(sys2, k=2, t2=5000, t3=45000)
+	p3=plot_data(sys2, k=3, t2=5000, t3=45000)
+	p4=plot_data(sys2, k=4, t2=5000, t3=45000)
 	plot(p1, p2, p3, p4, legend = false)
+end
+
+# ╔═╡ 50cb438d-501e-411e-844d-e75569ca3c85
+md"#### Results - Bridge height
+
+After a first visual inspection of the neck region we move towards a more quantitative analysis.
+We would like to know how the height of the neck is evolving with time.
+This is quite a simple measurement and will tell us already a lot about our system.
+
+"
+
+# ╔═╡ e5b058aa-16ca-4864-84d0-9879b353aa18
+@subset(df2, :nablaG .== "tanh")
+
+# ╔═╡ b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
+function bridge_height(df; time=100:100:5000000)
+	df_ = DataFrame()
+	time_list = []
+	height_list = []
+	grad_list = []
+	for i in gamma_labels
+		tmp = @subset(df2, :nablaG .== i) 
+		for t in time
+			push!(time_list, t)
+			push!(grad_list, i)
+			push!(height_list, minimum(tmp[!, Symbol("h_$(t)")][]))
 end
 
 # ╔═╡ d591ec33-0ae9-4d64-9422-9a1f283de7b5
@@ -379,21 +501,6 @@ While it does not save a lot of time, given the experiments run not even for ten
 
 # ╔═╡ f5696349-24f8-4503-b037-ad511579918d
 # Save data, so it needs to be loaded not computed
-begin 
-	
-	for k in 1:4
-		df_fluid = Dict()
-		df_gamma = Dict()
-		df_gamma["gamma_$(k)"] = γ[k,:]
-		for t in 1:sys2.param.Tmax÷sys2.param.tdump
-	        df_fluid["h_$(t*sys2.param.tdump)"] = data2[k,t,:]
-	    end
-		save("..\\data\\Drop_coalescence\\gamma_$(gamma_labels[k])_tmax_$(sys2.param.Tmax)_v2.jld2", df_fluid)
-	end
-end
-
-# ╔═╡ af0a8e52-f777-4cc4-9fb6-b67bfadfd2ed
-isfile("..\\data\\Drop_coalescence\\gamma_linear_tmax_5000000_v2.jld2")
 
 # ╔═╡ 3091f849-7ce2-400d-9938-4b89215a0bdc
 md"## References
@@ -419,7 +526,7 @@ md"## References
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
 # ╟─708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
-# ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
+# ╠═09a80dac-0cd5-42f3-9676-e412a58f58db
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
 # ╠═547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
 # ╟─6332a336-fe15-4fb9-949b-c7d8ebc03176
@@ -429,10 +536,14 @@ md"## References
 # ╟─bab2a9ab-1ee1-4146-95e7-03d87a8f9c35
 # ╠═35541b43-a834-4f01-ad0d-fa11be9af74b
 # ╟─b164e7ec-eaa8-4f2a-b35a-6ac01fd12875
+# ╟─9e714346-0e8d-4de5-85b4-4ede3e275834
+# ╟─a2389b72-c460-4026-8676-b3b0fb4acdc2
 # ╠═9e567d24-9636-467a-b491-ed9bdc584854
-# ╠═19772481-02f9-4091-bfc9-e2853e64d4d6
+# ╟─19772481-02f9-4091-bfc9-e2853e64d4d6
 # ╠═0d7c9262-ff25-46bd-9833-bddfd7f958f9
+# ╠═50cb438d-501e-411e-844d-e75569ca3c85
+# ╠═e5b058aa-16ca-4864-84d0-9879b353aa18
+# ╠═b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
 # ╟─d591ec33-0ae9-4d64-9422-9a1f283de7b5
 # ╠═f5696349-24f8-4503-b037-ad511579918d
-# ╠═af0a8e52-f777-4cc4-9fb6-b67bfadfd2ed
 # ╟─3091f849-7ce2-400d-9938-4b89215a0bdc
