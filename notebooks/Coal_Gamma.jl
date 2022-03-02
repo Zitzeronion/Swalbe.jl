@@ -491,6 +491,8 @@ function bridge_height(df; time=100:100:5000000)
 			push!(time_list, t)
 			push!(grad_list, i)
 			push!(height_list, minimum(tmp[!, Symbol("h_$(t)")][]))
+		end
+	end
 end
 
 # ╔═╡ d591ec33-0ae9-4d64-9422-9a1f283de7b5
