@@ -84,42 +84,13 @@ We store the three $\gamma$ functions in a single array and will loop through th
 "
 
 # ╔═╡ eda3dc93-7626-42eb-82a6-b8615bd0f477
-begin
-	data_path = "..\\..\\data\\Drop_coalescence\\"
-	L = 1024
-	x = collect(1:L)
-	γ = zeros(4,L)
-	ε = 0.2
-	γ₀ = 0.0001
-	γ_bar = (γ₀ + (γ₀ - ε))/2
-	Δγ = ε
-	sl = L÷10
-	gamma_labels = Dict(1 => "default", 2 => "linear", 3 => "step", 4 => "tanh")
-end
+include(helpers.jl)
 
 # ╔═╡ bcb187be-9a59-46ce-aebe-74e7003077d8
-function gamma_curves!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
-	function smooth(l, L, sl)
-		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
-	end
-	out[1,:] .= x0
-	out[2,:] .= x0 .* (1 .- ϵ .* l ./ L)
-	out[3,1:L÷2] .= x0
-	out[3,L÷2+1:L] .= x0 - x0 * ϵ
-	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
-	out[4,:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
-	return nothing
-end
+
 
 # ╔═╡ ed3fc5a5-9b76-4361-bcc5-e345395a6691
-function gamma_curves_tanh!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
-	function smooth(l, L, sl)
-		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
-	end
-	
-	out[:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
-	return nothing
-end
+
 
 # ╔═╡ 677ff3cc-4037-4b19-a521-dbca74a635a7
 gamma_curves!(γ)
@@ -216,46 +187,7 @@ Having a single function to run the experiments is rather convenient, as we simp
 Below is the definition of the function `run_()`"
 
 # ╔═╡ 547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
-function run_(
-    sys::Swalbe.SysConst_1D,
-    gamma::Vector;
-    r₁=115,
-    r₂=115, 
-    θ₀=1/9,  
-    verbos=true, 
-    dump = 100, 
-    fluid=zeros(sys.param.Tmax÷dump, sys.L)
-)
-    println("Simulating droplet coalecense with surface tension gardient")
-    state = Swalbe.Sys(sys, kind="gamma")
-    drop_cent = (sys.L/3, 2*sys.L/3)
-    state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
-    Swalbe.equilibrium!(state, sys)
-    state.γ .= gamma
-	Swalbe.∇γ!(state)
-    println("Starting the lattice Boltzmann time loop")
-    for t in 1:sys.param.Tmax
-        if t % sys.param.tdump == 0
-            mass = 0.0
-            mass = sum(state.basestate.height)
-            if verbos
-                println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-20:sys.L÷2+20]), digits=3))")
-            end
-        end
-        Swalbe.filmpressure!(state, sys, γ=gamma)
-        Swalbe.h∇p!(state)
-        Swalbe.slippage!(state, sys)
-        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .- state.∇γ
-        Swalbe.equilibrium!(state, sys)
-        Swalbe.BGKandStream!(state, sys)
-        Swalbe.moments!(state)
-        
-        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
-    end
-	# println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
-    return fluid
-    
-end
+
 
 # ╔═╡ 6332a336-fe15-4fb9-949b-c7d8ebc03176
 md"To collect data, the only thing that is left to do is to run the function with the various surface tension fields we created.
@@ -343,7 +275,7 @@ begin
 	data = zeros(4, 1000, 1024)
 	
 	for i in 1:4
-	 	data[i, :, :] = run_(sys, γ[i, :], r₁=rad, r₂=rad)
+	 	data[i, :, :] = Swalbe.run_gamma(sys, γ[i, :], r₁=rad, r₂=rad)
 
 		println("Done with iteration $i")
 	end

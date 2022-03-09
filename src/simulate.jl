@@ -404,3 +404,57 @@ function run_dropletforced(sys::SysConst_1D; radius=20, θ₀=1/6, center=(sys.L
     return state.height, state.vel
 
 end
+
+# Simulation of a one dinmensional surface tension gradient using the State_gamma_1D state.
+"""
+	run_(sys::Swalbe.SysConst_1D,
+    	 gamma::Vector;
+    	 r₁=115,
+    	 r₂=115, 
+    	 θ₀=1/9,  
+    	 verbos=true, 
+    	 dump = 100, 
+    	 fluid=zeros(sys.param.Tmax÷dump, sys.L))
+
+Lattice Boltzmann simulation of coalescing droplets.
+"""
+function run_gamma(
+    sys::Swalbe.SysConst_1D,
+    gamma::Vector;
+    r₁=115,
+    r₂=115, 
+    θ₀=1/9,  
+    verbos=true, 
+    dump = 100, 
+    fluid=zeros(sys.param.Tmax÷dump, sys.L)
+)
+    println("Simulating droplet coalecense with surface tension gardient")
+    state = Swalbe.Sys(sys, kind="gamma")
+    drop_cent = (sys.L/3, 2*sys.L/3)
+    state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+    Swalbe.equilibrium!(state, sys)
+    state.γ .= gamma
+	Swalbe.∇γ!(state)
+    println("Starting the lattice Boltzmann time loop")
+    for t in 1:sys.param.Tmax
+        if t % sys.param.tdump == 0
+            mass = 0.0
+            mass = sum(state.basestate.height)
+            if verbos
+                println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-20:sys.L÷2+20]), digits=3))")
+            end
+        end
+        Swalbe.filmpressure!(state, sys, γ=gamma)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .- state.∇γ
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state, sys)
+        Swalbe.moments!(state)
+        
+        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
+    end
+	# println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
+    return fluid
+    
+end
