@@ -12,8 +12,11 @@ begin
     # instantiate, i.e. make sure that all packages are downloaded
     Pkg.instantiate()
 	
-    using Plots, Revise, DataFrames, FileIO, Swalbe, DataFramesMeta
+    using Swalbe
 end
+
+# ╔═╡ 691876ad-2ee6-4b87-974f-66a3650c4b2f
+using Plots, Revise, DataFrames, FileIO, DataFramesMeta, StatsBase, CSV
 
 # ╔═╡ bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 md"# Coalescence of sessile droplets
@@ -82,6 +85,7 @@ We store the three $\gamma$ functions in a single array and will loop through th
 
 # ╔═╡ eda3dc93-7626-42eb-82a6-b8615bd0f477
 begin
+	data_path = "..\\..\\data\\Drop_coalescence\\"
 	L = 1024
 	x = collect(1:L)
 	γ = zeros(4,L)
@@ -104,6 +108,16 @@ function gamma_curves!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
 	out[3,L÷2+1:L] .= x0 - x0 * ϵ
 	# x[3,:] .= x0 .* exp.(-collect(1:L)/L)
 	out[4,:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
+	return nothing
+end
+
+# ╔═╡ ed3fc5a5-9b76-4361-bcc5-e345395a6691
+function gamma_curves_tanh!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
+	end
+	
+	out[:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
 	return nothing
 end
 
@@ -153,8 +167,8 @@ begin
 		 xlabel="x/Δx", 
 		 ylabel="γ/γ₀", 
 	     legendfontsize = 14,			# legend font size
-         tickfont = (14),	# tick font and size
-         guidefont = (15)	# label font and size
+         tickfontsize = 14,	# tick font and size
+         guidefontsize = 15	# label font and size
 		 )
 	plot!(collect(1:L), γ[3,:] ./ γ₀, 
 		  w=3, 
@@ -186,8 +200,8 @@ The thickness of the two droplets is given by $h(x)$, with a touching point in t
 		      xlabel="x [Δx]", 
 		      ylabel="h(x)",
 		      legendfontsize = 14,			# legend font size
-              tickfont = (14),	# tick font and size
-              guidefont = (15)	# label font and size
+              tickfontsize = 14,	# tick font and size
+              guidefontsize = 15	# label font and size
 	          )
 	ylims!(0,40)
 end
@@ -284,8 +298,8 @@ function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
 			xlabel="x", 
 			ylabel="h",
 			legendfontsize=14,
-			guidefont = (18, :black), 
-			tickfont = (12, :black),
+			guidefontsize = 18, 
+			tickfontsize = 12,
 			legend= leg,
 			xlims=(472, 552)
 		)
@@ -294,7 +308,7 @@ function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
 		end
 		ylims!(0,15)
 	elseif isa(data, Swalbe.SysConst_1D)
-		save_file = "..\\data\\Drop_coalescence\\gamma_$(gamma_labels[k])_tmax_$(data.param.Tmax).jld2"
+		save_file = "..\\..\\data\\Drop_coalescence\\gamma_$(gamma_labels[k])_tmax_$(data.param.Tmax).jld2"
 		df = load(save_file) |> DataFrame
 		plot(df[!, Symbol("h_$(tarray[t1])")], 
 			label="γ=$(gamma_labels[k]) t=$(tarray[t1])", 
@@ -302,8 +316,8 @@ function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
 			xlabel="x", 
 			ylabel="h",
 			legendfontsize=14,
-			guidefont = (18, :black), 
-			tickfont = (12, :black),
+			guidefontsize = 18, 
+			tickfontsize = 12,
 			legend= leg,
 			xlims=(472, 552)
 		)
@@ -409,37 +423,28 @@ function tau_ic(;ρ=1, r₀=171, γ=γ₀)
 	return sqrt(ρ*r₀^3/γ)
 end
 
-# ╔═╡ 9e567d24-9636-467a-b491-ed9bdc584854
+# ╔═╡ 2ef048ee-fc8a-4898-a82c-4c33bc1c52b3
+md"Load the numerical experiments data into a dataframe" 
+
+# ╔═╡ ac583c93-ca39-420c-95dc-8db69c55a790
 begin
-	sys2 = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=5000000, δ=1.0))
-	# Memory
-	data2 = zeros(4, 50000, 1024)
+	sys2 = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=5000000, δ=5.0))
 	df2 = DataFrame()
 	# Time
-	time = 100:100:size(data2)[2]*100
+	time = 100:100:size(data)[2]*100
 	# Loop over γ
 	for i in 1:4
 		# Check if there is already a file created
-		save_file = "..\\data\\Drop_coalescence\\gamma_$(gamma_labels[i])_tmax_$(sys2.param.Tmax).jld2"
+		sim_name = "gamma_$(gamma_labels[i])_tmax_$(sys.param.Tmax).jld2"
+		save_file = string(data_path, sim_name)
 		# If so just read it from disc
 		if isfile(save_file)
 			tmp = load(save_file) |> DataFrame
 			tmp.nablaG .= gamma_labels[i]
-			df2 = vcat(df2, tmp)
+			df = vcat(df, tmp)
 		# If not, compute the evolution of the droplet coalescence
 		else
-	 		data2[i, :, :] = run_(sys2, γ[i, :], r₁=rad, r₂=rad)
-			# Think about storing them on the disc
-			df_fluid = Dict()
-			# Loop through the time once more
-			for t in 1:size(data2)[2]
-		        df_fluid["h_$(time[t])"] = data2[i,t,:]
-		    end
-			# Add a surface tension field label
-			df_fluid["nablaG"] = fill(gamma_labels[i], 1024)
-			# Save it
-			println("Writing file $(gamma_labels[i]) to disk")
-			save("..\\data\\Drop_coalescence\\gamma_$(gamma_labels[i])_tmax_$(sys2.param.Tmax).jld2", df_fluid)
+	 		println("Can not find simulation results for run $(save_file)\nCheck the data folder.")
 		end
 		# Print that you are done
 		println("Done with iteration $(gamma_labels[i])")
@@ -474,35 +479,165 @@ After a first visual inspection of the neck region we move towards a more quanti
 We would like to know how the height of the neck is evolving with time.
 This is quite a simple measurement and will tell us already a lot about our system.
 
+However, if we are already taking a look at the data why not ask it more.
+We could for example ask if the minimum of the neck is time independent,
+
+$\min_x(h(t)|_{neck}) = const. ,$
+
+therefor it says in the middle of the simulations domain.
+
+Another interesting question to ask is about the symmetry of the neck.
+If we were to put a symmetry line along the center of the domain, will the two sides of the neck being mirror symmetric.
+From the pictures above we already know that this seems to be only the case for the constant surface tension field $\gamma(x) = \gamma_0$.
+
+The is collected into a dataframe which makes it easy to store it and plot specific parts.
 "
 
-# ╔═╡ e5b058aa-16ca-4864-84d0-9879b353aa18
-@subset(df2, :nablaG .== "tanh")
-
 # ╔═╡ b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
-function bridge_height(df; time=100:100:5000000)
+"""
+	bridge_height(df; time=100:100:5000000, L=L)
+
+Measurement of bridge height, neck position and skewness.
+"""
+function bridge_height(df; time=100:100:5000000, L=L, r0=171)
 	df_ = DataFrame()
+	# Parameter
+	center = L÷2
+	# Controll values
 	time_list = []
-	height_list = []
 	grad_list = []
-	for i in gamma_labels
-		tmp = @subset(df2, :nablaG .== i) 
+	# Computed data
+	height_list = []
+	skew_list = []
+	pos_min_list = []
+	# Loop through data
+	for i in values(gamma_labels)
+		tmp = @subset(df, :nablaG .== i) 
 		for t in time
+			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
+			hmin = argmin(neck_region)
 			push!(time_list, t)
 			push!(grad_list, i)
-			push!(height_list, minimum(tmp[!, Symbol("h_$(t)")][]))
+			push!(height_list, minimum(neck_region))
+			push!(pos_min_list, argmin(neck_region))
+			push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
 		end
+	end
+	df_[!, "nablaG"] = grad_list
+	df_[!, "time"] = time_list
+	df_[!, "bridge_height"] = height_list
+	df_[!, "neck_min"] = pos_min_list
+	df_[!, "skewness"] = skew_list
+
+	return df_
+end
+
+# ╔═╡ 2cc159d3-1548-4f46-842d-0ebeecee49be
+begin
+	analysis_1 = "Neck_bridge_skew.csv"
+	frame_analysis_1 = string(data_path, analysis_1)
+	if isfile(frame_analysis_1)
+		df_secsweep = CSV.File(frame_analysis_1) |> DataFrame
+	else
+		df_secsweep = bridge_height(df2)
+		CSV.write(frame_analysis_1, df_secsweep)
 	end
 end
 
-# ╔═╡ d591ec33-0ae9-4d64-9422-9a1f283de7b5
-md"### Data
+# ╔═╡ 7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
+begin
+	tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_ic()
+	# tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_vr()
+	p_bridge = plot(tr, @subset(df_secsweep, :nablaG .== "default").bridge_height ./ 171,
+	ylabel = "h₀/R₀", 
+	xlabel = "t/τ",
+	label = "default",
+	title = "Evolution bridge height",
+	l = (3, :auto),
+	xaxis = :log, 
+	yaxis = :log,
+	xticks=([0.001, 0.01, 0.1, 1, 10], 
+	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+	legendfontsize = 14,		# legend font size
+    tickfontsize = 14,			# tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr, @subset(df_secsweep, :nablaG .== "linear").bridge_height ./ 171, l=(3, :auto),label="linear")
+	plot!(tr, @subset(df_secsweep, :nablaG .== "step").bridge_height ./ 171, l=(3, :auto),label="step")
+	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").bridge_height ./ 171, l=(3, :auto),label="tanh")
+	fit_t = 2e-4:2e-4:100
+	exponent = 2/3
+	plot!(fit_t, 0.014*fit_t.^(exponent) .+ 0.00109, l=(3, :auto, :black), label="∝t^(2/3)")
+	plot!(xlim=(5e-4, 30), ylim=(1e-3, 0.1))
+end
 
-Instead of rerunning the experiments, we write them to disc and relaod them.
-While it does not save a lot of time, given the experiments run not even for ten minutes, we have the ability to share the raw data if needed."
+# ╔═╡ ce0bf03e-181b-4abe-89b4-af0ae4217346
+begin
+	p_pos = plot(tr, @subset(df_secsweep, :nablaG .== "default").neck_min .- 172,
+	ylabel = "x₀ - L/2", 
+	xlabel = "t/τ",
+	label = "default",
+	title = "Position of the minimum",
+	l=(3, :auto),
+	# xaxis=:log, 
+	# yaxis=:log,
+	legendfontsize = 14,  # legend font size
+    tickfontsize = 14,	  # tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr, @subset(df_secsweep, :nablaG .== "linear").neck_min .- 172, l=(3, :auto),label="linear")
+	plot!(tr, @subset(df_secsweep, :nablaG .== "step").neck_min .- 172, l=(3, :auto),label="step")
+	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").neck_min .- 172, l=(3, :auto),label="tanh")
+end
 
-# ╔═╡ f5696349-24f8-4503-b037-ad511579918d
-# Save data, so it needs to be loaded not computed
+# ╔═╡ 67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
+begin
+	p_xi = ξ₀ = @subset(df_secsweep, :nablaG .== "default").skewness
+	plot(tr, @subset(df_secsweep, :nablaG .== "default").skewness ./ ξ₀,
+	ylabel = "ξ/ξ₀", 
+	xlabel = "t/τ",
+	label = "default",
+	title = "Asymmetry around the minimum",
+	l=(3, :auto),
+	# xaxis=:log, 
+	# yaxis=:log,
+	legendfontsize = 14,  # legend font size
+    tickfontsize = 14,	  # tick font and size
+    guidefontsize = 15,
+	legend=:bottomright)
+	plot!(tr, @subset(df_secsweep, :nablaG .== "linear").skewness ./ ξ₀, l=(3, :auto),label="linear")
+	plot!(tr, @subset(df_secsweep, :nablaG .== "step").skewness ./ ξ₀, l=(3, :auto),label="step")
+	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").skewness ./ ξ₀, l=(3, :auto),label="tanh")
+end
+
+# ╔═╡ 851750ae-46ec-4853-8c48-06608b2614c5
+md"### Results - Playing with the smoothing width" 
+
+# ╔═╡ 5114bb75-637a-4e95-ba3f-e075f181f189
+begin
+	sys3 = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=10000000, δ=5.0))
+	tanh_label_dict = Dict(1 => "sl_1div80", 2 => "sl_1div90", 3 => "sl_1div100")
+	tanh_value_dict = Dict(1 => L÷80, 2 => L÷90, 3 => L÷100)
+	df3 = DataFrame()
+	for i in 1:3
+		ggs = zeros(1024)
+		gamma_curves_tanh!(ggs, sl=tanh_value_dict[i])
+		# Check if there is already a file created
+		sim_name_tanh = "gamma_tanh_width_$(tanh_label_dict[i])_tmax_$(sys3.param.Tmax).jld2"
+		save_file = string(data_path, sim_name_tanh)
+		# If so just read it from disc
+		if isfile(save_file)
+			tmp = load(save_file) |> DataFrame
+			tmp.smoothing_width .= tanh_value_dict[i]
+			df3 = vcat(df3, tmp)
+		# If not, compute the evolution of the droplet coalescence
+		else
+	 		println("Can not find simulation results for run $(save_file)\nCheck the data folder.")
+		end
+		# Print that you are done
+		println("Done with iteration $(tanh_label_dict[i])")
+	end
+end
 
 # ╔═╡ 3091f849-7ce2-400d-9938-4b89215a0bdc
 md"## References
@@ -520,9 +655,11 @@ md"## References
 # ╔═╡ Cell order:
 # ╟─bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 # ╠═52725098-857a-4301-b86b-d9cd819de541
+# ╠═691876ad-2ee6-4b87-974f-66a3650c4b2f
 # ╟─54427765-643f-44fe-84e1-c7c67b2cfe0d
 # ╠═eda3dc93-7626-42eb-82a6-b8615bd0f477
 # ╠═bcb187be-9a59-46ce-aebe-74e7003077d8
+# ╠═ed3fc5a5-9b76-4361-bcc5-e345395a6691
 # ╠═677ff3cc-4037-4b19-a521-dbca74a635a7
 # ╟─c4236e13-fca3-4350-adf7-b98c7bde8a0a
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
@@ -530,9 +667,9 @@ md"## References
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
 # ╠═09a80dac-0cd5-42f3-9676-e412a58f58db
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
-# ╠═547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
+# ╟─547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
 # ╟─6332a336-fe15-4fb9-949b-c7d8ebc03176
-# ╟─a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
+# ╠═a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
 # ╟─2f6e1154-eaff-4c20-9fac-290474f45f0b
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
 # ╟─bab2a9ab-1ee1-4146-95e7-03d87a8f9c35
@@ -540,12 +677,16 @@ md"## References
 # ╟─b164e7ec-eaa8-4f2a-b35a-6ac01fd12875
 # ╟─9e714346-0e8d-4de5-85b4-4ede3e275834
 # ╟─a2389b72-c460-4026-8676-b3b0fb4acdc2
-# ╠═9e567d24-9636-467a-b491-ed9bdc584854
+# ╠═2ef048ee-fc8a-4898-a82c-4c33bc1c52b3
+# ╠═ac583c93-ca39-420c-95dc-8db69c55a790
 # ╟─19772481-02f9-4091-bfc9-e2853e64d4d6
 # ╠═0d7c9262-ff25-46bd-9833-bddfd7f958f9
-# ╠═50cb438d-501e-411e-844d-e75569ca3c85
-# ╠═e5b058aa-16ca-4864-84d0-9879b353aa18
-# ╠═b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
-# ╟─d591ec33-0ae9-4d64-9422-9a1f283de7b5
-# ╠═f5696349-24f8-4503-b037-ad511579918d
+# ╟─50cb438d-501e-411e-844d-e75569ca3c85
+# ╟─b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
+# ╟─2cc159d3-1548-4f46-842d-0ebeecee49be
+# ╠═7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
+# ╟─ce0bf03e-181b-4abe-89b4-af0ae4217346
+# ╟─67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
+# ╠═851750ae-46ec-4853-8c48-06608b2614c5
+# ╠═5114bb75-637a-4e95-ba3f-e075f181f189
 # ╟─3091f849-7ce2-400d-9938-4b89215a0bdc
