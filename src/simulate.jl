@@ -437,10 +437,10 @@ function run_gamma(
 	Swalbe.∇γ!(state)
     println("Starting the lattice Boltzmann time loop")
     for t in 1:sys.param.Tmax
-        if t % sys.param.tdump == 0
-            mass = 0.0
-            mass = sum(state.basestate.height)
-            if verbos
+        if verbos
+            if t % sys.param.tdump == 0
+                mass = 0.0
+                mass = sum(state.basestate.height)
                 println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-20:sys.L÷2+20]), digits=3))")
             end
         end

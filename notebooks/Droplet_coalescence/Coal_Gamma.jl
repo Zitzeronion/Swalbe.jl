@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.1
+# v0.18.2
 
 using Markdown
 using InteractiveUtils
@@ -17,6 +17,9 @@ end
 
 # ╔═╡ 691876ad-2ee6-4b87-974f-66a3650c4b2f
 using Plots, Revise, DataFrames, FileIO, DataFramesMeta, StatsBase, CSV
+
+# ╔═╡ eda3dc93-7626-42eb-82a6-b8615bd0f477
+include("helpers.jl")
 
 # ╔═╡ bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 md"# Coalescence of sessile droplets
@@ -82,15 +85,6 @@ where $a$ and $b$ define the intersection point and the smoothing width, respect
 For the following experiments, we use a one dimensional grid with $L=1024$ grid points.
 We store the three $\gamma$ functions in a single array and will loop through them. 
 "
-
-# ╔═╡ eda3dc93-7626-42eb-82a6-b8615bd0f477
-include(helpers.jl)
-
-# ╔═╡ bcb187be-9a59-46ce-aebe-74e7003077d8
-
-
-# ╔═╡ ed3fc5a5-9b76-4361-bcc5-e345395a6691
-
 
 # ╔═╡ 677ff3cc-4037-4b19-a521-dbca74a635a7
 gamma_curves!(γ)
@@ -184,10 +178,7 @@ To do an experiment, we simply call a function that contains the *LBM* iteration
 This function will take as input arguments the spatially resolved surface tension γ(x).
 Having a single function to run the experiments is rather convenient, as we simply can loop over if for further data.
 
-Below is the definition of the function `run_()`"
-
-# ╔═╡ 547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
-
+The definition of the function can be found in Swalbe.jl and is called `run_gamma()`"
 
 # ╔═╡ 6332a336-fe15-4fb9-949b-c7d8ebc03176
 md"To collect data, the only thing that is left to do is to run the function with the various surface tension fields we created.
@@ -221,11 +212,11 @@ But first we have to perform the experiments.
 "
 
 # ╔═╡ a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
-function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
+function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true, labels=gamma_labels)
 	tarray = 100:100:1000000000
 	if isa(data, Array) 
 		plot(data[k, t1, :], 
-			label="γ=$(gamma_labels[k]) t=$(tarray[t1])", 
+			label="γ=$(labels[k]) t=$(tarray[t1])", 
 			line = (:auto, 4), 
 			xlabel="x", 
 			ylabel="h",
@@ -236,14 +227,14 @@ function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
 			xlims=(472, 552)
 		)
 		for i in [t2, t3]
-			plot!(data[k, i, :], label="γ=$(gamma_labels[k]) t=$(tarray[i])", line = (:auto, 4))
+			plot!(data[k, i, :], label="γ=$(labels[k]) t=$(tarray[i])", line = (:auto, 4))
 		end
 		ylims!(0,15)
 	elseif isa(data, Swalbe.SysConst_1D)
-		save_file = "..\\..\\data\\Drop_coalescence\\gamma_$(gamma_labels[k])_tmax_$(data.param.Tmax).jld2"
+		save_file = "..\\..\\data\\Drop_coalescence\\gamma_$(labels[k])_tmax_$(data.param.Tmax).jld2"
 		df = load(save_file) |> DataFrame
 		plot(df[!, Symbol("h_$(tarray[t1])")], 
-			label="γ=$(gamma_labels[k]) t=$(tarray[t1])", 
+			label="γ=$(labels[k]) t=$(tarray[t1])", 
 			line = (:auto, 4), 
 			xlabel="x", 
 			ylabel="h",
@@ -254,7 +245,7 @@ function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true)
 			xlims=(472, 552)
 		)
 		for i in [t2, t3]
-			plot!(df[!, Symbol("h_$(tarray[i])")], label="γ=$(gamma_labels[k]) t=$(tarray[i])", line = (:auto, 4))
+			plot!(df[!, Symbol("h_$(tarray[i])")], label="γ=$(labels[k]) t=$(tarray[i])", line = (:auto, 4))
 		end
 		ylims!(0,15)
 	end
@@ -312,9 +303,10 @@ To make sense of this time steps we use characteristic time scales and match the
 We proceed in a similar matter for the lenght scale. 
 thus we have $\tau$ and $l$ with defining equations,
 
-$\tau = \frac{r\mu}{\gamma},$
+$\tau_v = \frac{l\mu}{\gamma},\qquad \tau_i = \sqrt{\frac{\rho l^3}{\gamma}},$
 
-where $\tau$ is the time scale of viscos relaxation and thus $t/\tau$ is nondimensional.
+where $\tau_v$ is the time scale of viscos relaxation and $\tau_i$ is the inertio-capillary time.
+The product $t/\tau$ is therefore nondimensional.
 For the length scale we get quite naturally
 
 $l = r,$
@@ -327,9 +319,10 @@ The numerical values therefore are
 | μ |  1/6 |
 | γ₀ | 10⁻⁴ |
 | l | 171 |
-| τ | 285000 | 
+| τᵥ | 285000 |
+| τᵢ | 223611.5 |
 
-The value of $\tau$ can now be used to make sense of our time steps.
+The value of $\tau$ (because $\tau_i \approx \tau_v$) can now be used to make sense of our time steps.
 In our second sweep we simulate for 5×10⁶ time steps and in terms of nondimensional time up to 17.5[t/τ].
 A single time step therefor creates the increment of 3.5×10⁻⁶ in terms of t/τ.
 Which is quite cool because for scaling laws we can cover a huge range in time, from 10⁻⁵ up to 10.
@@ -340,6 +333,12 @@ Which is quite cool because for scaling laws we can cover a huge range in time, 
 	tau_vr(;r₀=171, μ=1/6, γ=γ₀)
 
 Computation of the viscous relaxation time.
+
+#### Mathematics
+
+`` \\tau_{\\text{vr}} = \\frac{r_0\\mu}{\\gamma} ``
+
+where ``r_0`` is the base radius of the droplet, ``\\mu`` is the viscosity and ``\\gamma`` is the surface tension.
 """
 function tau_vr(;r₀=171, μ=1/6, γ=γ₀)
 	return r₀ * μ / γ
@@ -350,13 +349,19 @@ end
 	tau_ic(;ρ=1, r₀=171, γ=γ₀)
 
 Computation of the inertio-capillary time.
+
+#### Mathematics
+
+`` \\tau_{\\text{ic}} = \\sqrt{\\frac{\\rho r_0^3}{\\gamma}} ``
+
+where ``r_0`` is the base radius of the droplet, ``\\rho`` is the liquids density and ``\\gamma`` is the surface tension.
 """
 function tau_ic(;ρ=1, r₀=171, γ=γ₀)
 	return sqrt(ρ*r₀^3/γ)
 end
 
 # ╔═╡ 2ef048ee-fc8a-4898-a82c-4c33bc1c52b3
-md"Load the numerical experiments data into a dataframe" 
+md"Loading the data from disk" 
 
 # ╔═╡ ac583c93-ca39-420c-95dc-8db69c55a790
 begin
@@ -367,13 +372,13 @@ begin
 	# Loop over γ
 	for i in 1:4
 		# Check if there is already a file created
-		sim_name = "gamma_$(gamma_labels[i])_tmax_$(sys.param.Tmax).jld2"
+		sim_name = "gamma_$(gamma_labels[i])_tmax_$(sys2.param.Tmax).jld2"
 		save_file = string(data_path, sim_name)
 		# If so just read it from disc
 		if isfile(save_file)
 			tmp = load(save_file) |> DataFrame
 			tmp.nablaG .= gamma_labels[i]
-			df = vcat(df, tmp)
+			df2 = vcat(df2, tmp)
 		# If not, compute the evolution of the droplet coalescence
 		else
 	 		println("Can not find simulation results for run $(save_file)\nCheck the data folder.")
@@ -464,6 +469,45 @@ function bridge_height(df; time=100:100:5000000, L=L, r0=171)
 	return df_
 end
 
+# ╔═╡ 4e9366a1-c415-4094-b840-0b329f73396c
+"""
+	bridge_height3(df; time=200:200:10000000, L=L, r0=171)
+
+Measurement of bridge height, neck position and skewness.
+"""
+function bridge_height3(df; time=200:200:10000000, L=L, r0=171)
+	df_ = DataFrame()
+	# Parameter
+	center = L÷2
+	# Controll values
+	time_list = []
+	grad_list = []
+	# Computed data
+	height_list = []
+	skew_list = []
+	pos_min_list = []
+	# Loop through data
+	for i in values(tanh_v_dict)
+		tmp = @subset(df, :sw .== i) 
+		for t in time
+			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
+			hmin = argmin(neck_region)
+			push!(time_list, t)
+			push!(grad_list, i)
+			push!(height_list, minimum(neck_region))
+			push!(pos_min_list, argmin(neck_region))
+			push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
+		end
+	end
+	df_[!, "width"] = grad_list
+	df_[!, "time"] = time_list
+	df_[!, "bridge_height"] = height_list
+	df_[!, "neck_min"] = pos_min_list
+	df_[!, "skewness"] = skew_list
+
+	return df_
+end
+
 # ╔═╡ 2cc159d3-1548-4f46-842d-0ebeecee49be
 begin
 	analysis_1 = "Neck_bridge_skew.csv"
@@ -476,10 +520,17 @@ begin
 	end
 end
 
-# ╔═╡ 7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
+# ╔═╡ 3cf76e23-c873-4730-a38a-9b8e87887ed3
 begin
+	# Center thickness at t=0 divided by r₀
+	h0t0 = minimum(h[200:600])/171
+	# Time divided by the inertio capillary time
 	tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_ic()
 	# tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_vr()
+end
+
+# ╔═╡ 7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
+begin
 	p_bridge = plot(tr, @subset(df_secsweep, :nablaG .== "default").bridge_height ./ 171,
 	ylabel = "h₀/R₀", 
 	xlabel = "t/τ",
@@ -499,14 +550,22 @@ begin
 	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").bridge_height ./ 171, l=(3, :auto),label="tanh")
 	fit_t = 2e-4:2e-4:100
 	exponent = 2/3
-	plot!(fit_t, 0.014*fit_t.^(exponent) .+ 0.00109, l=(3, :auto, :black), label="∝t^(2/3)")
+	plot!(fit_t, 0.014 .* fit_t.^(exponent) .+ h0t0, l=(3, :auto, :black), label="∝t^(2/3)")
 	plot!(xlim=(5e-4, 30), ylim=(1e-3, 0.1))
 end
+
+# ╔═╡ c688523c-2db3-4362-b379-20115cbbfde9
+md"Although not perfect but the theory with some fitting seems to capture the trend quite well.
+For the fitting we have used
+
+$f(t) = a + b\cdot t^{2/3},$
+
+where $a = h_0(0)/r$ and $b = 0.014$."
 
 # ╔═╡ ce0bf03e-181b-4abe-89b4-af0ae4217346
 begin
 	p_pos = plot(tr, @subset(df_secsweep, :nablaG .== "default").neck_min .- 172,
-	ylabel = "x₀ - L/2", 
+	ylabel = "χ", 
 	xlabel = "t/τ",
 	label = "default",
 	title = "Position of the minimum",
@@ -521,6 +580,18 @@ begin
 	plot!(tr, @subset(df_secsweep, :nablaG .== "step").neck_min .- 172, l=(3, :auto),label="step")
 	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").neck_min .- 172, l=(3, :auto),label="tanh")
 end
+
+# ╔═╡ 77ecc143-24c0-448e-93f1-b8cec5b60700
+md"One of the interesting things that happen during this experiments is the movement of the minimum.
+We define the minimum of the bridge as 
+
+$\chi(t) := \{x \in L|x:pos(h_0(t))\}$
+
+That is why we try to track it over time.
+Clearly for the case of constant γ no asymmetry arises and the minimum keeps being pinned in the center thus
+
+$\chi(\gamma_0) = const$
+Somewhat understandable the "
 
 # ╔═╡ 67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
 begin
@@ -547,12 +618,12 @@ md"### Results - Playing with the smoothing width"
 
 # ╔═╡ 5114bb75-637a-4e95-ba3f-e075f181f189
 begin
-	sys3 = Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=10000000, δ=5.0))
+	sys3 = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(n=9, m=3, Tmax=10000000, δ=5.0))
 	tanh_label_dict = Dict(1 => "sl_1div80", 2 => "sl_1div90", 3 => "sl_1div100")
 	tanh_value_dict = Dict(1 => L÷80, 2 => L÷90, 3 => L÷100)
 	df3 = DataFrame()
 	for i in 1:3
-		ggs = zeros(1024)
+		ggs = zeros(L)
 		gamma_curves_tanh!(ggs, sl=tanh_value_dict[i])
 		# Check if there is already a file created
 		sim_name_tanh = "gamma_tanh_width_$(tanh_label_dict[i])_tmax_$(sys3.param.Tmax).jld2"
@@ -590,18 +661,15 @@ md"## References
 # ╠═691876ad-2ee6-4b87-974f-66a3650c4b2f
 # ╟─54427765-643f-44fe-84e1-c7c67b2cfe0d
 # ╠═eda3dc93-7626-42eb-82a6-b8615bd0f477
-# ╠═bcb187be-9a59-46ce-aebe-74e7003077d8
-# ╠═ed3fc5a5-9b76-4361-bcc5-e345395a6691
 # ╠═677ff3cc-4037-4b19-a521-dbca74a635a7
 # ╟─c4236e13-fca3-4350-adf7-b98c7bde8a0a
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
 # ╟─708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
-# ╠═09a80dac-0cd5-42f3-9676-e412a58f58db
+# ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
-# ╟─547e2ffb-b0a9-4bf2-a80a-5a6b5aed7e5a
 # ╟─6332a336-fe15-4fb9-949b-c7d8ebc03176
-# ╠═a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
+# ╟─a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
 # ╟─2f6e1154-eaff-4c20-9fac-290474f45f0b
 # ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
 # ╟─bab2a9ab-1ee1-4146-95e7-03d87a8f9c35
@@ -609,15 +677,19 @@ md"## References
 # ╟─b164e7ec-eaa8-4f2a-b35a-6ac01fd12875
 # ╟─9e714346-0e8d-4de5-85b4-4ede3e275834
 # ╟─a2389b72-c460-4026-8676-b3b0fb4acdc2
-# ╠═2ef048ee-fc8a-4898-a82c-4c33bc1c52b3
+# ╟─2ef048ee-fc8a-4898-a82c-4c33bc1c52b3
 # ╠═ac583c93-ca39-420c-95dc-8db69c55a790
 # ╟─19772481-02f9-4091-bfc9-e2853e64d4d6
 # ╠═0d7c9262-ff25-46bd-9833-bddfd7f958f9
 # ╟─50cb438d-501e-411e-844d-e75569ca3c85
 # ╟─b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
+# ╟─4e9366a1-c415-4094-b840-0b329f73396c
 # ╟─2cc159d3-1548-4f46-842d-0ebeecee49be
-# ╠═7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
+# ╠═3cf76e23-c873-4730-a38a-9b8e87887ed3
+# ╟─7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
+# ╟─c688523c-2db3-4362-b379-20115cbbfde9
 # ╟─ce0bf03e-181b-4abe-89b4-af0ae4217346
+# ╠═77ecc143-24c0-448e-93f1-b8cec5b60700
 # ╟─67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
 # ╠═851750ae-46ec-4853-8c48-06608b2614c5
 # ╠═5114bb75-637a-4e95-ba3f-e075f181f189

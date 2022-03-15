@@ -44,3 +44,47 @@ function gamma_curves_tanh!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
 	out[:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
 	return nothing
 end
+
+"""
+	plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true, labels=gamma_labels)
+
+Convienence function to plot the data.
+"""
+function plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true, labels=gamma_labels)
+	tarray = 100:100:1000000000
+	if isa(data, Array) 
+		plot(data[k, t1, :], 
+			label="γ=$(labels[k]) t=$(tarray[t1])", 
+			line = (:auto, 4), 
+			xlabel="x", 
+			ylabel="h",
+			legendfontsize=14,
+			guidefontsize = 18, 
+			tickfontsize = 12,
+			legend= leg,
+			xlims=(472, 552)
+		)
+		for i in [t2, t3]
+			plot!(data[k, i, :], label="γ=$(labels[k]) t=$(tarray[i])", line = (:auto, 4))
+		end
+		ylims!(0,15)
+	elseif isa(data, Swalbe.SysConst_1D)
+		save_file = "..\\..\\data\\Drop_coalescence\\gamma_$(labels[k])_tmax_$(data.param.Tmax).jld2"
+		df = load(save_file) |> DataFrame
+		plot(df[!, Symbol("h_$(tarray[t1])")], 
+			label="γ=$(labels[k]) t=$(tarray[t1])", 
+			line = (:auto, 4), 
+			xlabel="x", 
+			ylabel="h",
+			legendfontsize=14,
+			guidefontsize = 18, 
+			tickfontsize = 12,
+			legend= leg,
+			xlims=(472, 552)
+		)
+		for i in [t2, t3]
+			plot!(df[!, Symbol("h_$(tarray[i])")], label="γ=$(labels[k]) t=$(tarray[i])", line = (:auto, 4))
+		end
+		ylims!(0,15)
+	end
+end
