@@ -153,23 +153,33 @@ end
 md"We then apply this surface tension function $\gamma(x)$ to the initial state displayed below.
 The thickness of the two droplets is given by $h(x)$, with a touching point in the center of the domain at $L/2$."
 
-# ╔═╡ 09a80dac-0cd5-42f3-9676-e412a58f58db
-	begin
-	# The initial configuration of the numerical experiment
+# ╔═╡ 28025793-b001-4597-aa1c-f2dd06c8a34e
+begin
+	# Some parameters and the initial condition
 	rad = 500
 	h = Swalbe.two_droplets(Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs()), r₁=rad, r₂=rad)
-	p0 = plot(collect(1:1024), h, 
+end
+
+# ╔═╡ 76aff625-dcfb-4875-8366-d4c6aac51e54
+begin
+	# The initial configuration of the numerical experiment
+	init_p = plot(collect(1:1024), h, 
 		      w=3, 
-		      aspect_ratio=7, 
-		      label="Initial conf.", 
+		      aspect_ratio=5, 
+		      label="", 
+			  ribbon=(h,0),
 		      xlabel="x [Δx]", 
-		      ylabel="h(x)",
+		      ylabel="h(x) [l.b.u.]",
 		      legendfontsize = 14,			# legend font size
               tickfontsize = 14,	# tick font and size
-              guidefontsize = 15	# label font and size
+              guidefontsize = 15,	# label font and size
+			  grid = false,
 	          )
 	ylims!(0,40)
 end
+
+# ╔═╡ 77566ed2-14b6-48c3-831f-80efce8c2e3e
+# savefig(init_p, "..\\..\\figures\\initial_cond.svg")
 
 # ╔═╡ ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
 md"### Run function
@@ -178,7 +188,7 @@ To do an experiment, we simply call a function that contains the *LBM* iteration
 This function will take as input arguments the spatially resolved surface tension γ(x).
 Having a single function to run the experiments is rather convenient, as we simply can loop over if for further data.
 
-The definition of the function can be found in Swalbe.jl and is called `run_gamma()`"
+The definition of the function can be found in Swalbe.jl (*surface\_tension\_gradient* branch) and is called `run_gamma()`"
 
 # ╔═╡ 6332a336-fe15-4fb9-949b-c7d8ebc03176
 md"To collect data, the only thing that is left to do is to run the function with the various surface tension fields we created.
@@ -419,12 +429,12 @@ This is quite a simple measurement and will tell us already a lot about our syst
 However, if we are already taking a look at the data why not ask it more.
 We could for example ask if the minimum of the neck is time independent,
 
-$\min_x(h(t)|_{neck}) = const. ,$
+$\forall t : h_0(t, x) = h_0(t_0, x_0) ,$
 
-therefor it says in the middle of the simulations domain.
+so it stays at the same position throughout the simulation.
 
 Another interesting question to ask is about the symmetry of the neck.
-If we were to put a symmetry line along the center of the domain, will the two sides of the neck being mirror symmetric.
+If we were to put a symmetry line along the center of the domain, will the two sides of the neck being mirror symmetric, this is however work in progress.
 From the pictures above we already know that this seems to be only the case for the constant surface tension field $\gamma(x) = \gamma_0$.
 
 The is collected into a dataframe which makes it easy to store it and plot specific parts.
@@ -508,6 +518,18 @@ function bridge_height3(df; time=200:200:10000000, L=L, r0=171)
 	return df_
 end
 
+# ╔═╡ 8adf34e9-7b5c-4b75-8753-2726ffdda706
+md"The data is stored in a dataframe with column names:
+
+- **nablaG**: The shape of the surface tension gradient
+- **time**: Time steps in lattice Boltzmann units
+- **bridge_height**: Minimal thickness between the droplets
+- **neck_min**: Position of the minimum on the lattice
+- **skewness**: First try to measure asymmetry
+
+Filtering on these columns is rather straight forward with `DataFramesMeta`.
+"
+
 # ╔═╡ 2cc159d3-1548-4f46-842d-0ebeecee49be
 begin
 	analysis_1 = "Neck_bridge_skew.csv"
@@ -520,14 +542,52 @@ begin
 	end
 end
 
-# ╔═╡ 3cf76e23-c873-4730-a38a-9b8e87887ed3
-begin
-	# Center thickness at t=0 divided by r₀
-	h0t0 = minimum(h[200:600])/171
-	# Time divided by the inertio capillary time
-	tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_ic()
-	# tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_vr()
+# ╔═╡ 6dd016bb-9a59-48ed-93ef-6e5c814037e9
+md"Theory suggests that the brdige height should grow according to a powerlaw.
+It is therefore necessay to have data for different decades.
+With a uniform sampling interval however the density of points looks odd.
+Very high densities appear in the late time stages, while data seems to sparse in the early time regime.
+
+There are two ideas to overcome this issue.
+
+1. Do not show points at all
+2. Use a log sampling of data points
+
+To normalize the axis for the scaling we compute the normalized time scales and the initial bridge height at $t = 0$.
+" 
+
+# ╔═╡ 2e6cd7bf-b650-48d1-aa23-78936404dce1
+# Center thickness at t=0 divided by r₀
+h0t0 = minimum(h[200:600])/171
+
+# ╔═╡ 9c48f835-3595-4d2d-978f-18fb74b6d3fe
+# Time divided by the inertio capillary time
+tr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_ic()
+#tr_vr = @subset(df_secsweep, :nablaG .== "default").time ./ tau_vr()
+
+# ╔═╡ 2b82f7ec-08de-4cd8-b4ee-7fac37fc4876
+"""
+	log_t(; tr=tr, log_p_interval=[1, 2, 3, 4, 5, 7])
+
+Data point sampling for log log plots.
+"""
+function log_t(; tr=tr, log_p_interval=[1, 2, 3, 4, 5, 7])
+	some_list = []
+	t_len = length(tr)
+	j = 1
+	while j < t_len + 1
+		for i in log_p_interval
+			if i * j < t_len
+       			push!(some_list, i*j)
+			end
+    	end
+       	j *= 10
+    end
+	return some_list
 end
+
+# ╔═╡ 01c10b58-c4de-456b-a69c-f751eaa879ad
+some_list = log_t()
 
 # ╔═╡ 7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
 begin
@@ -560,7 +620,76 @@ For the fitting we have used
 
 $f(t) = a + b\cdot t^{2/3},$
 
-where $a = h_0(0)/r$ and $b = 0.014$."
+where 
+
+$a = \frac{h_0(t_0)}{r_0},$ 
+
+and
+
+$b = 0.014.$
+
+Here we hide the data points and instead show a rather smooth curve.
+Therefore this is inline with **Do not show data points**
+
+However presentation of data is relatively important.
+Doing a simple plot is often not enough to please possible referees.
+Because of the fact that the data is discrete it helps to show data points.
+In double logarithmic scale this can be a hassle.
+
+That is why in the cell below we try to get a representative subset of data points only, in a log like distrubted fashion.
+For that reason we create a time array with appropriate distribution to ensure that the point density does not become unbareable.
+Meaning we use **log like display of data points** (there is more data than points!)
+"
+
+# ╔═╡ 1c780662-5b9a-4f5d-bb6c-3025bde4e484
+md"Using this time subset the data can cleanly displayed as"
+
+# ╔═╡ a1df9654-cafa-4739-be95-d36b0cfa62ac
+begin
+	logset = [1,2,3,4,5,6,7,8,9,10,20,30,40,50,]
+	p_b_simple = plot(tr[some_list], @subset(df_secsweep, :nablaG .== "default").bridge_height[some_list] ./ 171,
+	ylabel = "h₀/R₀", 
+	xlabel = "t/τ",
+	label = "γ(x) = const.",
+	# title = "Evolution bridge height",
+	m = (9, :auto, 0.6),
+	st = :scatter, 				# some recipy stuff
+	xaxis = :log, 
+	yaxis = :log,
+	grid = false,
+	xticks=([0.001, 0.01, 0.1, 1, 10], 
+	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+	legendfontsize = 14,		# legend font size
+    tickfontsize = 14,			# tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr[some_list], @subset(df_secsweep, :nablaG .== "step").bridge_height[some_list] ./ 171, 
+	m = (9, :auto, 0.6),
+	st = :scatter,
+	label="γ(x) = Θ(x)"
+	)
+	plot!(fit_t, 0.0165 .* fit_t.^(exponent), l=(3, :black), label="f(x) ∝ t^(2/3)")
+	plot!(xlim=(5e-4, 30), ylim=(1e-3, 0.12))
+end
+
+# ╔═╡ 72aba74a-6fd5-4bcc-b0b7-e8b0854b52bd
+# Enable to save the figure
+# savefig(p_b_simple, "..\\..\\figures\\simple_bridge_height.svg")
+
+# ╔═╡ 32d9caab-4c07-4546-aea7-708fd1fbe6b1
+md"The lower plot, while with less data is somewhat better to understand.
+The legend here tells us that the blue bullets were created using a constant surface tension throughout the whole domain, while orange squares are generated using a Heaviside function 
+
+$\Theta(x) = \begin{cases}
+\gamma_0 \quad\qquad\text{for}\quad x < L/2 \\
+\gamma_0 - \epsilon \quad~\text{else}
+\end{cases}$
+
+and $f(x)$ here is the same as above with $a = 0$.
+
+The next question we asked the data was if the minimum was moving with time or if its time independent.
+The plot below shows what the data has to say about that question.
+"
 
 # ╔═╡ ce0bf03e-181b-4abe-89b4-af0ae4217346
 begin
@@ -585,13 +714,61 @@ end
 md"One of the interesting things that happen during this experiments is the movement of the minimum.
 We define the minimum of the bridge as 
 
-$\chi(t) := \{x \in L|x:pos(h_0(t))\}$
+$\chi(t) := pos(h_0) - \frac{L}{2},$
 
-That is why we try to track it over time.
-Clearly for the case of constant γ no asymmetry arises and the minimum keeps being pinned in the center thus
+where $pos(g)$ returns the $x$-coordinate of $g(t)$ (somewhat similar to `argmin`).
+Clearly for the case of constant γ (blue line) no asymmetry arises and the minimum keeps being pinned in the center thus
 
-$\chi(\gamma_0) = const$
-Somewhat understandable the "
+$\chi(t)^{\gamma_0} = const.$
+
+Somewhat understandable the minimum moves in the case of a linear surface tension gradient (orange dashed).
+The linear surface tension function is with a constant negative slope, therefore the minimum is moving into regions of lower surface tension or
+
+$\chi(t)^{\gamma_l} = kt,$
+
+where $k$ is a positive slope and $t$ is the time.
+
+The smoothed step with a tangent hyperbolicus (violet dashed dotted) yields some interesting dynamics, with an unexpected $\chi(t) = 0$ crossing. 
+We will get back to this later.
+
+Almost similar to the constant surface tension, the step function induces a reshaping of the double droplet state and quickly reaches an equilibrium at negativ $\chi$,
+
+$\chi(t)^{\gamma_s} = \chi(t)^{\gamma_0} - l_0,$
+
+where $l_0$ is the shift in distance towards the new static equilibrium.
+"
+
+# ╔═╡ 0cf67e97-fb9a-43d2-985f-90e3328f680c
+begin
+	plot(tr, @subset(df_secsweep, :nablaG .== "default").neck_min .- 172,
+	ylabel = "χ", 
+	xlabel = "t/τ",
+	label = "default",
+	title = "Position of the minimum",
+	l=(3, :auto),
+	st = :samplemarkers, 				# some recipy stuff
+	step = 2000, 
+	marker = (8, :auto, 0.6),
+	legendfontsize = 14,  # legend font size
+    tickfontsize = 14,	  # tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr, @subset(df_secsweep, :nablaG .== "linear").neck_min .- 172, l=(3, :auto),label="linear", st = :samplemarkers, marker = (8, :auto, 0.6), step = 2000)
+	plot!(tr, @subset(df_secsweep, :nablaG .== "step").neck_min .- 172, l=(3, :auto),label="step", st = :samplemarkers, marker = (8, :auto, 0.6), step = 2000)
+	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").neck_min .- 172, l=(3, :auto),label="tanh", st = :samplemarkers, marker = (8, :auto, 0.6), step = 2000)
+end
+
+# ╔═╡ e89f39ed-473c-40aa-ac2e-40844bd80127
+md"Pretty much the same with markers for every nth data point.
+The discret nature of the plot arises from the fact that we do not interpolate the minimum.
+Thus it can only be above a well defined lattice point.
+
+The last point on the first analysis agenda was the skewness.
+Does the surface tension gradient induce asymmetry around the center?
+The clear answer to this question is, **yes**.
+Sadly I have to come up with a better way to measure this.
+However below is the first try.
+Trying to understand maybe not helpful at all!"
 
 # ╔═╡ 67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
 begin
@@ -602,15 +779,16 @@ begin
 	label = "default",
 	title = "Asymmetry around the minimum",
 	l=(3, :auto),
-	# xaxis=:log, 
+	xaxis=:log, 
 	# yaxis=:log,
 	legendfontsize = 14,  # legend font size
     tickfontsize = 14,	  # tick font and size
     guidefontsize = 15,
-	legend=:bottomright)
+	legend=:bottomleft)
 	plot!(tr, @subset(df_secsweep, :nablaG .== "linear").skewness ./ ξ₀, l=(3, :auto),label="linear")
 	plot!(tr, @subset(df_secsweep, :nablaG .== "step").skewness ./ ξ₀, l=(3, :auto),label="step")
 	plot!(tr, @subset(df_secsweep, :nablaG .== "tanh").skewness ./ ξ₀, l=(3, :auto),label="tanh")
+	xlims!(1e-2, 50)
 end
 
 # ╔═╡ 851750ae-46ec-4853-8c48-06608b2614c5
@@ -666,7 +844,9 @@ md"## References
 # ╟─3594c0d9-0010-4086-9e7e-163bdf1b0195
 # ╟─708f54fc-0bd4-4577-85ec-4faf38029c2f
 # ╟─8010c641-a385-4f3f-a88d-817332e45091
-# ╟─09a80dac-0cd5-42f3-9676-e412a58f58db
+# ╟─28025793-b001-4597-aa1c-f2dd06c8a34e
+# ╟─76aff625-dcfb-4875-8366-d4c6aac51e54
+# ╟─77566ed2-14b6-48c3-831f-80efce8c2e3e
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
 # ╟─6332a336-fe15-4fb9-949b-c7d8ebc03176
 # ╟─a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
@@ -684,12 +864,23 @@ md"## References
 # ╟─50cb438d-501e-411e-844d-e75569ca3c85
 # ╟─b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
 # ╟─4e9366a1-c415-4094-b840-0b329f73396c
+# ╟─8adf34e9-7b5c-4b75-8753-2726ffdda706
 # ╟─2cc159d3-1548-4f46-842d-0ebeecee49be
-# ╠═3cf76e23-c873-4730-a38a-9b8e87887ed3
+# ╟─6dd016bb-9a59-48ed-93ef-6e5c814037e9
+# ╟─2e6cd7bf-b650-48d1-aa23-78936404dce1
+# ╟─9c48f835-3595-4d2d-978f-18fb74b6d3fe
+# ╟─2b82f7ec-08de-4cd8-b4ee-7fac37fc4876
+# ╟─01c10b58-c4de-456b-a69c-f751eaa879ad
 # ╟─7a9cc2e4-5c43-49e5-abd6-5c614e7b3c30
 # ╟─c688523c-2db3-4362-b379-20115cbbfde9
+# ╟─1c780662-5b9a-4f5d-bb6c-3025bde4e484
+# ╟─a1df9654-cafa-4739-be95-d36b0cfa62ac
+# ╠═72aba74a-6fd5-4bcc-b0b7-e8b0854b52bd
+# ╟─32d9caab-4c07-4546-aea7-708fd1fbe6b1
 # ╟─ce0bf03e-181b-4abe-89b4-af0ae4217346
-# ╠═77ecc143-24c0-448e-93f1-b8cec5b60700
+# ╟─77ecc143-24c0-448e-93f1-b8cec5b60700
+# ╟─0cf67e97-fb9a-43d2-985f-90e3328f680c
+# ╟─e89f39ed-473c-40aa-ac2e-40844bd80127
 # ╟─67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
 # ╠═851750ae-46ec-4853-8c48-06608b2614c5
 # ╠═5114bb75-637a-4e95-ba3f-e075f181f189
