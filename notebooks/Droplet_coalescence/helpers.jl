@@ -46,6 +46,23 @@ function gamma_curves_tanh!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
 end
 
 """
+	function gamma_curves_tanh_p!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+"""
+function gamma_curves_tanh_p!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
+	end
+
+	function smooth_p(l, sl)
+		return (0.5 .+ 0.5 .* tanh.((l .- (sl÷2-1)) ./ (sl)))
+	end
+	
+	out[:] .= x0 .* smooth(x, L, sl)  .+ (1 .- smooth_p(x, sl)) .* x0 .*(1 - ϵ) .+ x0 .* smooth_p(x, sl)
+	out[L-sl:end] = x0 .*(1 - ϵ) .* smooth_p(x, sl) .+ (1 .- smooth_p(x, sl)) .* x0 .*(1 - ϵ)
+	return nothing
+end
+
+"""
 	plot_data(data; k=1, t1=100, t2=500, t3=1000, leg=true, labels=gamma_labels)
 
 Convienence function to plot the data.
