@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.2
+# v0.18.4
 
 using Markdown
 using InteractiveUtils
@@ -167,6 +167,7 @@ begin
 		      w=3, 
 		      aspect_ratio=5, 
 		      label="", 
+			  title="Initial condition",
 			  ribbon=(h,0),
 		      xlabel="x [Δx]", 
 		      ylabel="h(x) [l.b.u.]",
@@ -176,6 +177,7 @@ begin
 			  grid = false,
 	          )
 	ylims!(0,40)
+	xlims!(0,1024)
 end
 
 # ╔═╡ 77566ed2-14b6-48c3-831f-80efce8c2e3e
@@ -186,12 +188,12 @@ md"### Run function
 
 To do an experiment, we simply call a function that contains the *LBM* iterations.
 This function will take as input arguments the spatially resolved surface tension γ(x).
-Having a single function to run the experiments is rather convenient, as we simply can loop over if for further data.
+Having a single function to run the experiments is rather convenient. 
+This way we simply can loop over for further data collection.
 
-The definition of the function can be found in Swalbe.jl (*surface\_tension\_gradient* branch) and is called `run_gamma()`"
+The definition of the function can be found in Swalbe.jl (*surface\_tension\_gradient* branch) and is called `run_gamma()`
 
-# ╔═╡ 6332a336-fe15-4fb9-949b-c7d8ebc03176
-md"To collect data, the only thing that is left to do is to run the function with the various surface tension fields we created.
+To collect data, the only thing that is left to do is to run the function with the various surface tension fields we created.
 For two of the four experiments, we know what should happen.
 In case of a constant surface tension, the droplets will merge and the bridge height h₀ should grow as 
 
@@ -217,6 +219,29 @@ This counteracting forces stabilizes the two droplet state.
 We assume that the other two surface tension gradients, both the linear and the smoothed step function, will lead to coalescence. 
 However, especially in the case of smoothing function using a `tanh` should be dependent on the smoothing width.
 But first we have to perform the experiments.
+
+*Side note*, the experiments presented by Karpitschka et al. were verified using a numerical solver for the thin film problem.
+They numerically solved 
+
+$\partial_t h = -\partial_x\bigg\{\frac{1}{\mu}\bigg[\frac{h^3}{3}\partial_x(\gamma\partial_x^2h)+\frac{h^2}{2}\partial_x\gamma\bigg]\bigg\},$
+
+with $\mu$ being the viscosity.
+This model is more than appropriate for macroscopic drops.
+However if the overall size of the problem gets smaller another term could contribute, namely the disjoining pressure,
+
+$\Pi(h) = \kappa(\theta)\bigg[\bigg(\frac{h_{\ast}}{h}\bigg)^n - \bigg(\frac{h_{\ast}}{h}\bigg)^m\bigg],$
+
+where $\kappa(\theta)$ is a function of the contact angle $\theta$, $h_{\ast}$ a parameter for which $\Pi(h_{\ast}) = 0$ and $n, m$ are positive integers obeying $n > m > 0$.
+Combining this term and the second derivative of the thickness into single expression 
+
+$p_{\text{film}} = \gamma \partial_x^2 h + \Pi(h),$
+
+the thin film equation becomes
+
+$\partial_t h = -\partial_x\bigg\{\frac{1}{\mu}\bigg[\frac{h^3}{3}\partial_x p +\frac{h^2}{2}\partial_x\gamma\bigg]\bigg\},$
+
+while this may not seem like a huge game changer, the disjoining pressure is there to actually account for things like the three phase contact line.
+We shall find out now if we are able to come to the same conclusion as Karpitschka with the addition of the disjoining pressure.
 
 ## Numerical experiments
 "
@@ -479,43 +504,24 @@ function bridge_height(df; time=100:100:5000000, L=L, r0=171)
 	return df_
 end
 
-# ╔═╡ 4e9366a1-c415-4094-b840-0b329f73396c
+# ╔═╡ 20d4019f-7f79-4f25-bbdd-e439f936fa62
 """
-	bridge_height3(df; time=200:200:10000000, L=L, r0=171)
+	simple_curvature(x; appr = zeros(length(x)))
 
-Measurement of bridge height, neck position and skewness.
+Straight forward computation of 
+
+`` \\kappa = \\frac{\\frac{d^2 y}{dx^2}}{[1 + (\\frac{dy}{dx})^2]^{3/2}}``
+
+and returns an array of similar size to the input with curvature values.
 """
-function bridge_height3(df; time=200:200:10000000, L=L, r0=171)
-	df_ = DataFrame()
-	# Parameter
-	center = L÷2
-	# Controll values
-	time_list = []
-	grad_list = []
-	# Computed data
-	height_list = []
-	skew_list = []
-	pos_min_list = []
-	# Loop through data
-	for i in values(tanh_v_dict)
-		tmp = @subset(df, :sw .== i) 
-		for t in time
-			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
-			hmin = argmin(neck_region)
-			push!(time_list, t)
-			push!(grad_list, i)
-			push!(height_list, minimum(neck_region))
-			push!(pos_min_list, argmin(neck_region))
-			push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
-		end
-	end
-	df_[!, "width"] = grad_list
-	df_[!, "time"] = time_list
-	df_[!, "bridge_height"] = height_list
-	df_[!, "neck_min"] = pos_min_list
-	df_[!, "skewness"] = skew_list
+function simple_curvature(x; appr = zeros(length(x)))
+	p = circshift(x, 1)
+    m = circshift(x,-1)
+	
+    appr .= p .- 2 .* x .+ m
+    appr ./= (1 .+ (0.5 .* (p .- m)).^2).^(3/2)
 
-	return df_
+	return appr
 end
 
 # ╔═╡ 8adf34e9-7b5c-4b75-8753-2726ffdda706
@@ -792,10 +798,32 @@ begin
 end
 
 # ╔═╡ 851750ae-46ec-4853-8c48-06608b2614c5
-md"### Results - Playing with the smoothing width" 
+md"### Results - Playing with the smoothing width
+
+We know from Stefan Krapitschkas experiments that droplets can be kept from coalescing.
+In their experiments they use two liquids with different surface tensions, which roughly corresponds to the step surface tension in our simulation.
+
+What happens when the step is relaxed?
+Above we saw, the droplets coalesce again.
+In fact the only case where the droplets were not coalescing was the step function.
+However we like to study the influence of the gradient a little more.
+
+In the following we will only considere a surface tension gradient of typ,
+
+$γ^{smooth}(x) = γ₀[s(x) + (1-s(x))(1-ϵ)],$
+
+with $s(x)$ being
+
+$s(x; a, b) = \Bigg|1 - \left[\frac{1}{2} + \frac{1}{2}\tanh\left(\frac{x - a}{b}\right)\right]\Bigg|,$
+
+and vary the smoothing width $b$.
+In the experiments above $b$ was rather large.
+We therefore change in the following the value of $b$ because we know in the limit of vanishing width it should more or less be similar to the step case.
+" 
 
 # ╔═╡ 5114bb75-637a-4e95-ba3f-e075f181f189
 begin
+	needed = false
 	sys3 = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(n=9, m=3, Tmax=10000000, δ=5.0))
 	tanh_label_dict = Dict(1 => "sl_1div80", 2 => "sl_1div90", 3 => "sl_1div100")
 	tanh_value_dict = Dict(1 => L÷80, 2 => L÷90, 3 => L÷100)
@@ -809,7 +837,8 @@ begin
 		# If so just read it from disc
 		if isfile(save_file)
 			tmp = load(save_file) |> DataFrame
-			tmp.smoothing_width .= tanh_value_dict[i]
+			# Add a column for the smoothing width
+			tmp.sw .= tanh_value_dict[i]
 			df3 = vcat(df3, tmp)
 		# If not, compute the evolution of the droplet coalescence
 		else
@@ -818,6 +847,349 @@ begin
 		# Print that you are done
 		println("Done with iteration $(tanh_label_dict[i])")
 	end
+	if needed
+		println("Data stored in `df3`.")
+	else
+		df3 = DataFrame()
+		println("For data change `needed` to true at the top of the cell.")
+	end
+end
+
+# ╔═╡ 10481933-4b7c-4bad-8285-b16bf9c526c3
+md"Below you can find data from a run up to 10⁷ time steps, therefore $\approx 45 \frac{t}{\tau}$ in dimensionless time.
+Because I am very imperfect human being, I mislabelled the data.
+The temporal resolution is not a 100Δt but 200Δt, see the time corrected argument in `bridge_height2`.
+
+The parameter we are most interested in is the bridge height $h_0(t)$.
+Let us try to extract the data similar to above using the function `bridge_height2` on `df3`."
+
+# ╔═╡ c6708c4e-1613-44ca-938e-695ae95f7643
+md"The data we have collected in `df_tanh` can be used to plot the evolution of the bridge height.
+Similar to the plots above, we use a subset of data to have understandable log log plot.
+"
+
+# ╔═╡ ba37695d-7f37-4bfe-96b4-118d6253391e
+md"Good thing we did not call it a day after the first dataset with the smoothed step surface tension.
+In the plot above we have a lot of data.
+However, there are two extrema:
+
+1. Constant surface tension: blue bullets
+2. Heaviside function: orange squares
+
+The rest of the symbols represent differing smoothing widths.
+Interestingly for these rather small smoothing widths the bridge initially starts to grow, but then inverts the trend and seperate to a stable two droplet state.
+The meaning of a rather small smoothing width is losely defined as
+
+$b \approx \frac{\max[h(t=0)]}{3}.$
+
+One more observation that is probably not so clear from this data is that saddle point of the curves.
+It turns out that there is a correlation between the smoothing width and the saddle point.
+
+Further data is needed to make a more detailed observation of this behaviour.
+Luckily there is more data which in the next step will be loaded into a dataframe and analyzed in a similar manner.
+"
+
+# ╔═╡ 90d215db-fab4-4b87-9088-6f55e1a8b25d
+begin
+	sys_long = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(n=9, m=3, Tmax=50000000, δ=5.0, tdump=1000))
+	tanh_l_dict = Dict(1 => "sw_20", 2 => "sw_30", 3 => "sw_40", 4 => "sw_50")
+	tanh_v_dict = Dict(1 => 20, 2 => 30, 3 => 40, 4 => 50)
+	df_l = DataFrame()
+	for i in 1:length(tanh_l_dict)  
+    	# Check if there is already a file created
+    	sim_name_tanh = "gamma_tanh_width_$(tanh_l_dict[i])_tmax_$(sys_long.param.Tmax).jld2"
+    	save_file = string(data_path, sim_name_tanh)
+		# If so just read it from disc
+		if isfile(save_file)
+			tmp = load(save_file) |> DataFrame
+			# Add a column for the smoothing width
+			tmp.sw .= tanh_v_dict[i]
+			df_l = vcat(df_l, tmp)
+		# If not, compute the evolution of the droplet coalescence
+		else
+	 		println("Can not find simulation results for run $(save_file)\nCheck the data folder.")
+		end
+		# Print that you are done
+		println("Done with iteration $(tanh_l_dict[i])")
+	end
+end
+
+# ╔═╡ 56ca66b1-4f03-4132-9693-16a9cb173a24
+"""
+	bridge_height2(df; time=100:100:5000000, L=L, r0=171)
+
+Measurement of bridge height, neck position and skewness.
+Time corrected
+"""
+function bridge_height2(df; time=100:100:5000000, L=L, r0=171, label_dict=tanh_v_dict)
+	df_ = DataFrame()
+	# Parameter
+	center = L÷2
+	# Controll values
+	time_list = []
+	grad_list = []
+	# Computed data
+	height_list = []
+	skew_list = []
+	pos_min_list = []
+	# Loop through data
+	for i in values(label_dict)
+		tmp = @subset(df, :sw .== i) 
+		for t in time
+			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
+			hmin = argmin(neck_region)
+			push!(time_list, t * 2)
+			push!(grad_list, i)
+			push!(height_list, minimum(neck_region))
+			push!(pos_min_list, argmin(neck_region))
+			push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
+		end
+	end
+	df_[!, "width"] = grad_list
+	df_[!, "time"] = time_list
+	df_[!, "bridge_height"] = height_list
+	df_[!, "neck_min"] = pos_min_list
+	df_[!, "skewness"] = skew_list
+
+	return df_
+end
+
+# ╔═╡ bba72789-ce4a-46df-8cc8-3e74476e6dbb
+begin
+	analysis_tanh = "Neck_bridge_skew_tanh.csv"
+	frame_analysis_tanh = string(data_path, analysis_tanh)
+	if isfile(frame_analysis_tanh)
+		df_tanh = CSV.File(frame_analysis_tanh) |> DataFrame
+	else
+		df_tanh = bridge_height2(df3, label_dict=tanh_value_dict)
+		CSV.write(frame_analysis_tanh, df_tanh)
+	end
+end
+
+# ╔═╡ f49ce948-6a6f-4418-b8ba-1af6b7c5c695
+begin
+	tr2 = @subset(df_tanh, :width .== 10).time ./ tau_ic() 
+	p_bridge_tanh = plot(tr[some_list], @subset(df_secsweep, :nablaG .== "default").bridge_height[some_list] ./ 171,
+	ylabel = "h₀/R₀", 
+	xlabel = "t/τ",
+	label = "default",
+	title = "Evolution bridge height",
+	m = (9, :auto, 0.6),
+	st = :scatter, 
+	xaxis = :log, 
+	yaxis = :log,
+	xticks=([0.001, 0.01, 0.1, 1, 10], 
+	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+	legendfontsize = 14,		# legend font size
+    tickfontsize = 14,			# tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr[some_list], @subset(df_secsweep, :nablaG .== "step").bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) = Θ(x)")
+	plot!(tr2[some_list], @subset(df_tanh, :width .== 10).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=10)")
+	plot!(tr2[some_list], @subset(df_tanh, :width .== 11).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=11)")
+	plot!(tr2[some_list], @subset(df_tanh, :width .== 12).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=12)")
+	# Some fit
+	plot!(fit_t, 0.019 .* fit_t.^(exponent), l=(3, :black), label="f(x) ∝ t^(2/3)")
+	plot!(xlim=(5e-4, 30), ylim=(1e-3, 0.1))
+end
+
+# ╔═╡ 8df94264-e377-4ac3-8866-963c1f97bd35
+md"Now that the data is in fetched, lets analyze it and free up the memory."
+
+# ╔═╡ 4e9366a1-c415-4094-b840-0b329f73396c
+"""
+	bridge_height3(df; time=200:200:10000000, L=L, r0=171)
+
+Measurement of bridge height, neck position and skewness.
+"""
+function bridge_height3(df; time=200:200:10000000, L=L, r0=171, label_dict=tanh_v_dict)
+	df_ = DataFrame()
+	# Parameter
+	center = L÷2
+	# Controll values
+	time_list = []
+	grad_list = []
+	# Computed data
+	height_list = []
+	skew_list = []
+	pos_min_list = []
+	# Loop through data
+	for i in values(label_dict)
+		tmp = @subset(df, :sw .== i) 
+		for t in time
+			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
+			hmin = argmin(neck_region)
+			push!(time_list, t)
+			push!(grad_list, i)
+			push!(height_list, minimum(neck_region))
+			push!(pos_min_list, argmin(neck_region))
+			# Seems to be something funny happening
+			if hmin < 101
+				hmin = center
+				push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
+			else
+				push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
+			end
+		end
+	end
+	df_[!, "width"] = grad_list
+	df_[!, "time"] = time_list
+	df_[!, "bridge_height"] = height_list
+	df_[!, "neck_min"] = pos_min_list
+	df_[!, "skewness"] = skew_list
+
+	return df_
+end
+
+# ╔═╡ 3f3ed980-bd22-455d-9f17-52f589055a82
+begin
+	ana_tanh = "Neck_bridge_skew_tanh_t5e7.csv"
+	frame_tanh_l = string(data_path, ana_tanh)
+	if isfile(frame_tanh_l)
+		df_tanh_l = CSV.File(frame_tanh_l) |> DataFrame
+	else
+		df_tanh_l = bridge_height3(df_l, time=1000:1000:50000000, label_dict=tanh_v_dict)
+		CSV.write(frame_tanh_l, df_tanh_l)
+	end
+end
+
+# ╔═╡ 4f2e684d-0420-4edc-9a9f-c7140f05d208
+begin
+	tr3 = @subset(df_tanh_l, :width .== 20).time ./ tau_ic() 
+	p_bridge_tanh_swl = plot(tr[some_list], @subset(df_secsweep, :nablaG .== "default").bridge_height[some_list] ./ 171,
+	ylabel = "h₀/R₀", 
+	xlabel = "t/τ",
+	label = "γ₀",
+	title = "Evolution bridge height",
+	m = (9, :auto, 0.6),
+	st = :scatter, 
+	xaxis = :log, 
+	yaxis = :log,
+	xticks=([0.001, 0.01, 0.1, 1, 10], 
+	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+	legendfontsize = 14,		# legend font size
+    tickfontsize = 14,			# tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr[some_list], @subset(df_secsweep, :nablaG .== "step").bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) = Θ(x)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 20).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=20)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 30).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=30)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 40).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=40)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 50).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=50)")
+	# Some fit
+	plot!(fit_t, 0.019 .* fit_t.^(exponent), l=(3, :black), label="")
+	plot!(xlim=(5e-4, 200), ylim=(1e-3, 0.1))
+end
+
+# ╔═╡ a1dfe340-2fe4-498c-828f-3230c4a91a92
+md"One more data set to go"
+
+# ╔═╡ 462e0d4c-16f6-4fef-95e2-0cc21fcd5833
+begin
+	sys_sw = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(n=9, m=3, Tmax=10000000, δ=5.0, tdump=200))
+	tanh_l2_dict = Dict(1 => "sw_1", 2 => "sw_2", 3 => "sw_5", 4 => "sw_10")
+	tanh_v2_dict = Dict(1 => 1, 2 => 2, 3 => 5, 4 => 10)
+	df_sw = DataFrame()
+	for i in 1:length(tanh_l2_dict)  
+    	# Check if there is already a file created
+    	sim_name_tanh = "gamma_tanh_width_$(tanh_l2_dict[i])_tmax_$(sys_sw.param.Tmax).jld2"
+    	save_file = string(data_path, sim_name_tanh)
+		# If so just read it from disc
+		if isfile(save_file)
+			tmp = load(save_file) |> DataFrame
+			# Add a column for the smoothing width
+			tmp.sw .= tanh_v2_dict[i]
+			df_sw = vcat(df_sw, tmp)
+		# If not, compute the evolution of the droplet coalescence
+		else
+	 		println("Can not find simulation results for run $(save_file)\nCheck the data folder.")
+		end
+		# Print that you are done
+		println("Done with iteration $(tanh_l2_dict[i])")
+	end
+end
+
+# ╔═╡ d3bb48e3-550a-4378-a22b-359abb3c494e
+begin
+	an_tanh = "Neck_bridge_skew_tanh_t1e7.csv"
+	frame_tanh_sw = string(data_path, an_tanh)
+	if isfile(frame_tanh_sw)
+		df_tanh_sw = CSV.File(frame_tanh_sw) |> DataFrame
+	else
+		df_tanh_sw = bridge_height3(df_sw, time=200:200:10000000, label_dict=tanh_v2_dict)
+		CSV.write(frame_tanh_sw, df_tanh_sw)
+	end
+end
+
+# ╔═╡ 0d58d762-e39b-45a6-907b-105a1d530f76
+begin
+	tr4 = @subset(df_tanh_sw, :width .== 10).time ./ tau_ic() 
+	p_bridge_tanh_sw = plot(tr[some_list], @subset(df_secsweep, :nablaG .== "default").bridge_height[some_list] ./ 171,
+	ylabel = "h₀/R₀", 
+	xlabel = "t/τ",
+	label = "γ₀",
+	title = "Evolution bridge height",
+	m = (9, :auto, 0.6),
+	st = :scatter, 
+	xaxis = :log, 
+	yaxis = :log,
+	xticks=([0.001, 0.01, 0.1, 1, 10, 100], 
+	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹", "10²"]), # Axis labeling
+	legendfontsize = 14,		# legend font size
+    tickfontsize = 14,			# tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr4[some_list], @subset(df_secsweep, :nablaG .== "step").bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) = Θ(x)")
+	plot!(tr4[some_list], @subset(df_tanh_sw, :width .== 1).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=1)")
+	plot!(tr4[some_list], @subset(df_tanh_sw, :width .== 2).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=2)")
+	plot!(tr4[some_list], @subset(df_tanh_sw, :width .== 5).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=5)")
+	plot!(tr4[some_list], @subset(df_tanh_sw, :width .== 10).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=10)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 20).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=20)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 30).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=30)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 40).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=40)")
+	plot!(tr3[some_list], @subset(df_tanh_l, :width .== 50).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="s(x; b=50)")
+	# Some fit
+	plot!(fit_t, 0.019 .* fit_t.^(exponent), l=(3, :black), label="")
+	plot!(xlim=(5e-4, 200), ylim=(1e-3, 0.1))
+end
+
+# ╔═╡ 6ebade34-7de7-4463-a267-5016eb91bedd
+md"### Errors
+
+While it may be true that the step at the end of the domain induce some further dynamics, I think it should not appear in this experiment.
+
+See the plot below, having a rather stable double droplet system with one satelite to the right."
+
+# ╔═╡ 47dbb4d1-fada-4c46-acdf-458bee78d9db
+begin
+	plot(@subset(df_l, :sw .== 20).h_48000000)
+	plot!(@subset(df_l, :sw .== 50).h_48000000)
+end
+
+# ╔═╡ 29bccf1d-55f8-426a-aab0-59a11eb86a64
+"""
+	function gamma_curves_tanh_p!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+"""
+function gamma_curves_tanh_p!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+	function smooth(l, L, sl)
+		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
+	end
+
+	function smooth_p(l, sl)
+		return  (0.5 .+ 0.5 .* tanh.((l .- (L - (2sl+20))) ./ (sl)))
+	end
+	
+	out[:] .= x0 .* smooth(x, L, sl)  .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ)
+	subspace = L-200:1024
+	out[subspace] = x0 .*(1 - ϵ) .* (1 .- smooth_p(subspace, sl)) .+ smooth_p(subspace, sl) .* x0
+	return nothing
+end
+
+# ╔═╡ fc7b3054-1079-4f37-8526-aee85699a0cc
+begin
+	ghm = zeros(L) 
+	gamma_curves_tanh_p!(ghm, sl=20)
+	plot(ghm, legend=:bottomleft)
 end
 
 # ╔═╡ 3091f849-7ce2-400d-9938-4b89215a0bdc
@@ -848,22 +1220,22 @@ md"## References
 # ╟─76aff625-dcfb-4875-8366-d4c6aac51e54
 # ╟─77566ed2-14b6-48c3-831f-80efce8c2e3e
 # ╟─ac41b37e-841f-47c6-b5ff-3b10fc2c86ae
-# ╟─6332a336-fe15-4fb9-949b-c7d8ebc03176
 # ╟─a0b3c869-3a7e-4b10-a2d8-7021b8c4c54d
 # ╟─2f6e1154-eaff-4c20-9fac-290474f45f0b
-# ╠═2edc58c6-4ee0-4c5e-8013-311e81820c4c
+# ╟─2edc58c6-4ee0-4c5e-8013-311e81820c4c
 # ╟─bab2a9ab-1ee1-4146-95e7-03d87a8f9c35
 # ╠═35541b43-a834-4f01-ad0d-fa11be9af74b
 # ╟─b164e7ec-eaa8-4f2a-b35a-6ac01fd12875
 # ╟─9e714346-0e8d-4de5-85b4-4ede3e275834
 # ╟─a2389b72-c460-4026-8676-b3b0fb4acdc2
 # ╟─2ef048ee-fc8a-4898-a82c-4c33bc1c52b3
-# ╠═ac583c93-ca39-420c-95dc-8db69c55a790
+# ╟─ac583c93-ca39-420c-95dc-8db69c55a790
 # ╟─19772481-02f9-4091-bfc9-e2853e64d4d6
 # ╠═0d7c9262-ff25-46bd-9833-bddfd7f958f9
 # ╟─50cb438d-501e-411e-844d-e75569ca3c85
 # ╟─b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
-# ╟─4e9366a1-c415-4094-b840-0b329f73396c
+# ╟─56ca66b1-4f03-4132-9693-16a9cb173a24
+# ╟─20d4019f-7f79-4f25-bbdd-e439f936fa62
 # ╟─8adf34e9-7b5c-4b75-8753-2726ffdda706
 # ╟─2cc159d3-1548-4f46-842d-0ebeecee49be
 # ╟─6dd016bb-9a59-48ed-93ef-6e5c814037e9
@@ -882,6 +1254,24 @@ md"## References
 # ╟─0cf67e97-fb9a-43d2-985f-90e3328f680c
 # ╟─e89f39ed-473c-40aa-ac2e-40844bd80127
 # ╟─67b0a5a4-f5f3-4778-bc79-49a8e5af9b64
-# ╠═851750ae-46ec-4853-8c48-06608b2614c5
+# ╟─851750ae-46ec-4853-8c48-06608b2614c5
 # ╠═5114bb75-637a-4e95-ba3f-e075f181f189
+# ╟─10481933-4b7c-4bad-8285-b16bf9c526c3
+# ╠═bba72789-ce4a-46df-8cc8-3e74476e6dbb
+# ╟─c6708c4e-1613-44ca-938e-695ae95f7643
+# ╟─f49ce948-6a6f-4418-b8ba-1af6b7c5c695
+# ╟─ba37695d-7f37-4bfe-96b4-118d6253391e
+# ╟─90d215db-fab4-4b87-9088-6f55e1a8b25d
+# ╟─8df94264-e377-4ac3-8866-963c1f97bd35
+# ╟─4e9366a1-c415-4094-b840-0b329f73396c
+# ╟─3f3ed980-bd22-455d-9f17-52f589055a82
+# ╟─4f2e684d-0420-4edc-9a9f-c7140f05d208
+# ╟─a1dfe340-2fe4-498c-828f-3230c4a91a92
+# ╟─462e0d4c-16f6-4fef-95e2-0cc21fcd5833
+# ╟─d3bb48e3-550a-4378-a22b-359abb3c494e
+# ╟─0d58d762-e39b-45a6-907b-105a1d530f76
+# ╟─6ebade34-7de7-4463-a267-5016eb91bedd
+# ╠═47dbb4d1-fada-4c46-acdf-458bee78d9db
+# ╠═29bccf1d-55f8-426a-aab0-59a11eb86a64
+# ╠═fc7b3054-1079-4f37-8526-aee85699a0cc
 # ╟─3091f849-7ce2-400d-9938-4b89215a0bdc
