@@ -14,5 +14,6 @@ include("forcing.jl")
 include("moments.jl")
 include("simulate.jl")
 include("measures.jl")
+include("obstacle.jl")
 
 end

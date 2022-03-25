@@ -280,7 +280,7 @@ Calculation of the equilibrium distribution `feq` for the shallow water lattice 
 - `g <: Number`: Gravity, default is `sys.param.g`
 
 """
-function equilibrium!(state::State_1D, sys::SysConst_1D; g=sys.param.g)
+function equilibrium!(state::State_1D, sys::Consts_1D; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(state.feq) 
     
@@ -306,7 +306,7 @@ Calculation of the equilibrium distribution `feq` for the shallow water lattice 
 - `g <: Number`: Gravity, default is `sys.param.g`
 
 """
-function equilibrium!(state::Expanded_1D, sys::SysConst_1D; g=sys.param.g)
+function equilibrium!(state::Expanded_1D, sys::Consts_1D; g=sys.param.g)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(state.basestate.feq) 
     

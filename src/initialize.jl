@@ -8,9 +8,12 @@ abstract type Expanded_2D <: LBM_state_2D end
 abstract type LBM_state_1D <: LBM_state end
 
 abstract type Expanded_1D <: LBM_state_1D end
+abstract type State_gamma_1D <: Expanded_1D end
 
 # Parent type for system specific constants
 abstract type Consts end
+
+abstract type Consts_1D <: Consts end
 
 """
     Taumucs{T}
@@ -70,7 +73,7 @@ Struct that contains the system size of a two dimensional system and the struct 
 See also: [`SysConst_1D{T}`](@ref), [`Taumucs{T}`](@ref)
 
 """
-Base.@kwdef struct SysConst{T} <: Consts
+Base.@kwdef struct SysConst{T} <: Consts_1D
     # Lattice
     Lx :: Int = 256
     Ly :: Int = 256
@@ -90,11 +93,32 @@ Struct that contains the system size of a one dimensional system and the struct 
 See also: [`SysConst{T}`](@ref), [`Taumucs{T}`](@ref)
 
 """
-Base.@kwdef struct SysConst_1D{T} <: Consts
+Base.@kwdef struct SysConst_1D{T} <: Consts_1D
     # Lattice
     L :: Int = 256
     param :: Taumucs{T}
 end
+
+
+"""
+    SysConstWithBound_1D{T}
+
+Struct that contains all run time constants, e.g. lattice size, surface tension `γ` and so on.
+
+# Arguments
+
+
+"""
+Base.@kwdef struct SysConstWithBound_1D{T} <: Consts_1D
+    # Lattice
+    L :: Int = 256
+    param :: Taumucs{T}
+    obs::Array{T} = zeros(L)
+    # interior, obsleft, obsright, obsup, obsdown, corneroutlu, corneroutld, corneroutru, corneroutrd, cornerru, cornerrd, cornerlu, cornerld
+    interior::Vector{T} = zeros(L)
+    border = [zeros(L),zeros(L)]
+end
+
 
 """
     State{T, N}
@@ -265,6 +289,7 @@ Base.@kwdef struct State_1D{T} <: LBM_state_1D
     dgrad :: Matrix{T} 
 end
 
+
 """
     State_gamma_1D{T, N}
 
@@ -276,11 +301,28 @@ end
 - `γ :: Vector{T}`: Surface tension field
 - `∇γ :: Vector{T}`: Surface tension gardient
 """
-Base.@kwdef struct State_gamma_1D{T} <: Expanded_1D
+Base.@kwdef struct State_Gamma_1D{T} <: State_gamma_1D
     basestate :: State_1D{T}
     γ :: Vector{T}
     ∇γ :: Vector{T}
 end
+
+
+"""
+    StateWithBound_1D{T, N}
+
+Data structure that stores all arrays for a given simulation.
+
+"""
+Base.@kwdef struct StateWithBound_1D{T} <: State_gamma_1D
+    basestate :: State_1D{T}
+    # surface tension gradient
+    γ :: Vector{T}
+    ∇γ :: Vector{T}
+    # Distribution functions 
+    fbound :: Matrix{T} 
+end
+
 
 """
     State_thermal_1D{T, N}
@@ -482,7 +524,7 @@ Returns a `State` data structure based on `kind` the struct can be "simple", "th
 - `T <: Number`: Optional numerical type, default is set to `Float64`
 - `kind :: String`: Optional, default is set to `simple`
 """
-function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
+function Sys(sysc::Consts_1D; T=Float64, kind="simple")
     s = State_1D{T}(
             fout = zeros(sysc.L, 3),
             ftemp = zeros(sysc.L, 3),
@@ -507,6 +549,13 @@ function Sys(sysc::SysConst_1D; T=Float64, kind="simple")
             basestate = s,
             γ = zeros(sysc.L),
             ∇γ = zeros(sysc.L)
+        )
+    elseif  kind == "gamma_bound"
+        dyn = StateWithBound_1D{T}(
+            basestate = s,
+            γ = zeros(sysc.L),
+            ∇γ = zeros(sysc.L),
+            fbound = zeros(sysc.L, 3)
         )
     end
     return dyn
