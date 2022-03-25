@@ -324,6 +324,43 @@ function BGKandStream!(state::Expanded_1D, sys::SysConst_1D; τ=sys.param.τ)
     return nothing
 end
 
+function BGKandStream!(state::StateWithBound_1D, sys::SysConstWithBound_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = Swalbe.viewdists_1D(state.basestate.feq)
+    ft0, ft1, ft2 = Swalbe.viewdists_1D(state.basestate.ftemp)
+    fo0, fo1, fo2 = Swalbe.viewdists_1D(state.basestate.fout)
+    fb0, fb1, fb2 = Swalbe.viewdists_1D(state.fbound)
+
+    omeg = 1-1/sys.param.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    fo0 .= omeg .* ft0 .+ 1/sys.param.τ .* fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= omeg .* ft1 .+ 1/sys.param.τ .* fe1 .+ 1/2 .* state.basestate.F
+    fo2 .= omeg .* ft2 .+ 1/sys.param.τ .* fe2 .- 1/2 .* state.basestate.F
+
+
+    fb1 .= fo1 .* sys.border[1]
+    fb2 .= fo2 .* sys.border[2]
+
+    #erasing the boundary distribution values
+    fo1 .-= fb1
+    fo2 .-= fb2
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+
+
+    #add the stored boundary terms
+    ft1 .+=  fb2
+    ft2 .+=  fb1 
+
+    # Overwrite fout with ftemp
+    state.basestate.fout .= state.basestate.ftemp
+    return nothing
+end
+
 """
     viewdists(f)
 

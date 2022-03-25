@@ -80,7 +80,7 @@ Fluid substrate interaction that effectively mimics a velocity boundary conditio
 - `g <: Number`: Gravity, default is `sys.param.g`
 
 """
-function slippage!(state::LBM_state_1D, sys::SysConst_1D; δ=sys.param.δ, μ=sys.param.μ)
+function slippage!(state::LBM_state_1D, sys::Consts_1D; δ=sys.param.δ, μ=sys.param.μ)
     @. state.slip .= (6μ * state.height * state.vel) / (2 * state.height^2 + 6δ * state.height + 3δ^2 )
     return nothing
 end
@@ -115,7 +115,7 @@ Fluid substrate interaction that effectively mimics a velocity boundary conditio
 - `g <: Number`: Gravity, default is `sys.param.g`
 
 """
-function slippage!(state::Expanded_1D, sys::SysConst_1D; δ=sys.param.δ, μ=sys.param.μ)
+function slippage!(state::Expanded_1D, sys::Consts_1D; δ=sys.param.δ, μ=sys.param.μ)
     @. state.basestate.slip .= (6μ * state.basestate.height * state.basestate.vel) / (2 * state.basestate.height^2 + 6δ * state.basestate.height + 3δ^2 )
     return nothing
 end
@@ -379,7 +379,7 @@ function thermal!(state::State_thermal, sys::SysConst; kbt=sys.param.kbt, μ=sys
     return nothing
 end
 # With thermal state
-function thermal!(state::State_thermal_1D, sys::SysConst_1D; kbt=sys.param.kbt, μ=sys.param.μ, δ=sys.param.δ)
+function thermal!(state::State_thermal_1D, sys::Consts_1D; kbt=sys.param.kbt, μ=sys.param.μ, δ=sys.param.δ)
     randn!(state.kbt)
     state.kbt .*= sqrt.(2kbt * μ * 6 .* state.basestate.height ./
                   (2 * state.basestate.height.^2 .+ 6δ .* state.basestate.height .+
