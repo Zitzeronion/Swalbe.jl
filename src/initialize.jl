@@ -8,7 +8,7 @@ abstract type Expanded_2D <: LBM_state_2D end
 abstract type LBM_state_1D <: LBM_state end
 
 abstract type Expanded_1D <: LBM_state_1D end
-abstract type State_gamma_1D <: Expanded_1D end
+abstract type Boundary_1D <: Expanded_1D end
 
 # Parent type for system specific constants
 abstract type Consts end
@@ -301,7 +301,7 @@ end
 - `γ :: Vector{T}`: Surface tension field
 - `∇γ :: Vector{T}`: Surface tension gardient
 """
-Base.@kwdef struct State_Gamma_1D{T} <: State_gamma_1D
+Base.@kwdef struct State_Gamma_1D{T} <: Expanded_1D
     basestate :: State_1D{T}
     γ :: Vector{T}
     ∇γ :: Vector{T}
@@ -314,7 +314,7 @@ end
 Data structure that stores all arrays for a given simulation.
 
 """
-Base.@kwdef struct StateWithBound_1D{T} <: State_gamma_1D
+Base.@kwdef struct StateWithBound_1D{T} <: Boundary_1D
     basestate :: State_1D{T}
     # surface tension gradient
     γ :: Vector{T}

@@ -25,8 +25,9 @@
     onebytau = 1.0/0.75
     omega = 1.0 - 1.0/0.75
     @testset "Dummy dists τ=1 no forces" begin
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(τ=1.0))
         Swalbe.BGKandStream!(fout, feq, ftemp, zeros(5,5), zeros(5,5), 1.0)
-        Swalbe.BGKandStream!(state, sys, τ=1.0)
+        Swalbe.BGKandStream!(state, sys)
         Swalbe.BGKandStream!(state2, sys, τ=1.0)
         for i in [(fout, feq), (state.fout, state.feq), (state2.basestate.fout, state2.basestate.feq)]
             @test all(i[1][:,:,1] .== i[2][:,:,1])
@@ -52,8 +53,8 @@
             i.Fx .= 0.1
             i.Fy .= -0.1
         end
-        
-        Swalbe.BGKandStream!(state, sys, τ=1.0)
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(τ=1.0))
+        Swalbe.BGKandStream!(state, sys)
         Swalbe.BGKandStream!(state2, sys, τ=1.0)
         Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,5,5), fill(-0.1,5,5), 1.0)
         for i in [(fout, feq), (state.fout, state.feq), (state2.basestate.fout, state2.basestate.feq)]
@@ -78,6 +79,7 @@
             i.Fx .= 0.0
             i.Fy .= 0.0
         end
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(τ=0.75))
         Swalbe.BGKandStream!(fout, feq, ftemp, zeros(5,5), zeros(5,5), 0.75)
         Swalbe.BGKandStream!(state, sys)
         Swalbe.BGKandStream!(state2, sys)
@@ -103,6 +105,7 @@
             i.Fx .= 0.1
             i.Fy .= -0.1
         end
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(τ=0.75))
         Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,5,5), fill(-0.1,5,5), 0.75)
         Swalbe.BGKandStream!(state, sys)
         Swalbe.BGKandStream!(state2, sys)

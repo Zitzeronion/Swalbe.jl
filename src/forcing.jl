@@ -467,7 +467,7 @@ end
 
 Computes the gradient of a spatially resolved surface tension field.
 """
-function ∇γ!(state::State_gamma_1D)
+function ∇γ!(state::T) where {T <: Expanded_1D}
     fip, fim = viewneighbors_1D(state.basestate.dgrad)
     # One dim case, central differences
     circshift!(fip, state.γ, 1)
