@@ -36,12 +36,12 @@ end
 
 Different surface tension fields using the tangent hyperbolicus and a varying smoothing width.
 """
-function gamma_curves_tanh!(out; x0=γ₀, ϵ=ε, l=x, L=L, sl=sl)
+function gamma_curves_tanh!(out; x0=γ₀, ϵ=ε, L=L, sl=sl, l=collect(1:length(out)))
 	function smooth(l, L, sl)
 		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
 	end
 	
-	out[:] .= x0 .* smooth(x, L, sl) .+ (1 .- smooth(x, L, sl)) .* x0 .*(1 - ϵ) 
+	out[:] .= x0 .* smooth(l, L, sl) .+ (1 .- smooth(l, L, sl)) .* x0 .*(1 - ϵ) 
 	return nothing
 end
 
