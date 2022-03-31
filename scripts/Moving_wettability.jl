@@ -219,6 +219,7 @@ v6 = [29404, 2940, 294]
 v7 = [34305, 3430, 343] 
 v8 = [39206, 3920, 392] 
 v9 = [44107, 4410, 441] 
+v10 = 2v5 
 # To pin down the Rayleigh-Plateu instability
 v_lam2_dia_more = [490, 245, 164, 123]
 for direction in ["diagonal"] #  "diagonal"
@@ -246,6 +247,8 @@ for direction in ["diagonal"] #  "diagonal"
             speeds .= v8
         elseif waves == 9
             speeds .= v9
+        elseif waves == 10
+            speeds .= v10
         end
         for speed in speeds # 1 2 3 # [0] 
             pattern = "sine"
