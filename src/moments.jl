@@ -64,59 +64,10 @@ function moments!(height, vel, fout)
   return nothing
 end
 
-"""
-    moments!(state::LBM_state_2D)
+moments!(state::LBM_state_2D) = moments!(state.height, state.velx, state.vely, state.fout)
 
-Computation of the hydrodynamic moments, `height` and `velocity`.
+moments!(state::LBM_state_1D) = moments!(state.height, state.vel, state.fout)
 
-In contrast to `moments!`, this function works with a `state` struct.
-The state can be either a `LBM_state_2D` or `LBM_state_1D`, but also a `Expanded_2D` or `Expanded_1D`.
-For the mathematical description take a look at [`moments!(height, velx, vely, fout)`](@ref).
+moments!(state::Expanded_2D) = moments!(state.basestate.height, state.basestate.velx, state.basestate.vely, state.basestate.fout)
 
-# References
-
-- [Krüger](https://www.springer.com/gp/book/9783319446479)
-- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
-- [Zitz, Scagliarini and Harting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
-"""
-function moments!(state::LBM_state_2D)
-    # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
-    # Compute the height
-    sum!(state.height, state.fout)
-    # and the velocities (as simple as possible)
-    state.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.height
-    state.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.height
-    return nothing
-end
-
-function moments!(state::LBM_state_1D)
-  # Get views of the populations
-  f0, f1, f2 = Swalbe.viewdists_1D(state.fout) 
-  # Compute the height
-  sum!(state.height, state.fout)
-  # and the velocities (as simple as possible)
-  state.vel .= (f1 .- f2) ./ state.height
-  return nothing
-end
-
-function moments!(state::Expanded_2D)
-  # Get views of the populations
-  f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.basestate.fout) 
-  # Compute the height
-  sum!(state.basestate.height, state.basestate.fout)
-  # and the velocities (as simple as possible)
-  state.basestate.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.basestate.height
-  state.basestate.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.basestate.height
-  return nothing
-end
-
-function moments!(state::Expanded_1D)
-  # Get views of the populations
-  f0, f1, f2 = Swalbe.viewdists_1D(state.basestate.fout) 
-  # Compute the height
-  sum!(state.basestate.height, state.basestate.fout)
-  # and the velocities (as simple as possible)
-  state.basestate.vel .= (f1 .- f2) ./ state.basestate.height
-  return nothing
-end
+moments!(state::Expanded_1D) = moments!(state.basestate.height, state.basestate.vel, state.basestate.fout)
