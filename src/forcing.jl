@@ -45,50 +45,19 @@ function slippage!(slipx, slipy, height, velx, vely, δ, μ)
     return nothing
 end
 
+slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.param.δ, sys.param.μ)
+
+slippage!(state::Expanded_2D, sys::SysConst) = slippage!(state.basestate.slipx, state.basestate.slipy, state.basestate.height, state.basestate.velx, state.basestate.vely, sys.param.δ, sys.param.μ)
+
 function slippage!(slip, height, vel, δ, μ)
     @. slip .= (6μ * height * vel) / (2 * height^2 + 6δ * height + 3δ^2 )
     return nothing
 end
 
-slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.param.δ, sys.param.μ)
-
 slippage!(state::LBM_state_1D, sys::Consts_1D) = slippage!(state.slip, state.height, state.vel, sys.param.δ, sys.param.μ)
+    
+slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(state.basestate.slip, state.basestate.height, state.basestate.vel, sys.param.δ, sys.param.μ)
 
-
-"""
-    slippage!(state, sys; δ=sys.param.δ, μ=sys.param.μ)
-
-Fluid substrate interaction that effectively mimics a velocity boundary condition at ``h=0``.
-
-# Arguments
-
-- `state :: Expanded_2D`: State data structure
-- `sys :: SysConst`: System constants, contains the slip length `δ` and the kinematic viscosity `μ`
-- `g <: Number`: Gravity, default is `sys.param.g`
-
-"""
-function slippage!(state::Expanded_2D, sys::SysConst; δ=sys.param.δ, μ=sys.param.μ)
-    @. state.basestate.slipx .= (6μ * state.basestate.height * state.basestate.velx) / (2 * state.basestate.height^2 + 6δ * state.basestate.height + 3*δ^2 )
-    @. state.basestate.slipy .= (6μ * state.basestate.height * state.basestate.vely) / (2 * state.basestate.height^2 + 6δ * state.basestate.height + 3*δ^2 )
-    return nothing
-end
-
-"""
-    slippage!(state, sys; δ=sys.param.δ, μ=sys.param.μ)
-
-Fluid substrate interaction that effectively mimics a velocity boundary condition at ``h=0``.
-
-# Arguments
-
-- `state :: Expanded_1D`: State data structure
-- `sys :: SysConst`: System constants, contains the slip length `δ` and the kinematic viscosity `μ`
-- `g <: Number`: Gravity, default is `sys.param.g`
-
-"""
-function slippage!(state::Expanded_1D, sys::Consts_1D; δ=sys.param.δ, μ=sys.param.μ)
-    @. state.basestate.slip .= (6μ * state.basestate.height * state.basestate.vel) / (2 * state.basestate.height^2 + 6δ * state.basestate.height + 3δ^2 )
-    return nothing
-end
 
 """
     h∇p!(state)
@@ -280,6 +249,8 @@ function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     return nothing
 end
 
+thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
+
 function thermal!(fluc, height, kᵦT, μ, δ)
     randn!(fluc)
     fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
@@ -290,73 +261,7 @@ function thermal!(fluc, height, kᵦT, μ, δ)
     return nothing
 end
 
-"""
-    thermal!(state, sys; kbt=sys.param.kbt, μ=sys.param.μ, δ=sys.param.δ)
-
-Computations of force due to thermal fluctuations.
-
-# Arguments
-
-- `state::State_thermal`: x-component of the force due to the fluctuations
-- `sys::SysConst`: y-component of the force due to the fluctuations
-- `kbt <: Number`: thermal energy kBT, default set to sys.param.kbt
-- `μ <: Number`: kinematic viscosity, default set to sys.param.mu 
-- `δ <: Number`: Slip length, default set to sys.param.δ
-
-# Examples
-```julia
-julia> using Swalbe, Statistics, Test, Random
-
-julia> Random.seed!(1234); # Set a seed
-
-julia> sys = Swalbe.SysConst{Float64}(Lx=25, Ly=25, param=Swalbe.Taumucs(kbt=0.1)); state = Swalbe.Sys(sys, "CPU", kind="thermal");
-
-julia> Swalbe.thermal!(state, sys)
-
-julia> @test mean(state.kbtx) ≈ 0.0 atol=1e-2
-Test Passed
-  Expression: ≈(mean(state.kbtx), 0.0, atol = 0.01)
-   Evaluated: -0.012022949905630423 ≈ 0.0 (atol=0.01)
-
-julia> @test mean(state.kbty) ≈ 0.0 atol=1e-2
-Test Passed
-  Expression: ≈(mean(state.kbty), 0.0, atol = 0.01)
-   Evaluated: ≈(0.005333544764407721, 0.0; atol = 0.01)
-
-julia> @test var(state.kbtx) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
-Test Passed
-  Expression: ≈(var(state.kbtx), (2 * 0.1) / 11, atol = ((2 * 0.1) / 11) / 10)
-   Evaluated: 0.021139055723598574 ≈ 0.018181818181818184 (atol=0.0018181818181818184)
-```
-
-# References
-
-- [Grün, Mecke and Rauscher](https://link.springer.com/article/10.1007/s10955-006-9028-8)
-- [Mecke, Rauscher](https://iopscience.iop.org/article/10.1088/0953-8984/17/45/042/meta)
-- [Davidovitch, Moro and Stone](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.95.244505)
-
-See also: [`Swalbe.slippage!`](@ref)
-""" 
-function thermal!(state::State_thermal, sys::SysConst; kbt=sys.param.kbt, μ=sys.param.μ, δ=sys.param.δ)
-    randn!(state.kbtx)
-    randn!(state.kbty)
-    state.kbtx .*= sqrt.(2kbt * μ * 6 .* state.basestate.height ./
-                    (2 .* state.basestate.height.^2 .+ 6δ .* state.basestate.height .+
-                     3δ^2))
-    state.kbty .*= sqrt.(2kbt * μ * 6 .* state.basestate.height ./
-                    (2 .* state.basestate.height.^2 + 6δ .* state.basestate.height .+
-                     3δ^2))
-    return nothing
-end
-# With thermal state
-function thermal!(state::State_thermal_1D, sys::Consts_1D; kbt=sys.param.kbt, μ=sys.param.μ, δ=sys.param.δ)
-    randn!(state.kbt)
-    state.kbt .*= sqrt.(2kbt * μ * 6 .* state.basestate.height ./
-                  (2 * state.basestate.height.^2 .+ 6δ .* state.basestate.height .+
-                   3δ^2))
-    
-    return nothing
-end
+thermal!(state::State_thermal_1D, sys::Consts_1D) = thermal!(state.kbt, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
 
 """
    inclination!(α, state)

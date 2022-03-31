@@ -301,7 +301,7 @@ end
 - `γ :: Vector{T}`: Surface tension field
 - `∇γ :: Vector{T}`: Surface tension gardient
 """
-Base.@kwdef struct State_Gamma_1D{T} <: Expanded_1D
+Base.@kwdef struct State_gamma_1D{T} <: Expanded_1D
     basestate :: State_1D{T}
     γ :: Vector{T}
     ∇γ :: Vector{T}

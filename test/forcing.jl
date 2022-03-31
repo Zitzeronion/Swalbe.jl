@@ -58,9 +58,10 @@
         end
         
         # No slip
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(δ=0.0))
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 0.0, 1/6)
-        Swalbe.slippage!(state, sys, δ=0.0)
-        Swalbe.slippage!(state2, sys, δ=0.0)
+        Swalbe.slippage!(state, sys)
+        Swalbe.slippage!(state2, sys)
         for i in [(fx, fy), (state.slipx, state.slipy), (state2.basestate.slipx, state2.basestate.slipy)]
             @test all(isapprox.(i[1], -0.1/2; atol=1e-10))
             @test all(isapprox.(i[2], 0.1/2; atol=1e-10))
@@ -87,12 +88,13 @@
         end            
         
         # No slip
+        sys1D = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(δ=0.0))
         for i in [st1, st2.basestate]
             i.vel .= -0.1
         end
         Swalbe.slippage!(f1, ones(30), fill(-0.1,30), 0.0, 1/6)
-        Swalbe.slippage!(st1, sys1D, δ=0.0)
-        Swalbe.slippage!(st2, sys1D, δ=0.0)
+        Swalbe.slippage!(st1, sys1D)
+        Swalbe.slippage!(st2, sys1D)
         for i in [f1, st1.slip, st2.basestate.slip]
             @test all(isapprox.(i, -0.1/2; atol=1e-10))
         end
@@ -147,11 +149,13 @@
         st1 = Swalbe.Sys(sys1, kind="thermal")    
         
         for kb in [0.01, 0.1]
+            sys = Swalbe.SysConst(Lx=50, Ly=50, param=Swalbe.Taumucs(kbt=kb))
+            sys1 = Swalbe.SysConst_1D(L=100000, param=Swalbe.Taumucs(kbt=kb))
             vartest = 2*kb/11
             Swalbe.thermal!(f1, f2, ones(50,50), kb, 1/6, 1.0)
             Swalbe.thermal!(f1D, ones(100000), kb, 1/6, 1.0)
-            Swalbe.thermal!(state, sys, kbt=kb)
-            Swalbe.thermal!(st1, sys1, kbt=kb)
+            Swalbe.thermal!(state, sys)
+            Swalbe.thermal!(st1, sys1)
             for i in enumerate([f1, f2, state.kbtx, state.kbty, st1.kbt])
                 @test mean(i[2]) ≈ 0.0 atol=1e-2
                 @test var(i[2]) ≈ vartest atol=vartest/10
