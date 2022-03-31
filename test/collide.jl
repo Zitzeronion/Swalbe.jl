@@ -28,7 +28,7 @@
         sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(τ=1.0))
         Swalbe.BGKandStream!(fout, feq, ftemp, zeros(5,5), zeros(5,5), 1.0)
         Swalbe.BGKandStream!(state, sys)
-        Swalbe.BGKandStream!(state2, sys, τ=1.0)
+        Swalbe.BGKandStream!(state2, sys)
         for i in [(fout, feq), (state.fout, state.feq), (state2.basestate.fout, state2.basestate.feq)]
             @test all(i[1][:,:,1] .== i[2][:,:,1])
             @test all(i[1][:,:,2] .== circshift(i[2][:,:,1],(1,0)))
@@ -55,7 +55,7 @@
         end
         sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(τ=1.0))
         Swalbe.BGKandStream!(state, sys)
-        Swalbe.BGKandStream!(state2, sys, τ=1.0)
+        Swalbe.BGKandStream!(state2, sys)
         Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,5,5), fill(-0.1,5,5), 1.0)
         for i in [(fout, feq), (state.fout, state.feq), (state2.basestate.fout, state2.basestate.feq)]
             @test all(i[1][:,:,1] .== i[2][:,:,1])
@@ -132,9 +132,10 @@
     onebytau = 1.0/0.75
     omega = 1.0 - 1.0/0.75
     @testset "Dummy dists τ=1 no forces 1D" begin
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(τ=1.0))
         Swalbe.BGKandStream!(fout, feq, ftemp, zeros(30), 1.0)
-        Swalbe.BGKandStream!(st1d, sys, τ=1.0)
-        Swalbe.BGKandStream!(st1d2, sys, τ=1.0)
+        Swalbe.BGKandStream!(st1d, sys)
+        Swalbe.BGKandStream!(st1d2, sys)
         for i in [(fout, feq), (st1d.fout, st1d.feq), (st1d2.basestate.fout, st1d2.basestate.feq)]
             @test all(i[1][:,1] .== i[2][:,1])
             @test all(i[1][:,2] .== circshift(i[2][:,1],1))
@@ -149,9 +150,10 @@
             i[3] .= 1.0
             i[1][1,:] .= 2.0
         end
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(τ=0.75))
         Swalbe.BGKandStream!(fout, feq, ftemp, zeros(30), 0.75)
-        Swalbe.BGKandStream!(st1d, sys, τ=0.75)
-        Swalbe.BGKandStream!(st1d2, sys, τ=0.75)
+        Swalbe.BGKandStream!(st1d, sys)
+        Swalbe.BGKandStream!(st1d2, sys)
         for i in [(fout, feq), (st1d.fout, st1d.feq), (st1d2.basestate.fout, st1d2.basestate.feq)]
             @test all(i[1][:,1] .== omega .* 1.0 .+ onebytau .* i[2][:,1])
             @test all(i[1][:,2] .== circshift(omega .* 1.0 .+ onebytau * i[2][:,1],1))
@@ -170,9 +172,10 @@
         for i in [st1d, st1d2.basestate]
             i.F .= 0.1
         end
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(τ=1.0))
         Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,30), 1.0)
-        Swalbe.BGKandStream!(st1d, sys, τ=1.0)
-        Swalbe.BGKandStream!(st1d2, sys, τ=1.0)
+        Swalbe.BGKandStream!(st1d, sys)
+        Swalbe.BGKandStream!(st1d2, sys)
         for i in [(fout, feq), (st1d.fout, st1d.feq), (st1d2.basestate.fout, st1d2.basestate.feq)]
             @test all(i[1][:,1] .== i[2][:,1])
             @test all(i[1][:,2] .== circshift(i[2][:,1] .+ 1/20,1))
@@ -191,9 +194,10 @@
         for i in [st1d, st1d2.basestate]
             i.F .= 0.1
         end
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(τ=0.75))
         Swalbe.BGKandStream!(fout, feq, ftemp, fill(0.1,30), 0.75)
-        Swalbe.BGKandStream!(st1d, sys, τ=0.75)
-        Swalbe.BGKandStream!(st1d2, sys, τ=0.75)
+        Swalbe.BGKandStream!(st1d, sys)
+        Swalbe.BGKandStream!(st1d2, sys)
         for i in [(fout, feq), (st1d.fout, st1d.feq), (st1d2.basestate.fout, st1d2.basestate.feq)]
             @test all(i[1][:,1] .== omega .* 1.0 .+ onebytau .* i[2][:,1])
             @test all(i[1][:,2] .== circshift(omega .* 1.0 .+ onebytau * i[2][:,1].+ 1/20,1))

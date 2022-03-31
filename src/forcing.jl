@@ -50,40 +50,10 @@ function slippage!(slip, height, vel, δ, μ)
     return nothing
 end
 
-"""
-    slippage!(state, sys; δ=sys.param.δ, μ=sys.param.μ)
+slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.param.δ, sys.param.μ)
 
-Fluid substrate interaction that effectively mimics a velocity boundary condition at ``h=0``.
+slippage!(state::LBM_state_1D, sys::Consts_1D) = slippage!(state.slip, state.height, state.vel, sys.param.δ, sys.param.μ)
 
-# Arguments
-
-- `state :: LBM_state_2D`: State data structure
-- `sys :: SysConst`: System constants, contains the slip length `δ` and the kinematic viscosity `μ`
-- `g <: Number`: Gravity, default is `sys.param.g`
-
-"""
-function slippage!(state::LBM_state_2D, sys::SysConst; δ=sys.param.δ, μ=sys.param.μ)
-    @. state.slipx .= (6μ * state.height * state.velx) / (2 * state.height^2 + 6δ * state.height + 3δ^2 )
-    @. state.slipy .= (6μ * state.height * state.vely) / (2 * state.height^2 + 6δ * state.height + 3δ^2 )
-    return nothing
-end
-
-"""
-    slippage!(state, sys; δ=sys.param.δ, μ=sys.param.μ)
-
-Fluid substrate interaction that effectively mimics a velocity boundary condition at ``h=0``.
-
-# Arguments
-
-- `state :: LBM_state_1D`: State data structure
-- `sys :: SysConst`: System constants, contains the slip length `δ` and the kinematic viscosity `μ`
-- `g <: Number`: Gravity, default is `sys.param.g`
-
-"""
-function slippage!(state::LBM_state_1D, sys::Consts_1D; δ=sys.param.δ, μ=sys.param.μ)
-    @. state.slip .= (6μ * state.height * state.vel) / (2 * state.height^2 + 6δ * state.height + 3δ^2 )
-    return nothing
-end
 
 """
     slippage!(state, sys; δ=sys.param.δ, μ=sys.param.μ)

@@ -6,8 +6,8 @@
     @testset "Nothing" begin
         state.height .= 0.0
         state2.basestate.height .= 0.0
-        Swalbe.equilibrium!(state, sys, g=0.0)
-        Swalbe.equilibrium!(state2, sys, g=0.0)
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.equilibrium!(state2, sys)
         Swalbe.equilibrium!(feq, zeros(5,5), zeros(5,5), zeros(5,5), zeros(5,5), 0.0)
         for i in [feq, state.feq, state2.basestate.feq]
             @test all(i[:,:,:] .== 0.0)
@@ -18,8 +18,8 @@
         state.height .= 1.0
         state2.basestate.height .= 1.0
         Swalbe.equilibrium!(feq, ones(5,5), zeros(5,5), zeros(5,5), zeros(5,5), 0.0)
-        Swalbe.equilibrium!(state, sys, g=0.0)
-        Swalbe.equilibrium!(state2, sys, g=0.0)
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.equilibrium!(state2, sys)
         for i in [feq, state.feq, state2.basestate.feq]
             @test all(i[:,:,1] .== 1.0)
             @test all(i[:,:,2:9] .== 0.0)
@@ -29,8 +29,9 @@
     @testset "Density and gravity" begin
         state.height .= 1.0
         state2.basestate.height .= 1.0
-        Swalbe.equilibrium!(state, sys, g=0.1)
-        Swalbe.equilibrium!(state2, sys, g=0.1)
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(g=0.1))
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.equilibrium!(state2, sys)
         Swalbe.equilibrium!(feq, ones(5,5), zeros(5,5), zeros(5,5), zeros(5,5), 0.1)
         for i in [feq, state.feq, state2.basestate.feq]
             @test all(i[:,:,1] .== 1.0 - 1/12)
@@ -46,6 +47,7 @@
             i.velx .= 0.1 
             i.vely .= -0.1
         end
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs())
         Swalbe.equilibrium!(feq, ones(5,5), fill(0.1,5,5), fill(-0.1,5,5), zeros(5,5), 0.0)
         Swalbe.equilibrium!(state, sys)
         Swalbe.equilibrium!(state2, sys)
@@ -63,9 +65,10 @@
     end
     
     @testset "Density and gravity and velocity" begin
+        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(g=0.1))
         Swalbe.equilibrium!(feq, ones(5,5), fill(0.1,5,5), fill(-0.1,5,5), zeros(5,5), 0.1)
-        Swalbe.equilibrium!(state, sys, g=0.1)
-        Swalbe.equilibrium!(state2, sys, g=0.1)
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.equilibrium!(state2, sys)
         for i in [feq, state.feq, state2.basestate.feq]
             @test all(i[:,:,1] .== 1.0 - 1/12 - 2/3 * 0.02)
             @test all(i[:,:,2] .≈  1/9 * (1.5 * 0.1 + 3 * 0.1 + 4.5 * 0.01 - 3/2 * 0.02))
@@ -90,8 +93,8 @@ end
         st1.height .= 0.0
         st2.basestate.height .= 0.0
         Swalbe.equilibrium!(feq, zeros(30), zeros(30), 0.0)
-        Swalbe.equilibrium!(st1, sys, g=0.0)
-        Swalbe.equilibrium!(st2, sys, g=0.0)
+        Swalbe.equilibrium!(st1, sys)
+        Swalbe.equilibrium!(st2, sys)
         for i in [feq, st1.feq, st2.basestate.feq]
             @test all(i[:,:] .== 0.0)
         end
@@ -100,8 +103,8 @@ end
     @testset "Density only" begin
         st1.height .= 1.0
         st2.basestate.height .= 1.0
-        Swalbe.equilibrium!(st1, sys, g=0.0)
-        Swalbe.equilibrium!(st2, sys, g=0.0)
+        Swalbe.equilibrium!(st1, sys)
+        Swalbe.equilibrium!(st2, sys)
         Swalbe.equilibrium!(feq, ones(30), zeros(30), 0.0)
         for i in [feq, st1.feq, st2.basestate.feq]
             @test all(i[:,1] .== 1.0)
@@ -110,9 +113,10 @@ end
     end
     
     @testset "Density and gravity" begin
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(g=0.1))
         Swalbe.equilibrium!(feq, ones(30), zeros(30), 0.1)
-        Swalbe.equilibrium!(st1, sys, g=0.1)
-        Swalbe.equilibrium!(st2, sys, g=0.1)
+        Swalbe.equilibrium!(st1, sys)
+        Swalbe.equilibrium!(st2, sys)
         for i in [feq, st1.feq, st2.basestate.feq]
             @test all(i[:,1] .== 1.0 - 0.05)
             @test all(i[:,2:3] .== 0.025)
@@ -123,9 +127,10 @@ end
         for i in [st1, st2.basestate]
             i.vel .= 0.1
         end
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs())
         Swalbe.equilibrium!(feq, ones(30), fill(0.1,30), 0.0)
-        Swalbe.equilibrium!(st1, sys, g=0.0)
-        Swalbe.equilibrium!(st2, sys, g=0.0)
+        Swalbe.equilibrium!(st1, sys)
+        Swalbe.equilibrium!(st2, sys)
         for i in [feq, st1.feq, st2.basestate.feq]
             @test all(i[:,1] .== 1.0 - 0.01)
             @test all(i[:,2] .≈  0.5 * 0.1 + 0.5 * 0.01)
@@ -134,8 +139,9 @@ end
     end
     
     @testset "Density and gravity and velocity" begin
-        Swalbe.equilibrium!(st1, sys, g=0.1)
-        Swalbe.equilibrium!(st2, sys, g=0.1)
+        sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(g=0.1))
+        Swalbe.equilibrium!(st1, sys)
+        Swalbe.equilibrium!(st2, sys)
         Swalbe.equilibrium!(feq, ones(30), fill(0.1,30), 0.1)
         for i in [feq, st1.feq, st2.basestate.feq]
             @test all(feq[:,1] .== 1.0 - 0.5 * 0.1 - 0.01)
