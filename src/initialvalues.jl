@@ -144,7 +144,7 @@ Test Passed
 
 See also: 
 """
-function two_droplets(sys::SysConst_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
     dum = zeros(sys.L)
     dum2 = zeros(sys.L)
     height = zeros(sys.L)

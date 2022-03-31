@@ -164,7 +164,7 @@ function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
 end
 
 
-function filmpressure!(state::LBM_state_1D, sys::SysConst_1D; 
+function filmpressure!(state::LBM_state_1D, sys::Consts_1D; 
         θ=sys.param.θ, n=sys.param.n, m=sys.param.m, 
         hmin=sys.param.hmin, hcrit=sys.param.hcrit, γ=sys.param.γ)
     hip, him = viewneighbors_1D(state.dgrad)
@@ -180,7 +180,7 @@ function filmpressure!(state::LBM_state_1D, sys::SysConst_1D;
     return nothing
 end
 
-function filmpressure!(state::Expanded_1D, sys::SysConst_1D; 
+function filmpressure!(state::Expanded_1D, sys::Consts_1D; 
     θ=sys.param.θ, n=sys.param.n, m=sys.param.m, 
     hmin=sys.param.hmin, hcrit=sys.param.hcrit, γ=sys.param.γ)
 hip, him = viewneighbors_1D(state.basestate.dgrad)

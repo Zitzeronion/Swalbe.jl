@@ -148,43 +148,8 @@ julia> state.fout[:,:,6] # The value 2 should have moved one down and one to the
 
 See also: [`Swalbe.equilibrium`](@ref)
 """
-function BGKandStream!(state::LBM_state_2D, sys::SysConst; τ=sys.param.τ)
-    # All distribution functions
-    fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdists(state.feq)
-    ft0, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8 = viewdists(state.ftemp)
-    fo0, fo1, fo2, fo3, fo4, fo5, fo6, fo7, fo8 = viewdists(state.fout)
+BGKandStream!(state::LBM_state_2D, sys::SysConst) = BGKandStream!(state.fout, state.feq, state.ftemp, state.Fx, state.Fy, sys.param.τ)
 
-    omeg = 1-1/τ
-
-    # Collision for the nine populations
-    # Zeroth, no forcing!
-    fo0 .= omeg .* ft0 .+ 1/τ .* fe0
-    # Straight ones, force correction is 1/3, 3*1/9
-    fo1 .= omeg .* ft1 .+ 1/τ .* fe1 .+ 1/3 .* state.Fx
-    fo2 .= omeg .* ft2 .+ 1/τ .* fe2 .+ 1/3 .* state.Fy
-    fo3 .= omeg .* ft3 .+ 1/τ .* fe3 .- 1/3 .* state.Fx
-    fo4 .= omeg .* ft4 .+ 1/τ .* fe4 .- 1/3 .* state.Fy
-    # Diagonal ones, force c1/24 -> 3/2*1/36
-    fo5 .= omeg .* ft5 .+ 1/τ .* fe5 .+ 1/24 .* (state.Fx .+ state.Fy)
-    fo6 .= omeg .* ft6 .+ 1/τ .* fe6 .+ 1/24 .* (state.Fy .- state.Fx)
-    fo7 .= omeg .* ft7 .+ 1/τ .* fe7 .- 1/24 .* (state.Fx .+ state.Fy)
-    fo8 .= omeg .* ft8 .+ 1/τ .* fe8 .+ 1/24 .* (state.Fx .- state.Fy)
-
-    # This is the streaming step with implicite periodic boundarys
-    circshift!(ft0, fo0, (0, 0))
-    circshift!(ft1, fo1, (1, 0))
-    circshift!(ft2, fo2, (0, 1))
-    circshift!(ft3, fo3, (-1, 0))
-    circshift!(ft4, fo4, (0, -1))
-    circshift!(ft5, fo5, (1, 1))
-    circshift!(ft6, fo6, (-1, 1))
-    circshift!(ft7, fo7, (-1, -1))
-    circshift!(ft8, fo8, (1, -1))
-    
-    # Overwrite fout with ftemp
-    state.fout .= state.ftemp
-    return nothing
-end
 
 function BGKandStream!(state::Expanded_2D, sys::SysConst; τ=sys.param.τ)
     # All distribution functions
@@ -319,6 +284,43 @@ function BGKandStream!(state::Expanded_1D, sys::SysConst_1D; τ=sys.param.τ)
     circshift!(ft1, fo1, 1)
     circshift!(ft2, fo2, -1)
     
+    # Overwrite fout with ftemp
+    state.basestate.fout .= state.basestate.ftemp
+    return nothing
+end
+
+function BGKandStream!(state::StateWithBound_1D, sys::SysConstWithBound_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = Swalbe.viewdists_1D(state.basestate.feq)
+    ft0, ft1, ft2 = Swalbe.viewdists_1D(state.basestate.ftemp)
+    fo0, fo1, fo2 = Swalbe.viewdists_1D(state.basestate.fout)
+    fb0, fb1, fb2 = Swalbe.viewdists_1D(state.fbound)
+
+    omeg = 1-1/sys.param.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    fo0 .= omeg .* ft0 .+ 1/sys.param.τ .* fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= omeg .* ft1 .+ 1/sys.param.τ .* fe1 .+ 1/2 .* state.basestate.F
+    fo2 .= omeg .* ft2 .+ 1/sys.param.τ .* fe2 .- 1/2 .* state.basestate.F
+
+
+    fb1 .= fo1 .* sys.border[1]
+    fb2 .= fo2 .* sys.border[2]
+
+    #erasing the boundary distribution values
+    fo1 .-= fb1
+    fo2 .-= fb2
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+
+
+    #add the stored boundary terms
+    ft1 .+=  fb2
+    ft2 .+=  fb1 
+
     # Overwrite fout with ftemp
     state.basestate.fout .= state.basestate.ftemp
     return nothing

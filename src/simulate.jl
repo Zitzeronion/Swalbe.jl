@@ -172,6 +172,26 @@ function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure; verb
     return state, measure
 end
 
+function time_loop(sys::SysConstWithBound_1D, state::StateWithBound_1D; verbose=false, diff = 0.05)
+    for t in 1:sys.param.Tmax
+        if t % sys.param.tdump == 0
+            mass = 0.0
+            mass = sum(state.basestate.height .- sys.interior .* state.basestate.height)
+            if verbose
+                println("Time step $t mass is $(round(mass, digits=3))")
+            end
+        end 
+        
+        Swalbe.filmpressure!(state, sys)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state, sys)
+        Swalbe.moments!(state)
+    end
+    return state
+end
 """
     run_flat(Sys::SysConst, device::String)
 
