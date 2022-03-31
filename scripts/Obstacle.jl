@@ -1,7 +1,8 @@
-using Swalbe, DelimitedFiles
+using DrWatson
+@quickactivate :Swalbe
+using DelimitedFiles, Dates
 
-data = "data/24.03.2022_obstacle"
-
+data = "data/$(Dates.today())"
 
 count = "01"
 function no_tours_1D()
@@ -11,10 +12,10 @@ function no_tours_1D()
     end
     L=2^9
     obst = zeros(L)
-    # obst[1]=1
-    # obst[2]=1
-    # obst[L]=1
-    # obst[L-1]=1
+    obst[1]=1
+    obst[2]=1
+    obst[L]=1
+    obst[L-1]=1
     sys = Swalbe.SysConstWithBound_1D{Float64}(obs=obst, L=L,param= Swalbe.Taumucs( Tmax=1000000, n=3, m=2))
     Swalbe.obslist!(sys)
     state = Swalbe.Sys(sys, kind="gamma_bound")
