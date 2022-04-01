@@ -462,8 +462,99 @@ Another interesting question to ask is about the symmetry of the neck.
 If we were to put a symmetry line along the center of the domain, will the two sides of the neck being mirror symmetric, this is however work in progress.
 From the pictures above we already know that this seems to be only the case for the constant surface tension field $\gamma(x) = \gamma_0$.
 
-The is collected into a dataframe which makes it easy to store it and plot specific parts.
+#### Higher order momenta for a thin film
+
+We interpret the heightn film as a distribution in the sens that 
+```math
+\int_V \frac{1}{\|h\|_{L^1}}h(x,t) dx
+``` 
+is the probability of a unitary particle of the fluid making up the thin film selected at random to be located in the volume $V$ at time $t$.
+
+That might not seem very insightfull at first glance but if we have a look at the momenta of such distribution it might tell us something about the geometry of the film.
+
+##### 0th momentum
+The mass of the film is
+```math
+m=\mathbb{M}_0(h)=\int_\Omega h(x)dx
+```
+The main reason we include oth momentum in this discusion is that we need the distribution 
+```math
+p:=\frac{h}{m}
+```
+to be normalized in order to calculate higher order momenta. 
+
+##### 1st momentum
+The first momentum (mean) reads
+```math
+\mu=\mathbb{E}(p) =\int_\Omega xp(x)dx.
+```
+It gives information about where mass center of a distribution.
+
+##### 2nd momentum
+The second momentum (deviation) reads
+```math
+\sigma=\mathbb{M}_2(p) = \sqrt{\int_\Omega (x-\mu)^2 p(x)dx}.
+```
+It gives information about how far the distribution is spread around the mean.
+
+##### 3rd momentum
+
+The third momentum also called skewness reads
+```math
+\mathbb{M}_3(p)=\int_\Omega \left(\frac{x-\mu}{\sigma}\right)^3p(x)dx.
+```
+It is meassure for assymetrie of a distribution. A possitive value indicates left skewness while a negative value indicates right skewness.
+
+Mostly we are interested in the skewness, so we can talk about the asymmetry a surface tension gradient induces.
 "
+
+# ╔═╡ 5b732eec-1a13-481f-b6e8-891d52de4728
+"""
+	mymean(h)
+
+First momentum of the thickness field interpreted as a distribution.
+"""
+function mymean(h)
+	μ=0
+	m=sum(h)
+	for i in 1:length(h)
+		μ+= (h[i]/m)*i
+	end
+	return μ
+end
+
+# ╔═╡ cefbb37b-11db-4619-8f05-05b0ba15e176
+"""
+	mystd(h)
+
+Standard deviation of the film thickness.
+"""
+function mystd(h)
+	σ=0
+	m=sum(h)
+	μ=mymean(h)
+	for i in 1:length(h)
+		σ += (h[i]/m)*((i-μ)^2)
+	end
+	return sqrt(σ)
+end
+
+# ╔═╡ 24b38416-dfd6-484b-a101-8282d6e292e4
+"""
+	myskew(h)
+
+Computes the skewness, given a thickness field.
+"""
+function myskew(h)
+	σ=mystd(h)
+	μ=mymean(h)
+	m=sum(h)
+	s=0
+	for i in 1:length(h)
+		s += (h[i]/m)*(((i-μ)/σ)^3)
+	end
+	return s
+end
 
 # ╔═╡ b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
 """
@@ -1233,6 +1324,9 @@ md"## References
 # ╟─19772481-02f9-4091-bfc9-e2853e64d4d6
 # ╠═0d7c9262-ff25-46bd-9833-bddfd7f958f9
 # ╟─50cb438d-501e-411e-844d-e75569ca3c85
+# ╟─5b732eec-1a13-481f-b6e8-891d52de4728
+# ╟─cefbb37b-11db-4619-8f05-05b0ba15e176
+# ╟─24b38416-dfd6-484b-a101-8282d6e292e4
 # ╟─b8eadb42-643c-41e3-ae94-7fe0cefb3d6b
 # ╟─56ca66b1-4f03-4132-9693-16a9cb173a24
 # ╟─20d4019f-7f79-4f25-bbdd-e439f936fa62

@@ -144,8 +144,10 @@ end
 md"## Forth run
 
 Since there is an effect due to the periodicity of the domain we like to experiment a little with walls.
-For this reason we use bounce back boundaries at the start and end of the domain.
+For this reason we use the [simple bounce back boundary condition](https://sites.google.com/site/latticeboltzmannmethodcs205/home/boundary-conditions) at the start and end of the domain.
 This will probably lead to some minuscus at the boundary but nothing to bad happens hopefully.
+
+
 "
 
 # ╔═╡ 604ce508-e7a6-422f-8a55-e1658143bbac
@@ -251,6 +253,68 @@ begin
 	plot!(fl[10000,:], w=3, label="t10000")
 end
 
+# ╔═╡ 3f89d672-c3bd-465a-890e-89080b44f9f2
+begin
+	# Swalbe.SysConst_1D(L=1024, param=Swalbe.Taumucs(n=9, m=3, Tmax=50000000, δ=5.0, tdump=1000))
+	sys_bounds = Swalbe.SysConstWithBound_1D{Float64}(obs=obst, L=1024,param= Swalbe.Taumucs(n=9, m=3, Tmax=50000000, δ=5.0, tdump=1000))
+	alltanh_dict = Dict(1 => "sw_1", 
+		                2 => "sw_2", 
+		                3 => "sw_5", 
+		                4 => "sw_10", 
+		                5 => "sw_20", 
+		                6 => "sw_30", 
+		                7 => "sw_40", 
+		                8 => "sw_50",
+	                    9 => "sw_100",
+	                    10 => "sw_200",)
+	alltanh_vals = Dict(1 => 1, 
+		                2 => 2, 
+		                3 => 5, 
+		                4 => 10,
+						5 => 20,
+						6 => 30,
+						7 => 40,
+						8 => 50,
+						9 => 100,
+						10 => 200)
+	
+	data_bounds = zeros(length(alltanh_dict))
+	
+	sys_tanh_l.param.Tmax÷sys_tanh_l.param.tdump, sys_tanh_l.L)
+	# Memory
+	nexp = length(tanh_l_dict)
+	data_tanh_l = zeros(nexp, sys_tanh_l.param.Tmax÷sys_tanh_l.param.tdump, sys_tanh_l.L)
+	# Time here
+	sim_time_t = 1000:1000:50000000
+	# Loop over γ
+	for i in 1:nexp
+		ggs = zeros(1024)
+		gamma_curves_tanh!(ggs, sl=tanh_v_dict[i])
+		# Check if there is already a file created
+		sim_name_tanh = "gamma_tanh_width_$(tanh_l_dict[i])_tmax_$(sys_tanh_l.param.Tmax).jld2"
+		save_file = string(data_path, sim_name_tanh)
+		# If so just read it from disc
+		if isfile(save_file)
+			println("There is already a file at location $(save_file)\nIf you still want to run the experiment change `sim_name_tanh`, can take several minutes.")
+			
+		# If not, compute the evolution of the droplet coalescence
+		else
+	 		data_t[i, :, :] = Swalbe.run_gamma(sys_tanh_l, ggs, r₁=rad, r₂=rad, dump=sys_tanh_l.param.tdump)
+			# Think about storing them on the disc
+			df_fluid = Dict()
+			# Loop through the time once more
+			for t in 1:size(data_t)[2]
+		        df_fluid["h_$(sim_time_t[t])"] = data_t[i,t,:]
+		    end
+			# Save it
+			println("Writing file $(tanh_l_dict[i]) to disk")
+			save(save_file, df_fluid)
+		end
+		# Print that you are done
+		println("Done with iteration $(tanh_l_dict[i])")
+	end
+
+
 # ╔═╡ Cell order:
 # ╟─c18ba690-9f8e-11ec-1a41-7330ad3642ec
 # ╠═a539f57c-7d60-4851-ba5e-60dad313fab7
@@ -261,8 +325,9 @@ end
 # ╟─677a3ed5-046e-49de-a2bf-7f65fe904be4
 # ╟─e073abd0-dcd2-4c3d-a043-238f81952446
 # ╟─0f007740-d067-4b89-9aeb-2b63f7c77d09
-# ╟─f6ebd1b2-fbd3-4622-ab9d-dc98f50bb31f
-# ╠═377a8f41-fc08-4941-8b08-530da4f0a987
-# ╠═604ce508-e7a6-422f-8a55-e1658143bbac
+# ╠═f6ebd1b2-fbd3-4622-ab9d-dc98f50bb31f
+# ╟─377a8f41-fc08-4941-8b08-530da4f0a987
+# ╟─604ce508-e7a6-422f-8a55-e1658143bbac
 # ╠═d7e92ccc-a1c5-4547-a6f6-5311514962a1
 # ╠═0247b632-557c-4151-b89e-c1ebac791205
+# ╠═3f89d672-c3bd-465a-890e-89080b44f9f2
