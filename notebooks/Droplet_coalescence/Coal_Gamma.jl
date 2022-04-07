@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.4
+# v0.19.0
 
 using Markdown
 using InteractiveUtils
@@ -1251,6 +1251,19 @@ While it may be true that the step at the end of the domain induce some further 
 
 See the plot below, having a rather stable double droplet system with one satelite to the right."
 
+# ╔═╡ 21c3f502-b045-41ee-9e77-db2b5841800e
+begin
+	plot(@subset(df_l, :sw .== 20).h_480000)
+	plot!(@subset(df_l, :sw .== 20).h_800000)
+	plot!(@subset(df_l, :sw .== 20).h_1480000)
+	plot!(@subset(df_l, :sw .== 20).h_2480000)
+	plot!(@subset(df_l, :sw .== 20).h_4480000)
+	plot!(@subset(df_l, :sw .== 20).h_6480000)
+	plot!(@subset(df_l, :sw .== 20).h_8480000)
+	plot!(@subset(df_l, :sw .== 20).h_10480000)
+	plot!(@subset(df_l, :sw .== 20).h_20480000)
+end
+
 # ╔═╡ 47dbb4d1-fada-4c46-acdf-458bee78d9db
 begin
 	plot(@subset(df_l, :sw .== 20).h_48000000)
@@ -1331,7 +1344,7 @@ md"## References
 # ╟─56ca66b1-4f03-4132-9693-16a9cb173a24
 # ╟─20d4019f-7f79-4f25-bbdd-e439f936fa62
 # ╟─8adf34e9-7b5c-4b75-8753-2726ffdda706
-# ╟─2cc159d3-1548-4f46-842d-0ebeecee49be
+# ╠═2cc159d3-1548-4f46-842d-0ebeecee49be
 # ╟─6dd016bb-9a59-48ed-93ef-6e5c814037e9
 # ╟─2e6cd7bf-b650-48d1-aa23-78936404dce1
 # ╟─9c48f835-3595-4d2d-978f-18fb74b6d3fe
@@ -1362,9 +1375,10 @@ md"## References
 # ╟─4f2e684d-0420-4edc-9a9f-c7140f05d208
 # ╟─a1dfe340-2fe4-498c-828f-3230c4a91a92
 # ╟─462e0d4c-16f6-4fef-95e2-0cc21fcd5833
-# ╟─d3bb48e3-550a-4378-a22b-359abb3c494e
-# ╟─0d58d762-e39b-45a6-907b-105a1d530f76
+# ╠═d3bb48e3-550a-4378-a22b-359abb3c494e
+# ╠═0d58d762-e39b-45a6-907b-105a1d530f76
 # ╟─6ebade34-7de7-4463-a267-5016eb91bedd
+# ╠═21c3f502-b045-41ee-9e77-db2b5841800e
 # ╠═47dbb4d1-fada-4c46-acdf-458bee78d9db
 # ╠═29bccf1d-55f8-426a-aab0-59a11eb86a64
 # ╠═fc7b3054-1079-4f37-8526-aee85699a0cc
