@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.4
+# v0.19.0
 
 using Markdown
 using InteractiveUtils
@@ -128,7 +128,7 @@ begin
     obst[2]=1
     obst[L]=1
     obst[L-1]=1
-    sys_bound = Swalbe.SysConstWithBound_1D{Float64}(obs=obst, L=L,param= Swalbe.Taumucs(Tmax=1000000, n=9, m=3))
+    sys_bound = Swalbe.SysConstWithBound_1D{Float64}(obs=obst, L=L,param= Swalbe.Taumucs(Tmax=1000000, n=9, m=3, δ=10.0))
 	gamma = 0.0001 .* (1 .- 0.1 .* collect(1.0:L) ./ L)
 	fl = run_gamma_walls(sys_bound, gamma, r₁=500, r₂=500)
 end
