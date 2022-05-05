@@ -6,6 +6,6 @@
 /data/*
 /figures/*
 /data_cleaned
-/analyze
+#/analyze
 /videos
 .vscode
