@@ -15,15 +15,15 @@ TM = 10000000
 TLow = 1000
 t1000 = 1000:1000:TM
 t10 = 10:10:TLow
+# Data path
+which = "sign"
+data_path = "data\\Drop_coalescence_$(which)\\"
 # Boundaries
 obst = zeros(L)
 obst[1]=1
 obst[2]=1
 obst[end]=1
 obst[end-1]=1
-# Data path
-which = "sign"
-data_path = "data\\Drop_coalescence_$(which)\\"
 
 #-----------------------------------------------------------#
 # 			   Surface tension gardients   					#	
@@ -150,6 +150,10 @@ function run_gamma_periodic(
             if t % sys.param.tdump == 0
                 mass = 0.0
                 mass = round(sum(state.basestate.height), digits=3)
+				if 0.0 / mass ≠ 0.0
+					println("Something went wrong, the mass is likely not a number")
+					break
+				end
                 println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-50:sys.L÷2+50]), digits=3)) and total mass $(mass)")
             end
         end
@@ -157,6 +161,53 @@ function run_gamma_periodic(
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .+ state.∇γ
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state, sys)
+        Swalbe.moments!(state)
+        
+        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
+    end
+	
+    return fluid
+    
+end
+
+function run_gamma_periodic_slipcr(
+    sys::Swalbe.SysConst_1D,
+    gamma::Vector;
+    r₁=115,
+    r₂=115, 
+    θ₀=1/9,
+	drop_cent=(sys.L/3, 2*sys.L/3),  
+    verbos=true, 
+    dump = 100, 
+    fluid=zeros(sys.param.Tmax÷dump, sys.L)
+)
+    println("Simulating droplet coalecense with surface tension gardient on a periodic domain")
+    state = Swalbe.Sys(sys, kind="gamma")
+    state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+    Swalbe.equilibrium!(state, sys)
+    state.γ .= gamma
+	Swalbe.∇γ!(state)
+	state.∇γ[L-4:L] .= 0
+	state.∇γ[1:4] .= 0
+    println("Starting the lattice Boltzmann time loop")
+    for t in 1:sys.param.Tmax
+        if verbos
+            if t % sys.param.tdump == 0
+                mass = 0.0
+                mass = round(sum(state.basestate.height), digits=3)
+				if 0.0 / mass ≠ 0.0
+					println("Something went wrong, the mass is likely not a number")
+					break
+				end
+                println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-50:sys.L÷2+50]), digits=3)) and total mass $(mass)")
+            end
+        end
+        Swalbe.filmpressure!(state, sys, γ=gamma)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .+ 1 ./ sys.param.δ .* state.∇γ
         Swalbe.equilibrium!(state, sys)
         Swalbe.BGKandStream!(state, sys)
         Swalbe.moments!(state)
@@ -228,6 +279,14 @@ function four_plots(f; t1=1, t2=100, t3=1000, t4=10000)
     plot!(f[t4, :], l=(4, :auto), label="t10^5")
 end
 
+# Base.@kwdef struct data_spec
+# 	L :: Int = 1024
+# 	Tmax :: Int = 10000000
+# 	delta_t :: Int = 1000
+# 	end_t :: Int = Tmax ÷ delta_t
+# 	hmin :: Int = 0
+# 	bc :: String = "periodic"
+# end
 """
 	do_gif(data_paths; fps=10, end_t=10000)
 
@@ -237,17 +296,33 @@ function do_gif(data_specs; fps=50, end_t=10000, delta_t=1000, folder="Drop_coal
 	#Check if there is one data set or more
 	number_sets = size(data_specs)[1]
 	# Have the temporal resolution of the problem
-	time_steps = delta_t:delta_t:end_t
+	real_end_T = 1000000*data_specs[1][2]
+	time_steps = delta_t:delta_t:real_end_T
 	# load data into a DataFrame
-	df = load("data\\$(folder)\\gamma_$(data_specs[1][1])_$(kind)_tmax_$(data_specs[1][2])_slip_$(data_specs[1][3])_L_$(L).jld2") |> DataFrame
-	# Build the animation object
-	drops = @animate for i in 1:fps:(end_t÷delta_t)
-		time_symbold = Symbol("h_$(time_steps[i])")
-		plot(df[!, time_symbold], l=(4, :solid), label="$(data_specs[1][1])")
-		if number_sets > 1
-			for j in 2:number_sets
-				df2 = load("data\\$(folder)\\gamma_$(data_specs[j][1])_$(kind)_tmax_$(data_specs[j][2])_slip_$(data_specs[j][3])_L_$(L).jld2") |> DataFrame
-				plot!(df2[!, time_symbold], l=(4, :auto), label="$(data_specs[j][1])")
+	if length(data_specs[1]) == 3
+		df = load("data\\$(folder)\\gamma_$(data_specs[1][1])_$(kind)_tmax_$(Int(1000000*data_specs[1][2]))_slip_$(data_specs[1][3])_L_$(L).jld2") |> DataFrame
+		# Build the animation object
+		drops = @animate for i in 1:fps:(real_end_T÷delta_t)
+			time_symbold = Symbol("h_$(time_steps[i])")
+			plot(df[!, time_symbold], l=(4, :solid), label="$(data_specs[1][1])")
+			if number_sets > 1
+				for j in 2:number_sets
+					df2 = load("data\\$(folder)\\gamma_$(data_specs[j][1])_$(kind)_tmax_$(Int(1000000*data_specs[1][2]))_slip_$(data_specs[j][3])_L_$(L).jld2") |> DataFrame
+					plot!(df2[!, time_symbold], l=(4, :auto), label="$(data_specs[j][1])")
+				end
+			end
+		end
+	else
+		df = load("data\\$(folder)\\gamma_$(data_specs[1][1])_$(kind)_tmax_$(Int(1000000*data_specs[1][2]))_slip_$(data_specs[1][3])_L_$(L)_hm_$(data_specs[1][4]).jld2") |> DataFrame
+		# Build the animation object
+		drops = @animate for i in 1:fps:(real_end_T÷delta_t)
+			time_symbold = Symbol("h_$(time_steps[i])")
+			plot(df[!, time_symbold], l=(4, :solid), label="$(data_specs[1][1])")
+			if number_sets > 1
+				for j in 2:number_sets
+					df2 = load("data\\$(folder)\\gamma_$(data_specs[j][1])_$(kind)_tmax_$(Int(1000000*data_specs[1][2]))_slip_$(data_specs[j][3])_L_$(L)_hm_$(data_specs[j][4]).jld2") |> DataFrame
+					plot!(df2[!, time_symbold], l=(4, :auto), label="$(data_specs[j][1])")
+				end
 			end
 		end
 	end
@@ -309,7 +384,6 @@ tanh_gamma(sl=50),
 tanh_gamma(sl=100), 
 tanh_gamma(sl=200)]
 
-
 gamnames = ["const", "step", "tanh1", "tanh2", "tanh5", "tanh10", "tanh20", "tanh50", "tanh100", "tanh200"]
 
 #-----------------------------------------------------------#
@@ -332,25 +406,86 @@ for i in enumerate(gamgrads)
 	end
 end
 # periodic
-for i in enumerate(gamgrads)
-	for j in [6.0]
-		# sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TM, n=9, m=3, δ=j))
-		sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TLow, n=9, m=3, δ=j))
-		# result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=1000)
-		result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=10)
-		data_sim = "gamma_$(gamnames[i[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L).jld2"
+for i in enumerate(gamgrads[1:2])
+	sll = 11.0
+	for j in [0.14] 
+		sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TM, hmin=j, n=9, m=3, δ=sll))
+		# sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TLow, hmin=j, n=9, m=3, δ=sll))
+		result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=1000)
+		# result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=10)
+		data_sim = "gamma_$(gamnames[i[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*j, digits=2))).jld2"
 		save_file = string(data_path, data_sim)
 		df_fluid = Dict()
 		# Loop through the time once more
 		for t in 1:size(result)[1]
-		    # df_fluid["h_$(t1000[t])"] = result[t,:]
-		    df_fluid["h_$(t10[t])"] = result[t,:]
+		    df_fluid["h_$(t1000[t])"] = result[t,:]
+		    # df_fluid["h_$(t10[t])"] = result[t,:]
 		end
 		save(save_file, df_fluid)
 		println("Done with simulation $(gamnames[i[1]])")
 	end
 end
 
+#-----------------------------------------------------------#
+# 				Test loop with vars   						#
+#-----------------------------------------------------------#
+function do_scan()
+	for k in [12.0] 
+		for j in [0.12] 
+			for i in enumerate(gamgrads[1:2])
+				sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TM, hmin=j, hcrit=0.03, n=9, m=3, δ=k))
+				# sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TLow, hmin=j, n=9, m=3, δ=sll))
+				result = run_gamma_periodic_slipcr(sys_loop, i[2], r₁=500, r₂=500, dump=1000)
+				# result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=10)
+				data_sim = "gamma_$(gamnames[i[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2))).jld2"
+				save_file = string(data_path, data_sim)
+				df_fluid = Dict()
+				# Loop through the time once more
+				for t in 1:size(result)[1]
+					df_fluid["h_$(t1000[t])"] = result[t,:]
+					# df_fluid["h_$(t10[t])"] = result[t,:]
+				end
+				save(save_file, df_fluid)
+				drops = @animate for i in 1:100:size(result)[1]
+					plot(result[i,:])
+				end
+				gif(drops, "figures\\$(gamnames[i[1]])_slip_$(Int(sys_loop.param.δ))_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2))).gif")
+				println("Done with simulation $(gamnames[i[1]])")
+			end
+		end
+	end
+end
+function do_step_scan()
+	powers = [(9, 3)]
+	hcrits = [0.01 0.02 0.03]
+	hmins = [0.14]
+	count = 0
+	for k in powers 
+		for j in hmins 
+			for l in hcrits
+				sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TM, hmin=j, hcrit=l, n=k[1], m=k[2], δ=12.0))
+				# sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TLow, hmin=j, n=9, m=3, δ=sll))
+				result = run_gamma_periodic_slipcr(sys_loop, step_gamma(), r₁=500, r₂=500, dump=1000)
+				# result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=10)
+				data_sim = "gamma_step_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2]).jld2"
+				save_file = string(data_path, data_sim)
+				df_fluid = Dict()
+				# Loop through the time once more
+				for t in 1:size(result)[1]
+					df_fluid["h_$(t1000[t])"] = result[t,:]
+					# df_fluid["h_$(t10[t])"] = result[t,:]
+				end
+				save(save_file, df_fluid)
+				drops = @animate for i in 1:100:size(result)[1]
+					plot(result[i,:])
+				end
+				gif(drops, "figures\\step_slip_$(Int(sys_loop.param.δ))_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2]).gif")
+				count += 1
+				println("Done with simulation $(count) of $(length(powers)*length(hmins)*length(hcrits))")
+			end
+		end
+	end
+end
 #-----------------------------------------------------------#
 # 				Data saved on disk   						#
 #-----------------------------------------------------------#
@@ -415,13 +550,15 @@ end
 
 Measurement of bridge height, neck position and skewness.
 """
-function bridge_height(df::DataFrame; time=200:200:10000000, L=1024, r0=171, label_="γ")
+function bridge_height(df::DataFrame; time=200:200:10000000, hmin=0.11, L=1024, r0=171, slip=12, label_="γ")
 	df_ = DataFrame()
 	# Parameter
 	center = L÷2
 	# Controll values
 	time_list = []
 	grad_list = []
+	slip_list = []
+	hmin_list = []
 	# Computed data
 	height_list = []
 	skew_list = []
@@ -436,6 +573,8 @@ function bridge_height(df::DataFrame; time=200:200:10000000, L=1024, r0=171, lab
 		push!(height_list, minimum(neck_region))
 		push!(pos_min_list, argmin(neck_region))
 		push!(skew_list, myskew(neck_region))
+		push!(slip_list, slip)
+		push!(hmin_list, hmin)
 		# end
 	end
 	df_[!, "width"] = grad_list
@@ -443,6 +582,8 @@ function bridge_height(df::DataFrame; time=200:200:10000000, L=1024, r0=171, lab
 	df_[!, "bridge_height"] = height_list
 	df_[!, "neck_min"] = pos_min_list
 	df_[!, "skewness"] = skew_list
+	df_[!, "slip"] = slip_list
+	df_[!, "Pi_hmin"] = hmin_list
 
 	return df_
 end
@@ -452,13 +593,16 @@ end
 
 Measurement of bridge height, neck position and skewness.
 """
-function bridge_height(; folder="Drop_coalescence_sign", T=TM, time=1000:1000:10000000, kind="periodic", slip=12, L=1024, r0=171, label_="step")
+function bridge_height(; folder="Drop_coalescence_sign", T=TM, T2=TLow, hmin=0.11, kind="periodic", slip=12, L=1024, r0=171, label_="step")
 	df_ = DataFrame()
 	# Parameter
 	center = L÷2
+	time_dict = Dict(T2 => 10:10:990, T => 1000:1000:TM)
 	# Controll values
 	time_list = []
 	grad_list = []
+	hm_list = []
+	slip_list = []
 	# Computed data
 	min_list = []
 	max_list = []
@@ -466,18 +610,22 @@ function bridge_height(; folder="Drop_coalescence_sign", T=TM, time=1000:1000:10
 	pos_min_list = []
 	pos_max_list = []
 	# Load data
-	df = load("data\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(T)_slip_$(slip)_L_$(L).jld2") |> DataFrame
-	println("Reading file:\ndata\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(T)_slip_$(slip)_L_$(L).jld2 ")
-	# Extract data from the simulation
-	for t in time
-		neck_region = df[!, Symbol("h_$(t)")][center-r0:center+r0]
-		push!(time_list, t)
-		push!(grad_list, label_)
-		push!(min_list, minimum(neck_region))
-		push!(max_list, maximum(neck_region))
-		push!(pos_min_list, argmin(neck_region))
-		push!(pos_max_list, argmax(neck_region))
-		push!(skew_list, myskew(neck_region))
+	for i in [T2, T]
+		df = load("data\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(i)_slip_$(slip)_L_$(L)_hm_$(Int(100*hmin)).jld2") |> DataFrame
+		println("Reading file:\ndata\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(i)_slip_$(slip)_L_$(L)_hm_$(Int(100*hmin)).jld2 ")
+		# Extract data from the simulation
+		for t in time_dict[i]
+			neck_region = df[!, Symbol("h_$(t)")][center-r0:center+r0]
+			push!(time_list, t)
+			push!(grad_list, label_)
+			push!(min_list, minimum(neck_region))
+			push!(max_list, maximum(neck_region))
+			push!(pos_min_list, argmin(neck_region))
+			push!(pos_max_list, argmax(neck_region))
+			push!(skew_list, myskew(neck_region))
+			push!(slip_list, slip)
+			push!(hm_list, hmin)
+		end
 	end
 	# Fill the dataframe with the results of the analysis
 	df_[!, "gamma"] = grad_list
@@ -487,18 +635,20 @@ function bridge_height(; folder="Drop_coalescence_sign", T=TM, time=1000:1000:10
 	df_[!, "neck_pos"] = pos_min_list
 	df_[!, "neck_max_pos"] = pos_max_list
 	df_[!, "skewness"] = skew_list
+	df_[!, "slip"] = slip_list
+	df_[!, "hmin"] = hm_list
 	# Return the denser data
 	return df_
 end
 
-function data_loop(labels; time=1000:1000:10000000, T=TM, slip=12)
+function data_loop(labels; slip=12, extras="hm_11")
 	df = DataFrame()
 	for i in labels
-		tmp = bridge_height(; label_=i, time=time, T=T, slip=slip)
+		tmp = bridge_height(; label_=i, slip=slip)
 		df = vcat(df, tmp)
 		println("Done with data set: $(i)")
 	end
-	CSV.write("data\\coalescence_analysed\\bridge_data_$(T)_slip_$(slip).csv", df)
+	CSV.write("data\\coalescence_analysed\\bridge_data_$(T)_slip_$(slip)_$(extras).csv", df)
 	return df
 end
 

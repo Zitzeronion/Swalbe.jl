@@ -353,6 +353,17 @@ function ∇γ!(state::T) where {T <: Expanded_1D}
     return nothing
 end
 
+function ∇γ!(state::T, sys::SysConst_1D) where {T <: Expanded_1D}
+    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.γ, 1)
+    circshift!(fim, state.γ, -1)
+    
+    # Here I try to get rid of the slippage term in the gradient
+    state.∇γ .=  (2 .* state.basestate.height.^2 .+ 6 .* sys.param.δ .* state.basestate.height .+ 3*sys.param.δ^2 ) ./ (6 .* state.basestate.height) .* state.basestate.height ./ 2 .* ((fip .- fim) ./ 2.0)
+    return nothing
+end
+
 """
     view_four()
 

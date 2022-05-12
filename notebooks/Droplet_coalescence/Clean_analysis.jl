@@ -91,7 +91,7 @@ end
 
 # ╔═╡ 81ef0ef7-b133-4345-8fc9-8c96bf4f0789
 begin
-	plot(tr, sort!(@subset(df_coalescence, :gamma .== "const", :slip .== 12), :time).bridge_min , l=(3, :solid), label="const", axis=:log, xlabel="time step", ylabel="bridge height", legend=:bottomright)
+	plot(tr, sort!(@subset(df_coalescence, :gamma .== "const", :slip .== 12, :hmin .== 0.1), :time).bridge_min , l=(3, :solid), label="const", axis=:log, xlabel="time step", ylabel="bridge height", legend=:bottomright)
 	plot!(tr, 0.001*tr.^(2/3), l=(3, :black, :dash), label="∝t^(2/3)")
 	xlims!(100, 1e7)
 	ylims!(2e-1, 5e1)
@@ -125,7 +125,7 @@ end
 # ╔═╡ eafc69c4-b79b-421e-943d-ae18d3948a59
 begin
 	plot(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "const", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "const", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :solid),
 		label="const", 
 		axis=:log,
@@ -149,7 +149,7 @@ Let's plot it!"
 # ╔═╡ 13518289-7615-48a9-8b9b-059311b725b5
 begin
 	plot(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "const", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "const", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :solid),
 		label="const", 
 		axis=:log,
@@ -161,35 +161,39 @@ begin
     	guidefontsize = 15,
 		labelfontsize = 16,
 		legend=:topleft)
-	plot!(tr./ tau_ic(γ=0.0001), 0.022 .* (tr./ tau_ic(γ=0.0001)).^(2/3), l=(3, :black, :dash), label="∝t^(2/3)")
 	plot!(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "step", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "step", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :auto),
 		label="step")
 	plot!(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "tanh2", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "tanh2", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :auto),
 		label="tanh2")
 	plot!(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "tanh10", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "tanh10", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :auto),
 		label="tanh10")
 	plot!(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "tanh50", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "tanh50", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :auto),
 		label="tanh50")
 	plot!(tr ./ tau_ic(γ=0.0001), 
-		sort!(@subset(df_coalescence, :gamma .== "tanh200", :slip .== 12), :time).bridge_min ./ 171,
+		sort!(@subset(df_coalescence, :gamma .== "tanh200", :slip .== 12, :hmin .== 0.1), :time).bridge_min ./ 171,
 		l=(3, :auto),
 		label="tanh200")
+	plot!(tr./ tau_ic(γ=0.0001), 0.022 .* (tr./ tau_ic(γ=0.0001)).^(2/3), l=(3, :black, :dash), label="∝t^(2/3)")
 	xlims!(1e-3, 4e1)
 	ylims!(8e-4, 2e-1)
 end
 
 # ╔═╡ ba7686b6-ad51-403b-bbb5-e7a01d2fae3f
-md"What is happening?
+md"### Artifacts (probably)
 
-It seems with the large slip a small instability is amplified and cumulates a lot of liquid in the center of the domain.
+What is happening?
+The curves grow again for a later time stages and decline again.
+
+
+It seems with the large slip a small instability is amplified and cumulates a lot of liquid in the center of the domain essentially forms a droplet at the step.
 To my understanding this not physical, at least I do not see a point why it should be.
 That is why we take a look at this system again with a smaller slip lenght, in fact only half of the above cases.
 "
@@ -205,7 +209,7 @@ begin
 		axis=:log,
 		xlabel="t/τ",
 		ylabel="h₀/R₀",
-		xticks=([0.001, 0.01, 0.1, 1, 10], ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+		xticks=([0.01, 0.1, 1, 10], ["10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
 		legendfontsize = 13,		# legend font size
     	tickfontsize = 14,			# tick font and size
     	guidefontsize = 15,
@@ -233,6 +237,62 @@ begin
 		label="tanh200")
 	# Fit
 	plot!(tr./ tau_ic(γ=0.0001), 0.02 .* (tr ./ tau_ic(γ=0.0001)).^(2/3), l=(3, :black, :dash), label="∝t^(2/3)")
+	# Centering
+	xlims!(4e-3, 4e1)
+	ylims!(8e-4, 2e-1)
+end
+
+# ╔═╡ b9b96436-b556-4408-83d9-506e5fd9aaf4
+md"Reduction of the slip of does help with the artifact.
+However it also decreases the overlap with the 
+```math
+h_b(t) \propto t^{2/3},
+```
+growth law.
+We therefor try another option and vary the disjoining pressure parameters.
+Let's see what happens if we increase $h_{\ast}$ by 10%.
+"
+
+# ╔═╡ dfeca876-3507-4d88-89e0-7b6e41a3b547
+begin
+	sl_ = 12
+	hast = 0.11
+	# Data
+	plot(tr ./ tau_ic(γ=0.0001), 
+		sort!(@subset(df_coalescence, :gamma .== "const", :slip .== sl_, :hmin .== hast), :time).bridge_min ./ 171,
+		l=(3, :solid),
+		label=L"\gamma(x) = \gamma_0", 
+		axis=:log,
+		xlabel="t/τ",
+		ylabel="h₀/R₀",
+		xticks=([0.01, 0.1, 1, 10], ["10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+		legendfontsize = 13,		# legend font size
+    	tickfontsize = 14,			# tick font and size
+    	guidefontsize = 15,
+		labelfontsize = 16,
+		legend=:topleft)
+	plot!(tr ./ tau_ic(γ=0.0001), 
+		sort!(@subset(df_coalescence, :gamma .== "step", :slip .== sl_, :hmin .== hast), :time).bridge_min ./ 171,
+		l=(3, :auto),
+		label=L"\gamma(x) = \Theta(x)")
+	plot!(tr ./ tau_ic(γ=0.0001), 
+		sort!(@subset(df_coalescence, :gamma .== "tanh5", :slip .== sl_, :hmin .== hast), :time).bridge_min ./ 171,
+		l=(3, :auto),
+		label=L"\gamma(x) \propto g(x;w=5)")
+	plot!(tr ./ tau_ic(γ=0.0001), 
+		sort!(@subset(df_coalescence, :gamma .== "tanh10", :slip .== sl_, :hmin .== hast), :time).bridge_min ./ 171,
+		l=(3, :auto),
+		label=L"\gamma(x) \propto g(x;w=10)")
+	# plot!(tr ./ tau_ic(γ=0.0001), 
+	#	sort!(@subset(df_coalescence, :gamma .== "tanh50", :slip .== sl_, :hmin .== hast), :time).bridge_min ./ 171,
+	#   l=(3, :auto),
+	#	label=L"\gamma(x) \propto g(x;w=50)")
+	#plot!(tr ./ tau_ic(γ=0.0001), 
+	#	sort!(@subset(df_coalescence, :gamma .== "tanh200", :slip .== sl_, :hmin .== hast), :time).bridge_min ./ 171,
+	#	l=(3, :auto),
+	#	label=L"\gamma(x) \propto g(x;w=200)")
+	# Fit
+	plot!(tr./ tau_ic(γ=0.00009), 0.021 .* (tr ./ tau_ic(γ=0.0001)).^(2/3), l=(3, :black, :dash), label=L"\propto t^{2/3}")
 	# Centering
 	xlims!(4e-3, 4e1)
 	ylims!(8e-4, 2e-1)
@@ -809,10 +869,10 @@ uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
 version = "4.9.1"
 
 [[deps.LLVMExtra_jll]]
-deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg"]
-git-tree-sha1 = "5558ad3c8972d602451efe9d81c78ec14ef4f5ef"
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg", "TOML"]
+git-tree-sha1 = "43817483288cdceb8d3258756040a3e63578bb1b"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.14+2"
+version = "0.0.14+3"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1576,9 +1636,11 @@ version = "0.9.1+5"
 # ╠═bc4e41ca-dad3-4a23-afdf-96e277ac4244
 # ╠═3a8431e9-690d-44ab-b731-deec3055422a
 # ╠═eafc69c4-b79b-421e-943d-ae18d3948a59
-# ╠═43de9713-402d-44a0-9789-5bb481b1ce00
-# ╠═13518289-7615-48a9-8b9b-059311b725b5
+# ╟─43de9713-402d-44a0-9789-5bb481b1ce00
+# ╟─13518289-7615-48a9-8b9b-059311b725b5
 # ╠═ba7686b6-ad51-403b-bbb5-e7a01d2fae3f
 # ╠═aee56503-d96c-4f14-9091-26cf11992f5b
+# ╠═b9b96436-b556-4408-83d9-506e5fd9aaf4
+# ╠═dfeca876-3507-4d88-89e0-7b6e41a3b547
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
