@@ -25,13 +25,13 @@ data_path = "data\\Drop_coalescence_$(which)\\"
 function const_gamma(;L=L, γ=γ₀)
     return fill(γ, L)
 end
-function step_gamma(;L=L, γ=γ₀, Δ=Δγ, periodic=false, boundary_l=50)
+function step_gamma(;L=L, γ=γ₀, perc=20, periodic=false, boundary_l=50)
     x = ones(L)
     for i in 1:L
         if i < L÷2
             x[i] = γ
         else
-            x[i] = γ - Δ
+            x[i] = γ - (γ * perc / 100)
         end
     end
 	# Linear interpolation between surface tensions at the boundary
@@ -45,13 +45,13 @@ function step_gamma(;L=L, γ=γ₀, Δ=Δγ, periodic=false, boundary_l=50)
 	end
     return x
 end
-function tanh_gamma(;L=L, γ=γ₀, Δ=Δγ, sl=1, periodic=false, boundary_l=50)
+function tanh_gamma(;L=L, γ=γ₀, perc=20, sl=1, periodic=false, boundary_l=50)
     l = collect(1.0:L)
     function smooth(l, L, sl)
 		return abs.(1 .- (0.5 .+ 0.5 .* tanh.((l .- L÷2) ./ (sl))))
 	end
 	x = ones(L)
-	x .= γ .* smooth(l, L, sl) .+ (1 .- smooth(l, L, sl)) .* (γ  - Δ) 
+	x .= γ .* smooth(l, L, sl) .+ (1 .- smooth(l, L, sl)) .* (γ - (γ * perc / 100)) 
 	# Linear interpolation between surface tensions at the boundary
 	if periodic
 		for i in enumerate(boundary_l:-1:1)
@@ -117,53 +117,6 @@ function run_gamma_periodic(
 	
     return fluid
     
-end
-
-function run_gamma_periodic_slipcr(
-    sys::Swalbe.SysConst_1D,
-    gamma::Vector;
-	fudge=1.0,
-    r₁=115,
-    r₂=115, 
-    θ₀=1/9,
-	drop_cent=(sys.L/3, 2*sys.L/3),  
-    verbos=true, 
-    dump = 100, 
-    fluid=zeros(sys.param.Tmax÷dump, sys.L)
-)
-    println("Simulating droplet coalecense with surface tension gardient on a periodic domain")
-    state = Swalbe.Sys(sys, kind="gamma")
-    state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
-    Swalbe.equilibrium!(state, sys)
-    state.γ .= gamma
-	Swalbe.∇γ!(state)
-	state.∇γ[L-4:L] .= 0
-	state.∇γ[1:4] .= 0
-    println("Starting the lattice Boltzmann time loop")
-    for t in 1:sys.param.Tmax
-        if verbos
-            if t % sys.param.tdump == 0
-                mass = 0.0
-                mass = round(sum(state.basestate.height), digits=3)
-				if 0.0 / mass ≠ 0.0
-					println("Something went wrong, the mass is likely not a number")
-					break
-				end
-                println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-50:sys.L÷2+50]), digits=3)) and total mass $(mass)")
-            end
-        end
-        Swalbe.filmpressure!(state, sys, γ=gamma)
-        Swalbe.h∇p!(state)
-        Swalbe.slippage!(state, sys)
-        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .+ fudge .* state.∇γ
-        Swalbe.equilibrium!(state, sys)
-        Swalbe.BGKandStream!(state, sys)
-        Swalbe.moments!(state)
-        
-        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
-    end
-	
-    return fluid
 end
 
 #-----------------------------------------------------------#
@@ -298,34 +251,47 @@ function do_scan()
 	end
 end
 function do_step_scan()
+	gamnames = ["const", "step", "tanh1", "tanh2", "tanh5", "tanh10", "tanh20", "tanh50", "tanh100", "tanh200"]
 	powers = [(9, 3)]
+	slips = [12.0]
 	hcrits = [0.03]
 	hmins = [0.12]
-	fudges = [0.85 0.9 0.95]
+	gammas = [1e-5]
 	count = 0
-	for k in powers 
-		for j in hmins 
-			for l in hcrits
-				for s in fudges
-					sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TM, hmin=j, hcrit=l, n=k[1], m=k[2], δ=12.0))
-					# sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=TLow, hmin=j, n=9, m=3, δ=sll))
-					result = run_gamma_periodic_slipcr(sys_loop, step_gamma(), fudge=s, r₁=500, r₂=500, dump=1000)
-					# result = run_gamma_periodic(sys_loop, i[2], r₁=500, r₂=500, dump=10)
-					data_sim = "gamma_step_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2]).jld2"
-					save_file = string(data_path, data_sim)
-					df_fluid = Dict()
-					# Loop through the time once more
-					for t in 1:size(result)[1]
-						df_fluid["h_$(t1000[t])"] = result[t,:]
-						# df_fluid["h_$(t10[t])"] = result[t,:]
+	t2000 = 2000:2000:20000000
+	for slip in slips
+		for k in powers 
+			for j in hmins 
+				for l in hcrits
+					for s in gammas
+						# Different surface tension gradients
+						gamgrads = [const_gamma(γ=s), step_gamma(γ=s), tanh_gamma(sl=1, γ=s), tanh_gamma(sl=2, γ=s), tanh_gamma(sl=5, γ=s), 
+	            					tanh_gamma(sl=10, γ=s), tanh_gamma(sl=20, γ=s), tanh_gamma(sl=50, γ=s), tanh_gamma(sl=100, γ=s), tanh_gamma(sl=200, γ=s)]
+						# Loop over gradients
+						for gam in enumerate(gamgrads)
+							# The system specific constants
+							sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=20000000, hmin=j, hcrit=l, n=k[1], m=k[2], δ=slip))
+							# The actual simulations
+							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=2000)
+							# Data paths
+							data_sim = "gamma_$(Int(round(1000000*s, digits=2)))_$(gamnames[gam[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_gamma_$(Int(round(1000000*s, digits=2))).jld2"
+							save_file = string(data_path, data_sim)
+							df_fluid = Dict()
+							# Loop through the time once more to store the data in a dictonary
+							for t in 1:size(result)[1]
+								df_fluid["h_$(t2000[t])"] = result[t,:]
+							end
+							# Save it to disc
+							save(save_file, df_fluid)
+							# Create an animation
+							drops = @animate for i in 1:100:size(result)[1]
+								plot(result[i,:])
+							end
+							gif(drops, "figures\\$(gamnames[gam[1]])_slip_$(Int(sys_loop.param.δ))_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2])_gamma_$(Int(round(1000000*s, digits=2))).gif")
+							count += 1
+							println("Done with simulation $(count) of $(length(powers)*length(hmins)*length(hcrits)*length(gammas)*length(slips)*length(gamgrads))")
+						end
 					end
-					save(save_file, df_fluid)
-					drops = @animate for i in 1:100:size(result)[1]
-						plot(result[i,:])
-					end
-					gif(drops, "figures\\step_slip_$(Int(sys_loop.param.δ))_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2])_fudge_$(Int(round(100*s, digits=2))).gif")
-					count += 1
-					println("Done with simulation $(count) of $(length(powers)*length(hmins)*length(hcrits)*length(fudges))")
 				end
 			end
 		end
