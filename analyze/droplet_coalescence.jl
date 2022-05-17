@@ -251,6 +251,7 @@ function do_scan()
 	end
 end
 function do_step_scan()
+	# TODO: 18.5 last five surface tension gradients starting with tanh10
 	gamnames = ["const", "step", "tanh1", "tanh2", "tanh5", "tanh10", "tanh20", "tanh50", "tanh100", "tanh200"]
 	powers = [(9, 3)]
 	slips = [12.0]
@@ -258,7 +259,7 @@ function do_step_scan()
 	hmins = [0.12]
 	gammas = [1e-5]
 	count = 0
-	t2000 = 2000:2000:20000000
+	tHere = 10000:10000:100000000
 	for slip in slips
 		for k in powers 
 			for j in hmins 
@@ -270,16 +271,16 @@ function do_step_scan()
 						# Loop over gradients
 						for gam in enumerate(gamgrads)
 							# The system specific constants
-							sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=20000000, hmin=j, hcrit=l, n=k[1], m=k[2], δ=slip))
+							sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=tHere[end], hmin=j, hcrit=l, n=k[1], m=k[2], δ=slip))
 							# The actual simulations
-							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=2000)
+							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=tHere[1])
 							# Data paths
 							data_sim = "gamma_$(Int(round(1000000*s, digits=2)))_$(gamnames[gam[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_gamma_$(Int(round(1000000*s, digits=2))).jld2"
 							save_file = string(data_path, data_sim)
 							df_fluid = Dict()
 							# Loop through the time once more to store the data in a dictonary
 							for t in 1:size(result)[1]
-								df_fluid["h_$(t2000[t])"] = result[t,:]
+								df_fluid["h_$(tHere[t])"] = result[t,:]
 							end
 							# Save it to disc
 							save(save_file, df_fluid)
