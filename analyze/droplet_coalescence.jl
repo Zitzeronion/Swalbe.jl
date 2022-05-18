@@ -252,7 +252,7 @@ function do_scan()
 end
 function do_step_scan()
 	# TODO: 18.5 last five surface tension gradients starting with tanh10
-	gamnames = ["const", "step", "tanh1", "tanh2", "tanh5", "tanh10", "tanh20", "tanh50", "tanh100", "tanh200"]
+	gamnames = ["tanh10", "tanh20", "tanh50", "tanh100", "tanh200"] # "const", "step", "tanh1", "tanh2", "tanh5",
 	powers = [(9, 3)]
 	slips = [12.0]
 	hcrits = [0.03]
@@ -266,8 +266,7 @@ function do_step_scan()
 				for l in hcrits
 					for s in gammas
 						# Different surface tension gradients
-						gamgrads = [const_gamma(γ=s), step_gamma(γ=s), tanh_gamma(sl=1, γ=s), tanh_gamma(sl=2, γ=s), tanh_gamma(sl=5, γ=s), 
-	            					tanh_gamma(sl=10, γ=s), tanh_gamma(sl=20, γ=s), tanh_gamma(sl=50, γ=s), tanh_gamma(sl=100, γ=s), tanh_gamma(sl=200, γ=s)]
+						gamgrads = [tanh_gamma(sl=10, γ=s), tanh_gamma(sl=20, γ=s), tanh_gamma(sl=50, γ=s), tanh_gamma(sl=100, γ=s), tanh_gamma(sl=200, γ=s)] # const_gamma(γ=s), step_gamma(γ=s), tanh_gamma(sl=1, γ=s), tanh_gamma(sl=2, γ=s), tanh_gamma(sl=5, γ=s), 
 						# Loop over gradients
 						for gam in enumerate(gamgrads)
 							# The system specific constants
