@@ -252,7 +252,7 @@ function do_scan()
 end
 function do_step_scan()
 	# TODO: 18.5 last five surface tension gradients starting with tanh10
-	gamnames = ["tanh10", "tanh20", "tanh50", "tanh100", "tanh200"] # "const", "step", "tanh1", "tanh2", "tanh5",
+	gamnames = ["const", "step", "tanh1", "tanh2", "tanh5","tanh10", "tanh20", "tanh50", "tanh100", "tanh200"] # 
 	powers = [(9, 3)]
 	slips = [12.0]
 	hcrits = [0.03]
@@ -260,34 +260,40 @@ function do_step_scan()
 	gammas = [1e-5]
 	count = 0
 	tHere = 10000:10000:100000000
+	tSmall = 10:10:9990
+	tChoice = tSmall
 	for slip in slips
 		for k in powers 
 			for j in hmins 
 				for l in hcrits
 					for s in gammas
 						# Different surface tension gradients
-						gamgrads = [tanh_gamma(sl=10, γ=s), tanh_gamma(sl=20, γ=s), tanh_gamma(sl=50, γ=s), tanh_gamma(sl=100, γ=s), tanh_gamma(sl=200, γ=s)] # const_gamma(γ=s), step_gamma(γ=s), tanh_gamma(sl=1, γ=s), tanh_gamma(sl=2, γ=s), tanh_gamma(sl=5, γ=s), 
+						gamgrads = [const_gamma(γ=s), step_gamma(γ=s), tanh_gamma(sl=1, γ=s), tanh_gamma(sl=2, γ=s), tanh_gamma(sl=5, γ=s), tanh_gamma(sl=10, γ=s), tanh_gamma(sl=20, γ=s), tanh_gamma(sl=50, γ=s), tanh_gamma(sl=100, γ=s), tanh_gamma(sl=200, γ=s)] 
 						# Loop over gradients
 						for gam in enumerate(gamgrads)
 							# The system specific constants
-							sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=tHere[end], hmin=j, hcrit=l, n=k[1], m=k[2], δ=slip))
+							sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=tChoice[end], hmin=j, hcrit=l, n=k[1], m=k[2], δ=slip))
 							# The actual simulations
-							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=tHere[1])
+							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=tChoice[1])
 							# Data paths
 							data_sim = "gamma_$(Int(round(1000000*s, digits=2)))_$(gamnames[gam[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_gamma_$(Int(round(1000000*s, digits=2))).jld2"
 							save_file = string(data_path, data_sim)
 							df_fluid = Dict()
 							# Loop through the time once more to store the data in a dictonary
 							for t in 1:size(result)[1]
-								df_fluid["h_$(tHere[t])"] = result[t,:]
+								df_fluid["h_$(tChoice[t])"] = result[t,:]
 							end
 							# Save it to disc
 							save(save_file, df_fluid)
 							# Create an animation
-							drops = @animate for i in 1:100:size(result)[1]
-								plot(result[i,:])
+							if tChoice[1] < 1000
+								println("No animation created")
+							else
+								drops = @animate for i in 1:100:size(result)[1]
+									plot(result[i,:])
+								end
+								gif(drops, "figures\\$(gamnames[gam[1]])_slip_$(Int(sys_loop.param.δ))_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2])_gamma_$(Int(round(1000000*s, digits=2))).gif")
 							end
-							gif(drops, "figures\\$(gamnames[gam[1]])_slip_$(Int(sys_loop.param.δ))_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_$(k[1]+k[2])_gamma_$(Int(round(1000000*s, digits=2))).gif")
 							count += 1
 							println("Done with simulation $(count) of $(length(powers)*length(hmins)*length(hcrits)*length(gammas)*length(slips)*length(gamgrads))")
 						end
@@ -404,62 +410,84 @@ end
 
 Measurement of bridge height, neck position and skewness.
 """
-function bridge_height(; folder="Drop_coalescence_sign", T=TM, T2=TLow, hmin=0.11, kind="periodic", slip=12, L=1024, r0=171, label_="step")
+function bridge_height(; folder="Drop_coalescence_sign", gamma=1e-5, kind="periodic", T=[9990, 100000000], hmin=0.11, hc=0.03, slip=12, L=1024, r0=171, label_="step")
 	df_ = DataFrame()
 	# Parameter
 	center = L÷2
-	time_dict = Dict(T2 => 10:10:990, T => 1000:1000:TM)
 	# Controll values
-	time_list = []
-	grad_list = []
-	hm_list = []
-	slip_list = []
+	time_list = Int64[]
+	grad_list = String[]
+	hm_list = Float64[]
+	hc_list = Float64[]
+	slip_list = Float64[]
+	g0_list = Float64[]
 	# Computed data
-	min_list = []
-	max_list = []
-	skew_list = []
-	pos_min_list = []
-	pos_max_list = []
+	pos_min_list = Int64[]
+	min_list = Float64[]
+	skew_list = Float64[]
+	pos_drop1 = Int64[]
+	pos_drop2 = Int64[]
+	height_drop1 = Float64[]
+	height_drop2 = Float64[]
 	# Load data
-	for i in [T2, T]
-		df = load("data\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(i)_slip_$(slip)_L_$(L)_hm_$(Int(100*hmin)).jld2") |> DataFrame
-		println("Reading file:\ndata\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(i)_slip_$(slip)_L_$(L)_hm_$(Int(100*hmin)).jld2 ")
+	time_dict = Dict(1 => 10:10:T[1], 2 => 10000:10000:T[2])
+
+	for i in 1:2
+		df = load("data\\$(folder)\\gamma_$(Int(round(1000000*gamma, digits=2)))_$(label_)_$(kind)_tmax_$(T[i])_slip_$(slip)_L_$(L)_hm_$(Int(100*hmin))_hc_$(Int(100*hc))_gamma_$(Int(round(1000000*gamma, digits=2))).jld2") |> DataFrame
+		println("Reading file:\ndata\\$(folder)\\gamma_$(label_)_$(kind)_tmax_$(T[i])_slip_$(slip)_L_$(L)_hm_$(Int(100*hmin)).jld2 ")
 		# Extract data from the simulation
 		for t in time_dict[i]
+			# Where the bridge should be
 			neck_region = df[!, Symbol("h_$(t)")][center-r0:center+r0]
+			# The position of the two maxima, thus the droplets heighest points
+			pos_maxH_drop1 = argmax(df[!, Symbol("h_$(t)")][1:center]) 
+			pos_maxH_drop2 = argmax(df[!, Symbol("h_$(t)")][center+1:L]) + center + 1
+			# And the numerical value of the height of the two droplets
+			maxH_drop1 = df[!, Symbol("h_$(t)")][pos_maxH_drop1]
+			maxH_drop2 = df[!, Symbol("h_$(t)")][pos_maxH_drop2]
+			# No push everything into lists
 			push!(time_list, t)
 			push!(grad_list, label_)
 			push!(min_list, minimum(neck_region))
-			push!(max_list, maximum(neck_region))
 			push!(pos_min_list, argmin(neck_region))
-			push!(pos_max_list, argmax(neck_region))
 			push!(skew_list, myskew(neck_region))
+			push!(pos_drop1, pos_maxH_drop1)
+			push!(pos_drop2, pos_maxH_drop2)
+			push!(height_drop1, maxH_drop1)
+			push!(height_drop2, maxH_drop2)
 			push!(slip_list, slip)
 			push!(hm_list, hmin)
+			push!(hc_list, hc)
+			push!(g0_list, gamma)
 		end
 	end
 	# Fill the dataframe with the results of the analysis
-	df_[!, "gamma"] = grad_list
+	df_[!, "g(x)"] = grad_list
 	df_[!, "time"] = time_list
 	df_[!, "bridge_min"] = min_list
-	df_[!, "bridge_max"] = max_list
 	df_[!, "neck_pos"] = pos_min_list
-	df_[!, "neck_max_pos"] = pos_max_list
+	df_[!, "position_maximum_left"] = pos_drop1 
+	df_[!, "position_maximum_right"] = pos_drop2 
+	df_[!, "height_droplet_left"] = height_drop1 
+	df_[!, "height_droplet_right"] = height_drop2 
 	df_[!, "skewness"] = skew_list
 	df_[!, "slip"] = slip_list
 	df_[!, "hmin"] = hm_list
+	df_[!, "hc"] = hc_list
+	df_[!, "gamma0"] = g0_list
+	
 	# Return the denser data
 	return df_
 end
 
-function data_loop(labels; slip=12, extras="hm_11")
+function data_loop(labels; slip=12, hc=0.03, extras="hm_11")
 	df = DataFrame()
 	for i in labels
-		tmp = bridge_height(; label_=i, slip=slip)
+		tmp = bridge_height(; folder="Drop_coalescence_long", hc=hc, hmin=0.12, label_=i, slip=slip)
 		df = vcat(df, tmp)
 		println("Done with data set: $(i)")
 	end
-	CSV.write("data\\coalescence_analysed\\bridge_data_$(T)_slip_$(slip)_$(extras).csv", df)
+	CSV.write("data\\coalescence_analysed\\coalescence_data_slip_$(slip)_$(extras).csv", df)
 	return df
 end
 

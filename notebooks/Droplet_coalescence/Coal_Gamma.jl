@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.3
+# v0.19.4
 
 using Markdown
 using InteractiveUtils
@@ -1310,7 +1310,7 @@ md"## References
 9. Oron, A., Davis, S.H. and Bankoff, S.G., 1997. Long-scale evolution of thin liquid films. Reviews of modern physics, 69(3), p.931."
 
 # ╔═╡ Cell order:
-# ╟─bb534270-0e59-4c41-a825-fd6dc0fb4a7e
+# ╠═bb534270-0e59-4c41-a825-fd6dc0fb4a7e
 # ╠═52725098-857a-4301-b86b-d9cd819de541
 # ╠═691876ad-2ee6-4b87-974f-66a3650c4b2f
 # ╟─54427765-643f-44fe-84e1-c7c67b2cfe0d
