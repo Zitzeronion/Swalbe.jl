@@ -196,6 +196,27 @@ circshift!(him, state.basestate.height, -1)
 return nothing
 end
 
+function filmpressure!(state::State_gamma_1D, sys::Consts_1D; 
+    θ=sys.param.θ, n=sys.param.n, m=sys.param.m, 
+    hmin=sys.param.hmin, hcrit=sys.param.hcrit, γ=sys.param.γ)
+hip, him = viewneighbors_1D(state.basestate.dgrad)
+# Straight elements j+1, i+1, i-1, j-1
+circshift!(hip, state.basestate.height, 1)
+circshift!(him, state.basestate.height, -1)
+
+@. state.basestate.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+             * (power_broad(hmin/(state.basestate.height + hcrit), n)
+              - power_broad(hmin/(state.basestate.height + hcrit), m)) )
+# Should be fine as long as τ = 1
+ft0, ft1, ft2 = viewdists_1D(state.basestate.ftemp)
+# Save pressure contributions so one can evalute their overall contribution
+ft1 .= state.basestate.pressure
+ft2 .= γ * (hip - 2 * state.basestate.height + him)
+
+@. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
+return nothing
+end
+
 # Paolo active matter model
 function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit; Gamma=0.0)
     hip, him = viewneighbors_1D(dgrad)

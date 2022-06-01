@@ -81,9 +81,14 @@ function run_gamma_periodic(
 	drop_cent=(sys.L/3, 2*sys.L/3),  
     verbos=true, 
     dump = 100, 
+	pressures = false,
     fluid=zeros(sys.param.Tmax÷dump, sys.L)
 )
     println("Simulating droplet coalecense with surface tension gardient on a periodic domain")
+	if pressures
+		lap=zeros(sys.param.Tmax÷dump, sys.L)
+		disj=zeros(sys.param.Tmax÷dump, sys.L)
+	end
     state = Swalbe.Sys(sys, kind="gamma")
     state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
     Swalbe.equilibrium!(state, sys)
@@ -105,6 +110,10 @@ function run_gamma_periodic(
             end
         end
         Swalbe.filmpressure!(state, sys, γ=gamma)
+		if pressures
+			Swalbe.snapshot!(lap, state.basestate.ftemp[:,3], t, dumping = dump)
+			Swalbe.snapshot!(disj, state.basestate.ftemp[:,2], t, dumping = dump)
+		end
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .+ state.∇γ
@@ -112,9 +121,11 @@ function run_gamma_periodic(
         Swalbe.BGKandStream!(state, sys)
         Swalbe.moments!(state)
         
-        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
+        # Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
     end
-	
+	if pressures
+		return lap, disj
+	end
     return fluid
     
 end
@@ -274,7 +285,7 @@ function do_step_scan()
 							# The system specific constants
 							sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=tChoice[end], hmin=j, hcrit=l, n=k[1], m=k[2], δ=slip))
 							# The actual simulations
-							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=tChoice[1])
+							result = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=tChoice[1], pressures=true)
 							# Data paths
 							data_sim = "gamma_$(Int(round(1000000*s, digits=2)))_$(gamnames[gam[1]])_periodic_tmax_$(sys_loop.param.Tmax)_slip_$(Int(sys_loop.param.δ))_L_$(sys_loop.L)_hm_$(Int(round(100*sys_loop.param.hmin)))_hc_$(Int(round(100*sys_loop.param.hcrit, digits=2)))_gamma_$(Int(round(1000000*s, digits=2))).jld2"
 							save_file = string(data_path, data_sim)
