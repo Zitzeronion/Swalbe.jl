@@ -52,8 +52,8 @@ function measure_substratewave(
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         # Forces are the pressure gradient and the slippage due to substrate liquid boundary conditions
-        state.Fx .= state.h∇px .+ state.slipx
-        state.Fy .= state.h∇py .+ state.slipy
+        state.Fx .= -state.h∇px .- state.slipx
+        state.Fy .= -state.h∇py .- state.slipy
         # New equilibrium
         Swalbe.equilibrium!(state, sys)
         Swalbe.BGKandStream!(state, sys)
@@ -65,7 +65,9 @@ function measure_substratewave(
         move_substrate!(state.slipx, θₛ, t, sub_speed, direction=dire)
     end
     return fluid, theta
-    CUDA.reclaim()
+    if device == "GPU"
+        CUDA.reclaim()
+    end
 end
 # Well not most clean way but one one to freeze the substrate without having the x/0 issue.
 function measure_substratewave(
@@ -114,8 +116,8 @@ function measure_substratewave(
         Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
         Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
         # Forces are the pressure gradient and the slippage due to substrate liquid boundary conditions
-        Fx .= h∇px .+ slipx
-        Fy .= h∇py .+ slipy
+        Fx .= -h∇px .- slipx
+        Fy .= -h∇py .- slipy
         # New equilibrium
         Swalbe.equilibrium!(feq, height, velx, vely, vsq)
         Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
@@ -159,48 +161,71 @@ speed_dict = Dict(1 => [0, 4900, 490, 49],
                   9 => [44107, 4410, 441],
                   10 => 2*[24504, 2450, 245])
 
+speed_dict_rup = Dict(1 => [980],
+                  2 => [980],
+                  3 =>  [980],
+                  4 => [980], 
+                  5 => [980], 
+                  6 => [980], 
+                  7 => [980], 
+                  8 => [980], 
+                  9 => [980],
+                  10 => [980])
+
 # To pin down the Rayleigh-Plateu instability
 # v_lam2_dia_more = [490, 245, 164, 123]
-for direction in ["diagonal"] #  "diagonal"
-    # Different initial volumes
-    waves_num = 10
-    speeds = speed_dict[waves_num]
-    for speed in speeds[1] # 1 2 3 # [0] 
-        pattern = "sine"
-        ang = 1/9
-        TM = 1000 # 5000000
-        println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-        sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=TM, tdump=5000))
-        #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
-        df_fluid = Dict()
-        df_sub = Dict()
-        θₚ = ones(sys.Lx,sys.Ly)
-        # Substrate patterning
-        if pattern == "sine" 
-            for i in 1:sys.Lx, j in 1:sys.Ly
-                θₚ[i,j] = ang + 1/18 * sin(2π*waves_num*(i-1)/sys.Lx) * sin(2π*waves_num*(j-1)/sys.Ly)
-            end
+# for theta_var in [1/24, 1/36, 1/64] #  "diagonal"
+direction = "diagonal"
+# Different initial volumes
+waves_num = 10
+theta_var = 1/18
+speeds = speed_dict[waves_num]
+run_on = "GPU"
+for speed in [980 98]#speeds[3]
+    pattern = "sine"
+    ang = 1/9
+    TM = 5000000 # 5000000
+    println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
+    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, μ=1/12, n=3, m=2, hmin=0.07, Tmax=200000, tdump=100))
+    #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
+    df_fluid = Dict()
+    df_sub = Dict()
+    θₚ = ones(sys.Lx,sys.Ly)
+    # Substrate patterning
+    if pattern == "sine" 
+        for i in 1:sys.Lx, j in 1:sys.Ly
+            θₚ[i,j] = ang + theta_var * sin(2π*waves_num*(i-1)/sys.Lx) * sin(2π*waves_num*(j-1)/sys.Ly)
         end
+    end
+    if run_on == "GPU"
         # Make a cuarray with the substrate pattern
         θ_in = CUDA.adapt(CuArray, θₚ)
         if speed == 0
             # Actual simulation
-            fluid, substrate = measure_substratewave(sys, "GPU", "blub", sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.param.tdump)
+            fluid, substrate = measure_substratewave(sys, run_on, "blub", sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.param.tdump)
         else
-            fluid, substrate = measure_substratewave(sys, "GPU", sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.param.tdump)
+            fluid, substrate = measure_substratewave(sys, run_on, sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.param.tdump)
         end
-        println("Writing measurements to Dict")
-        # Filling the dataframes
-        for t in 1:sys.param.Tmax÷sys.param.tdump
-            df_fluid["h_$(t*sys.tdump)"] = fluid[t,:]
-            df_sub["theta_$(t*sys.tdump)"] = substrate[t,:]
+    elseif run_on == "CPU"
+        if speed == 0
+            # Actual simulation
+            fluid, substrate = measure_substratewave(sys, run_on, "blub", sub_speed=speed, θₛ=θₚ, dire=direction, dump=sys.param.tdump)
+        else
+            fluid, substrate = measure_substratewave(sys, run_on, sub_speed=speed, θₛ=θₚ, dire=direction, dump=sys.param.tdump)
         end
-        println("Saving Dict subdirection $direction subvel $speed and $(pattern) $waves_num to disk")
-        save_ang = Int(round(rad2deg(π*ang)))
-        save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves_num)_$(save_ang)_tmax_$(sys.param.Tmax)_v3.jld2", df_fluid)
-    
-        CUDA.reclaim()
     end
+    println("Writing measurements to Dict")
+    # Filling the dataframes
+    for t in 1:sys.param.Tmax÷sys.param.tdump
+        df_fluid["h_$(t*sys.param.tdump)"] = fluid[t,:]
+        df_sub["theta_$(t*sys.param.tdump)"] = substrate[t,:]
+    end
+    println("Saving Dict subdirection $direction subvel $speed and $(pattern) $waves_num to disk")
+    save_ang = Int(round(rad2deg(π*ang)))
+    save_ang_del = Int(round(rad2deg(π*theta_var)))
+    save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves_num)_$(save_ang)_del_$(save_ang_del)_tmax_$(sys.param.Tmax)_v3.jld2", df_fluid)
+
+    CUDA.reclaim()
 end
 
 println("Script done, let's have a look at the data :)")

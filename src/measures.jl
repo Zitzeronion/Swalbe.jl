@@ -57,7 +57,7 @@ function t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
     qsq = hᵦ * (1 - cospi(θ)) * (2 - 3 * hᵦ) 
     charT = 3 * μ / (γ * qsq^2)
 
-    return charT
+    return charT, qsq
 end
 
 """
