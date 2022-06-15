@@ -109,7 +109,7 @@ Another example utilizing a Navier-Stokes solver would be the [**basilisk**](htt
 
 Lattice Boltzmann solvers offer another category to approximate the Navier-Stokes equation.
 Starting point of this method is not the Navier-Stokes equation but the Boltzmann equation.
-Using the Chapman-Enskog expansion [@Chapman; @Enskog], it can be shown that the resulting system of equations revcovers to the Navier-Stokes equation.
+Using the Chapman-Enskog expansion [@Chapman; @Enskog], it can be shown that the resulting system of equations recovers to the Navier-Stokes equation.
 The method is straightforward to implement and several small to large projects can be found with OSI-approved license. 
 To name just a few examples: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/) or some smaller project [**STLBM**](https://gitlab.com/unigehpfs/stlbm). 
 
