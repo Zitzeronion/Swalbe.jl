@@ -211,7 +211,7 @@ circshift!(him, state.basestate.height, -1)
 ft0, ft1, ft2 = viewdists_1D(state.basestate.ftemp)
 # Save pressure contributions so one can evalute their overall contribution
 ft1 .= state.basestate.pressure
-ft2 .= γ * (hip - 2 * state.basestate.height + him)
+ft2 .= -γ .* (hip .- 2 .* state.basestate.height .+ him)
 
 @. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
 return nothing

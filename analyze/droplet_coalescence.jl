@@ -16,7 +16,7 @@ TLow = 1000
 t1000 = 1000:1000:TM
 t10 = 10:10:TLow
 # Data path
-which = "sign"
+which = "long"
 data_path = "data\\Drop_coalescence_$(which)\\"
 
 #-----------------------------------------------------------#
@@ -270,9 +270,9 @@ function do_step_scan()
 	hmins = [0.12]
 	gammas = [1e-5]
 	count = 0
-	tHere = 10000:10000:100000000
+	tLong = 10000:10000:100000000
 	tSmall = 10:10:9990
-	tChoice = tSmall
+	tChoice = tLong
 	for slip in slips
 		for k in powers 
 			for j in hmins 
@@ -313,6 +313,46 @@ function do_step_scan()
 			end
 		end
 	end
+end
+
+function do_step_scan_p()
+	# TODO: 18.5 last five surface tension gradients starting with tanh10
+	gamnames = ["step", "tanh5", "tanh100"] # 
+	
+	gammas = 1e-5
+	count = 0
+	tLong = 10000:10000:100000000
+	tSmall = 10:10:9990
+	tChoice = tLong
+					
+	# Different surface tension gradients
+	gamgrads = [step_gamma(γ=gammas), tanh_gamma(sl=5, γ=gammas), tanh_gamma(sl=100, γ=gammas)] 
+	# Loop over gradients
+	for gam in enumerate(gamgrads)
+		# The system specific constants
+		sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=tChoice[end], hmin=0.12, hcrit=0.03, δ=12.0))
+		# The actual simulations
+		lap, disj = run_gamma_periodic(sys_loop, gam[2], r₁=500, r₂=500, dump=tChoice[1], pressures=true)
+		# Data paths
+		lap_sim = "lap_$(gamnames[gam[1]]).jld2"
+		disj_sim = "disj_$(gamnames[gam[1]]).jld2"
+		save_lap_file = string(data_path, lap_sim)
+		save_disj_file = string(data_path, disj_sim)
+		df_p1 = Dict()
+		df_p2 = Dict()
+		# Loop through the time once more to store the data in a dictonary
+		for t in 1:size(lap)[1]
+			df_p1["lap_$(tChoice[t])"] = lap[t,:]
+			df_p2["disj_$(tChoice[t])"] = disj[t,:]
+		end
+		# Save it to disc
+		save(save_lap_file, df_p1)
+		save(save_disj_file, df_p2)
+		# Create an animation
+	
+		println("Done with simulation $(count)")
+	end
+
 end
 #-----------------------------------------------------------#
 # 				Data saved on disk   						#
