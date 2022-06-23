@@ -45,6 +45,7 @@ function measure_substratewave(
             mass = sum(state.height)
             if verbos
                 println("Time step $t mass is $(round(mass, digits=3))")
+                println("Minimal thickness $(round(minimum(state.height), digits=3))")
             end
         end
         
@@ -177,16 +178,16 @@ speed_dict_rup = Dict(1 => [980],
 # for theta_var in [1/24, 1/36, 1/64] #  "diagonal"
 direction = "diagonal"
 # Different initial volumes
-waves_num = 10
+waves_num = 20
 theta_var = 1/18
-speeds = speed_dict[waves_num]
+# speeds = speed_dict[waves_num]
 run_on = "GPU"
-for speed in [980 98]#speeds[3]
+for speed in [980]#speeds[3] 98
     pattern = "sine"
     ang = 1/9
     TM = 5000000 # 5000000
     println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, μ=1/12, n=3, m=2, hmin=0.07, Tmax=200000, tdump=100))
+    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, μ=1/12, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000))
     #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
     df_fluid = Dict()
     df_sub = Dict()
