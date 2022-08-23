@@ -154,6 +154,10 @@ end
 
 ![Coalescenc of sessile droplets on a partially wetting substrate. The upper panel shows the time evolution for a single experiment (lowest surface tension). In the lower left panel we plot the evolution of the bridge height for the four different surface tensions. To the right we normalize the data with characteristic quantities and show that the bridge height grows as $\propto t^{2/3}$. \label{fig:coalesence}](drop_coal.png)
 
+# Author Contribution Statement
+
+The authors confirm contribution to the paper as follows: S. Z. wrote the code, performed the simulations and set up the package. M. Z. contributed to the continous integration as well as the documentation. A. S. derived the mathematical approximations on which the packages is based on and J. H. served in an advisory role in the design and the execution of the research.
+
 # Acknowledgements
 
 S. Zitz, M.Zellhöfer and J. Harting acknowledge financial support by the Deutsche Forschungsgemeinschaft (DFG) within the priority program SPP2171 ``Dynamic Wetting of Flexible, Adaptive, and Switchable Substrates'', under the project HA-4382/11.
