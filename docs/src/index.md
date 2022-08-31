@@ -223,22 +223,24 @@ This example will be further discussed in the Tutorials section.
 
 ## How to **perform research**
 
-The numerical approach is quite robust for a lot of thin film simulations. 
-This means in the limit of small Reynolds and Mach number simulations are usually stable, keeping in mind that for droplet like simulation the contact angle should be on smaller side (θ < π/2). 
+The numerical approach is quite robust for a lot of thin film simulations.
+This means in the limit of small Reynolds and Mach number simulations are usually stable, keeping in mind that for droplet like simulation the contact angle should be on smaller side (θ < π/2).
 Things I have looked into so far are
 
 - [Sliding droplets](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
+- [Surface tension gradients and droplet coalescence](https://arxiv.org/abs/2208.09307)
 - Equilibrium shapes of droplets on patterned substrates, depending on surface tension.
 - [Rayleigh-Taylor instability](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 - Dewetting thin films
 - [Dewetting of fluctuating thin films](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801)
-- Dewetting on switchable substrates
+- [Dewetting on switchable substrates](https://arxiv.org/abs/2112.09770)
 
 Things I have not yet looked into
 
 - Non-Newtonian fluids
 - Surfactants
 - Particles
+- *Active* films
 - Multicomponent/Multiphase
 
 ## How to **support and contribute**
