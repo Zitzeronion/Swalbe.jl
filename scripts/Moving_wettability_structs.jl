@@ -187,7 +187,7 @@ for speed in [980]#speeds[3] 98
     ang = 1/9
     TM = 5000000 # 5000000
     println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, μ=1/12, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000))
+    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=0.1, μ=1/12, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000))
     #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
     df_fluid = Dict()
     df_sub = Dict()
