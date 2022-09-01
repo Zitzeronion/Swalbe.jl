@@ -113,7 +113,7 @@ Lattice Boltzmann solvers offer another category to approximate the Navier-Stoke
 This mesoscopic approach is build on the Boltzmann equation.
 Using the Chapman-Enskog expansion [@Chapman; @Enskog], it can be shown that the resulting system of equations recovers to the Navier-Stokes equation.
 The method is straightforward to implement and several small to large projects can be found with OSI-approved license. 
-To name just a few examples: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/), [PALABOS](https://gitlab.com/unigespc/palabos) or some smaller projects [**STLBM**](https://gitlab.com/unigehpfs/stlbm), [**TLBfind**](https://github.com/FrancescaPelusi/TLBfind) (explicitly written for GPU use). 
+To name just a few examples: [**waLBerla**](https://walberla.net/doxygen/index.html), [**openLB**](https://www.openlb.net/), [PALABOS](https://gitlab.com/unigespc/palabos) or some smaller projects [**STLBM**](https://gitlab.com/unigehpfs/stlbm), [**TLBfind**](https://github.com/FrancescaPelusi/TLBfind) (explicitly written for GPU use).
 
 Proprietary software, e.g. [**COMSOL**](https://www.comsol.com/) can as well be used to simulate thin film dynamics.
 Wedershoven et al. used COMSOL to study the rupture of a thin film due to laser irradiation [@doi:10.1063/1.4863318].
@@ -156,7 +156,7 @@ end
 
 # Author Contribution Statement
 
-The authors confirm contribution to the paper as follows: S. Z. wrote the code, performed the simulations and set up the package. M. Z. contributed to the continous integration as well as the documentation. A. S. derived the mathematical approximations on which the packages is based on and J. H. served in an advisory role in the design and the execution of the research.
+The authors confirm contribution to the paper as follows: S. Z. wrote the code, performed the simulations and set up the package. M. Z. contributed to the continuous integration as well as the documentation. A. S. derived the mathematical approximations on which the packages is based on and J. H. served in an advisory role in the design and the execution of the research.
 
 # Acknowledgements
 
