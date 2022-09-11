@@ -89,47 +89,44 @@ function measure_substratewave(
     T=Float64
 )
     println("Simulating a time dependent substrate pattern")
-    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+    state = Swalbe.Sys(sys, device)
     if device == "CPU"
         for i in 1:sys.Lx, j in 1:sys.Ly
-            height[i,j] = h₀ + ϵ * sin(2π*wave_x*(i-1)/sys.Lx) * sin(2π*wave_y*(j-1)/sys.Ly)
+            state.height[i,j] = h₀ + ϵ * sin(2π*wave_x*(i-1)/sys.Lx) * sin(2π*wave_y*(j-1)/sys.Ly)
         end
     elseif device == "GPU"
-        h = zeros(size(height))
+        h = zeros(size(state.height))
         for i in 1:sys.Lx, j in 1:sys.Ly
             h[i,j] = h₀ + ϵ * sin(2π*wave_x*(i-1)/sys.Lx) * sin(2π*wave_y*(j-1)/sys.Ly)
         end
         # theta = CUDA.zeros(Float64, sys.Lx, sys.Ly)
-        height = CUDA.adapt(CuArray, h)
+        state.height .= CUDA.adapt(CuArray, h)
     end
-    Swalbe.equilibrium!(fout, height, velx, vely, vsq)
-    ftemp .= fout
-    for t in 1:sys.Tmax
-        if t % sys.tdump == 0
+    Swalbe.equilibrium!(state, sys)
+    for t in 1:sys.param.Tmax
+        if t % sys.param.tdump == 0
             mass = 0.0
-            mass = sum(height)
+            mass = sum(state.height)
             if verbos
                 println("Time step $t mass is $(round(mass, digits=3))")
+                println("Minimal thickness $(round(minimum(state.height), digits=3))")
             end
         end
         
-        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, θₛ, sys.n, sys.m, sys.hmin, sys.hcrit)
-        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
-        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+        Swalbe.filmpressure!(state, sys, θ=θₛ)
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
         # Forces are the pressure gradient and the slippage due to substrate liquid boundary conditions
-        Fx .= -h∇px .- slipx
-        Fy .= -h∇py .- slipy
+        state.Fx .= -state.h∇px .- state.slipx
+        state.Fy .= -state.h∇py .- state.slipy
         # New equilibrium
-        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
-        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state, sys)
         # New moments
-        Swalbe.moments!(height, velx, vely, fout)
+        Swalbe.moments!(state)
         # Measurements, in this case only snapshots of simulational arrays
-        Swalbe.snapshot!(fluid, height, t, dumping = dump)
+        Swalbe.snapshot!(fluid, state.height, t, dumping = dump)
         Swalbe.snapshot!(theta, θₛ, t, dumping = dump)
-        if move_sub == "yes"
-            # move_substrate!(slipx, θₛ, t, sub_speed, direction=dire)
-        end
     end
     return fluid, theta
     CUDA.reclaim()
@@ -178,16 +175,16 @@ speed_dict_rup = Dict(1 => [980],
 # for theta_var in [1/24, 1/36, 1/64] #  "diagonal"
 direction = "diagonal"
 # Different initial volumes
-waves_num = 20
+waves_num = 2
 theta_var = 1/18
 # speeds = speed_dict[waves_num]
 run_on = "GPU"
-for speed in [980]#speeds[3] 98
+for speed in [0 980]#speeds[3] 98
     pattern = "sine"
     ang = 1/9
     TM = 5000000 # 5000000
     println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=0.1, μ=1/12, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000))
+    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, μ=1/12, n=9, m=3, hmin=0.07, Tmax=5000000, tdump=5000))
     #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
     df_fluid = Dict()
     df_sub = Dict()
@@ -203,8 +200,10 @@ for speed in [980]#speeds[3] 98
         θ_in = CUDA.adapt(CuArray, θₚ)
         if speed == 0
             # Actual simulation
+            println("No pattern velocity")
             fluid, substrate = measure_substratewave(sys, run_on, "blub", sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.param.tdump)
         else
+            println("Pattern velocity v_theta = $(speed)")
             fluid, substrate = measure_substratewave(sys, run_on, sub_speed=speed, θₛ=θ_in, dire=direction, dump=sys.param.tdump)
         end
     elseif run_on == "CPU"
@@ -224,7 +223,7 @@ for speed in [980]#speeds[3] 98
     println("Saving Dict subdirection $direction subvel $speed and $(pattern) $waves_num to disk")
     save_ang = Int(round(rad2deg(π*ang)))
     save_ang_del = Int(round(rad2deg(π*theta_var)))
-    save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves_num)_$(save_ang)_del_$(save_ang_del)_tmax_$(sys.param.Tmax)_v3.jld2", df_fluid)
+    save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves_num)_$(save_ang)_del_$(save_ang_del)_tmax_$(sys.param.Tmax)_disj_$(sys.param.n)_v3.jld2", df_fluid)
 
     CUDA.reclaim()
 end
