@@ -58,6 +58,12 @@ slippage!(state::LBM_state_1D, sys::Consts_1D) = slippage!(state.slip, state.hei
     
 slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(state.basestate.slip, state.basestate.height, state.basestate.vel, sys.param.δ, sys.param.μ)
 
+# Dirty hack for reducing slip length
+function slippage2!(state::LBM_state_2D, sys::SysConst)
+    @. state.slipx .= (6sys.param.μ * (state.height+sys.param.hcrit) * state.velx) / (2 * (state.height+sys.param.hcrit)^2 + 6sys.param.δ * (state.height+sys.param.hcrit) + 3sys.param.δ^2 )
+    @. state.slipy .= (6sys.param.μ * (state.height+sys.param.hcrit) * state.vely) / (2 * (state.height+sys.param.hcrit)^2 + 6sys.param.δ * (state.height+sys.param.hcrit) + 3sys.param.δ^2 )
+    return nothing
+end
 
 """
     h∇p!(state)

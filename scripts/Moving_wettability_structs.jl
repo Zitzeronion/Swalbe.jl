@@ -184,7 +184,7 @@ for speed in [0 980]#speeds[3] 98
     ang = 1/9
     TM = 5000000 # 5000000
     println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
-    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=1.0, μ=1/12, n=9, m=3, hmin=0.07, Tmax=5000000, tdump=5000))
+    sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=0.1, n=9, m=3, hmin=0.07, Tmax=5000000, tdump=5000))
     #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
     df_fluid = Dict()
     df_sub = Dict()
@@ -223,7 +223,7 @@ for speed in [0 980]#speeds[3] 98
     println("Saving Dict subdirection $direction subvel $speed and $(pattern) $waves_num to disk")
     save_ang = Int(round(rad2deg(π*ang)))
     save_ang_del = Int(round(rad2deg(π*theta_var)))
-    save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves_num)_$(save_ang)_del_$(save_ang_del)_tmax_$(sys.param.Tmax)_disj_$(sys.param.n)_v3.jld2", df_fluid)
+    save("data/Moving_wettability/height_direc_$(direction)_sp_$(speed)_$(pattern)_$(waves_num)_$(save_ang)_del_$(save_ang_del)_tmax_$(sys.param.Tmax)_disj_$(sys.param.n)_v4.jld2", df_fluid)
 
     CUDA.reclaim()
 end
