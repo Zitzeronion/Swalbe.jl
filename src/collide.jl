@@ -248,8 +248,6 @@ julia> f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(ftest);
 
 julia> @test all(f3 .== ftest[:,:,4])
 Test Passed
-  Expression: all(f3 .== ftest[:, :, 4])
-
 ```
 
 See also: [`Swalbe.BGKandStream`](@ref)
@@ -283,7 +281,6 @@ julia> f0, f1, f2 = Swalbe.viewdists_1D(ftest);
 
 julia> @test all(f1 .== ftest[:,2])
 Test Passed
-  Expression: all(f1 .== ftest[:, 2])
 ```
 
 See also: [`Swalbe.BGKandStream`](@ref)

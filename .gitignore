@@ -1,12 +1,20 @@
+# Coverage and other things
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
+
+# Documentation 
 /docs/build/
+/docs/Manifest.toml
+
+# Pictures, data and tools
 /images/*
 /data/*
 /figures/*
 /data_cleaned
 /analyze
 /videos
+
+# Local things
 .vscode
 Manifest.toml

@@ -51,7 +51,6 @@ julia> Swalbe.equilibrium!(feq, ρ, ux, uy, zeros(5,5), 0.0) # Supply dummy u^2 
 
 julia> @test all(feq[:,:,1] .≈ 1 - 2/3 * 0.01)
 Test Passed
-  Expression: all(feq[:, :, 1] .≈ 1 - (2 / 3) * 0.01)
 ```
 
 # References
@@ -136,7 +135,6 @@ julia> feq[:,1]
 
 julia> @test all(feq[:,1] .≈ 1 - 0.1/2 - 0.01)
 Test Passed
-  Expression: all(feq[:, 1] .≈ (1 - 0.1 / 2) - 0.01)
 ```
 
 """

@@ -90,12 +90,9 @@ julia> Swalbe.h∇p!(state)
 
 julia> @test all(state.h∇px[1,:] .== -4.0) # at boundary
 Test Passed
-  Expression: all(state.h∇px[1, :] .== -4.0)
 
 julia> @test all(state.h∇px[2,:] .== 1.0) # inside
 Test Passed
-  Expression: all(state.h∇px[2, :] .== 1.0)
-
 ```
 
 # References
@@ -213,18 +210,12 @@ julia> Swalbe.thermal!(x, y, h, 0.1, 1/6, 1)
 
 julia> @test mean(x) ≈ 0.0 atol=1e-2
 Test Passed
-  Expression: ≈(mean(x), 0.0, atol = 0.01)
-   Evaluated: ≈(-0.004867491968048309, 0.0; atol = 0.01)
 
 julia> @test mean(y) ≈ 0.0 atol=1e-2
 Test Passed
-  Expression: ≈(mean(y), 0.0, atol = 0.01)
-   Evaluated: ≈(-0.000805723303937491, 0.0; atol = 0.01)
 
 julia> @test var(x) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
 Test Passed
-  Expression: ≈(var(x), (2 * 0.1) / 11, atol = ((2 * 0.1) / 11) / 10)
-   Evaluated: ≈(0.01919664721873892, 0.018181818181818184; atol = 0.0018181818181818184)
 ```
 
 # References
