@@ -180,14 +180,14 @@ speed_dict_rup = Dict(1 => [980],
 direction = "diagonal"
 # Different initial volumes
 waves_num = 2
-theta_var = 1/18
+theta_var = 1/36
 # speeds = speed_dict[waves_num]
 run_on = "GPU"
-for speed in [980]#speeds[3] 98
+for speed in [98]#speeds[3] 98
     pattern = "sine"
     ang = 1/9
     TM = 5000000 # 5000000
-    for slip in [0.3 0.4 0.5]
+    for slip in [1.0]
         println("Simulating moving substrate wettability with pattern $(pattern) and moving direction $(direction) and speed $(speed)")
         sys = Swalbe.SysConst(Lx=512, Ly=512, param=Swalbe.Taumucs(γ=0.01, δ=slip, μ=1/12, n=3, m=2, hmin=0.07, Tmax=5000000, tdump=5000))
         #sys = Swalbe.SysConst(Lx=512, Ly=512, γ=0.01, δ=1.0, n=3, m=2, hmin=0.07, Tmax=75000, tdump=500)
