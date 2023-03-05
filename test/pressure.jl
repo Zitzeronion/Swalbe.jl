@@ -47,7 +47,6 @@
 
         @test all(isapprox.(res, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
         @test all(isapprox.(state.pressure, -1 .* (sol .+ 20 .* ((0.1 ./ f).^3 .- (0.1 ./ f).^2)); atol=1e-10))
-        
     end
     @testset "Gradient and contact angle Float32" begin
         Swalbe.filmpressure!(res, f_float, 1.0f0, 0.5f0, 3, 2, 0.1f0, 0.0f0)
@@ -73,6 +72,7 @@
         
         @test all(isapprox.(res, sol; atol=1e-10))
         @test all(isapprox.(state.pressure, sol; atol=1e-10))
+        @test_throws DomainError Swalbe.filmpressure!(res, f, dgrad, 1.0, 0.0, 4, 3, 0.1, 0.1)
     end
 end
 
@@ -97,7 +97,9 @@ end
         sol[end] = -30
         @test all(res .== -sol)
         @test all(state.pressure .== -sol)
+        @test_throws DomainError Swalbe.filmpressure!(res, f, dummy, 1.0, 0.0, 4, 3, 0.1, 0.1)
     end
+   
     @testset "No height gradient" begin
         nograd = ones(30)
         state2.height .= 1.0

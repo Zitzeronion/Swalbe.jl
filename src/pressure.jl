@@ -114,7 +114,7 @@ function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
         output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
                      .* (fast_32.(hmin./(f .+ hcrit))))
     else 
-        throw(DomainError((n,m), "This disjoining pressure is not available in your country"))
+        throw(DomainError((n,m), "These exponents have not been used so far please take a look at `pressure.jl` and open an issue if there are questions"))
     end
     output .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
                    .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
@@ -166,7 +166,7 @@ function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
         output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
         .* (fast_32.(hmin./(f .+ hcrit))))
     else
-        throw(DomainError((n,m), "This disjoining pressure is not available in your country"))
+        throw(DomainError((n,m), "These exponents have not been used so far please take a look at `pressure.jl` and open an issue if there are questions"))
     end
     output .-= γ .* (hip .- 2 .* f .+ him)
     return nothing
@@ -245,7 +245,7 @@ end
 """
     power_2(arg)
 
-    Power two (arg^2) computation of a Float64 number.
+Power two (arg^2) computation of a Float64 number.
 """
 function power_2(arg::Float64)
 	return arg * arg 
