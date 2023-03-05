@@ -107,61 +107,25 @@ function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
     1. Constant part due to angle, n, m, hmin
     2. Part due to the powerlaw
     =#
-    output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                 .* (power_broad.(hmin./(f .+ hcrit), n)
-                  .- power_broad.(hmin./(f .+ hcrit), m)) )
-
+    if n == 9 && m == 3
+        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+                     .* (fast_93.(hmin./(f .+ hcrit))))
+    elseif n==3 && m==2
+        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+                     .* (fast_32.(hmin./(f .+ hcrit))))
+    else 
+        throw(DomainError((n,m), "This disjoining pressure is not available in your country"))
+    end
     output .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
                    .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
                    .- 10/3 .* f)
     return nothing
 end
 # Film pressure with the state struct
-function filmpressure!(state::LBM_state_2D, sys::SysConst, θ)
-    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, (1,0))
-    circshift!(hjp, state.height, (0,1))
-    circshift!(him, state.height, (-1,0))
-    circshift!(hjm, state.height, (0,-1))
-    # Diagonal elements  
-    circshift!(hipjp, state.height, (1,1))
-    circshift!(himjp, state.height, (-1,1))
-    circshift!(himjm, state.height, (-1,-1))
-    circshift!(hipjm, state.height, (1,-1))
-    # First the contact angle parameter part
-    state.pressure .= -sys.γ .* ((1 .- cospi.(θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                      .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                      .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
-    # Now the gradient
-    state.pressure .-= sys.γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* state.height)
-    return nothing
-end
+filmpressure!(state::LBM_state_2D, sys::SysConst, θ) = filmpressure!(state.pressure, state.height, state.dgrad, sys.γ, θ, sys.n, sys.m, sys.hmin, sys.hcrit)
+
 # With sys.θ
-function filmpressure!(state::LBM_state_2D, sys::SysConst)
-    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, (1,0))
-    circshift!(hjp, state.height, (0,1))
-    circshift!(him, state.height, (-1,0))
-    circshift!(hjm, state.height, (0,-1))
-    # Diagonal elements  
-    circshift!(hipjp, state.height, (1,1))
-    circshift!(himjp, state.height, (-1,1))
-    circshift!(himjm, state.height, (-1,-1))
-    circshift!(hipjm, state.height, (1,-1))
-    # First the contact angle parameter part
-    state.pressure .= -sys.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                      .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                      .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
-    # Now the gradient
-    state.pressure .-= sys.γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* state.height)
-    return nothing
-end
+filmpressure!(state::LBM_state_2D, sys::SysConst) = filmpressure!(state.pressure, state.height, state.dgrad, sys.γ, sys.θ, sys.n, sys.m, sys.hmin, sys.hcrit)
 
 # Standard usage parameters
 function filmpressure!(output, f, θ)
@@ -195,41 +159,22 @@ function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
     1. Constant part due to angle, n, m, hmin
     2. Part due to the powerlaw
     =#
-    output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                 .* (power_broad.(hmin./(f .+ hcrit), n)
-                  .- power_broad.(hmin./(f .+ hcrit), m)) )
-
+    if n == 9 && m == 3
+        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+                     .* (fast_93.(hmin./(f .+ hcrit))))
+    elseif n==3 && m==2
+        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+        .* (fast_32.(hmin./(f .+ hcrit))))
+    else
+        throw(DomainError((n,m), "This disjoining pressure is not available in your country"))
+    end
     output .-= γ .* (hip .- 2 .* f .+ him)
     return nothing
 end
 
-function filmpressure!(state::State_1D, sys::SysConst_1D, θ)
-    hip, him = viewneighbors_1D(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, 1)
-    circshift!(him, state.height, -1)
-    
-    state.pressure .= -sys.γ .* ((1 .- cospi.(θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                 .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                  .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
+filmpressure!(state::State_1D, sys::SysConst_1D, θ) = filmpressure!(state.pressure, state.height, state.dgrad, sys.γ, θ, sys.n, sys.m, sys.hmin, sys.hcrit)
 
-    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
-    return nothing
-end
-# State struct in 1D with sys contact angle
-function filmpressure!(state::State_1D, sys::SysConst_1D)
-    hip, him = viewneighbors_1D(state.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, 1)
-    circshift!(him, state.height, -1)
-    
-    state.pressure .= -sys.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
-                 .* (power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
-                  .- power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
-
-    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
-    return nothing
-end
+filmpressure!(state::State_1D, sys::SysConst_1D) = filmpressure!(state.pressure, state.height, state.dgrad, sys.γ, sys.θ, sys.n, sys.m, sys.hmin, sys.hcrit)
 
 # Paolo active matter model
 function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit; Gamma=0.0)
@@ -295,4 +240,31 @@ function power_broad(arg::Int, n::Int)
         temp *= arg
     end
     return temp
+end
+
+"""
+    power_n(arg)
+
+Power computation of a Float64 number
+"""
+function power_2(arg::Float64)
+	return arg * arg 
+end
+
+function power_3(arg::Float64)
+	return arg * arg * arg
+end 
+
+"""
+    fast_93(arg)
+
+Quick computation of a power law potential.
+"""
+function fast_93(arg::Float64)
+    temp = power_3(arg)
+    return power_3(temp)-temp
+end
+
+function fast_32(arg::Float64)
+    return power_3(arg)-power_2(arg)
 end
