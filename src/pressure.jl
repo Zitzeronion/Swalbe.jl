@@ -243,14 +243,19 @@ function power_broad(arg::Int, n::Int)
 end
 
 """
-    power_n(arg)
+    power_2(arg)
 
-Power computation of a Float64 number
+    Power two (arg^2) computation of a Float64 number.
 """
 function power_2(arg::Float64)
 	return arg * arg 
 end
 
+"""
+    power_3(arg)
+
+Power three (arg^3) computation of a Float64 number.
+"""
 function power_3(arg::Float64)
 	return arg * arg * arg
 end 
@@ -258,13 +263,18 @@ end
 """
     fast_93(arg)
 
-Quick computation of a power law potential.
+Quick computation of a power law potential see [`filmpressure`](@ref)
 """
 function fast_93(arg::Float64)
     temp = power_3(arg)
     return power_3(temp)-temp
 end
 
+"""
+    fast_32(arg)
+
+Quick computation of a power law potential see [`filmpressure`](@ref)
+"""
 function fast_32(arg::Float64)
     return power_3(arg)-power_2(arg)
 end
