@@ -40,26 +40,19 @@ and δ being the slip length, or the distance inside the substrate where the flu
 - [Oron, Davis and Bankoff](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.69.931)
 """
 function slippage!(slipx, slipy, height, velx, vely, δ, μ)
-    slipx .= (6μ .* height .* velx) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
-    slipy .= (6μ .* height .* vely) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
+    slipx .= (6μ .* height .* velx) ./ (2 .* (height .* height) .+ 6δ .* height .+ 3 .* (δ .* δ))
+    slipy .= (6μ .* height .* vely) ./ (2 .* (height .* height) .+ 6δ .* height .+ 3 .* (δ .* δ))
     return nothing
 end
 # with state struct
-function slippage!(state::LBM_state_2D, sys::SysConst)
-    state.slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
-    state.slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height.^2 .+ 6sys.δ .* state.height .+ 3*sys.δ^2 )
-    return nothing
-end
+slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.δ, sys.μ)
 
 function slippage!(slip, height, vel, δ, μ)
-    slip .= (6μ .* height .* vel) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
+    slip .= (6μ .* height .* vel) ./ (2 .* height .* height .+ 6δ .* height .+ 3δ .* δ)
     return nothing
 end
 # with state struct
-function slippage!(state::State_1D, sys::SysConst_1D)
-    state.slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height.^2 .+ 6*sys.δ .* state.height .+ 3*sys.δ^2 )
-    return nothing
-end
+slippage!(state::State_1D, sys::SysConst_1D) = slippage!(state.slip, state.height, state.vel, sys.δ, sys.μ)
 
 """
     h∇p!(state)
@@ -212,49 +205,29 @@ function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     randn!(fluc_x)
     randn!(fluc_y)
     fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                    (2 .* height.^2 .+
+                    (2 .* height .* height .+
                      6 .* height .* δ .+
-                     3 .* δ^2))
+                     3 .* δ .* δ))
     fluc_y .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                    (2 .* height.^2 .+
+                    (2 .* height .* height .+
                      6 .* height .* δ .+
-                     3 .* δ^2))
+                     3 .* δ .* δ))
     return nothing
 end
 
 function thermal!(fluc, height, kᵦT, μ, δ)
     randn!(fluc)
     fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                  (2 .* height.^2 .+
+                  (2 .* height .* height .+
                    6 .* height .* δ .+
-                   3 .* δ^2))
+                   3 .* δ .* δ))
     
     return nothing
 end
 
-function thermal!(state::State_thermal, sys::SysConst)
-    randn!(state.kbtx)
-    randn!(state.kbty)
-    state.kbtx .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
-                    (2 .* state.height.^2 .+
-                     6 .* state.height .* sys.δ .+
-                     3 .* sys.δ^2))
-    state.kbty .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
-                    (2 .* state.height.^2 .+
-                     6 .* state.height .* sys.δ .+
-                     3 .* sys.δ^2))
-    return nothing
-end
-# With thermal state
-function thermal!(state::State_thermal_1D, sys::SysConst_1D)
-    randn!(state.kbt)
-    state.kbt .*= sqrt.(2 .* sys.kbt .* sys.μ .* 6 .* state.height ./
-                  (2 .* state.height.^2 .+
-                   6 .* state.height .* sys.δ .+
-                   3 .* sys.δ^2))
-    
-    return nothing
-end
+thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.height, sys.kbt, sys.μ, sys.δ)
+
+thermal!(state::State_thermal_1D, sys::SysConst_1D) = thermal!(state.kbt, state.height, sys.kbt, sys.μ, sys.δ)
 
 """
    inclination!(α, state)
