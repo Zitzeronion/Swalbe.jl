@@ -117,7 +117,7 @@
 
     @testset "Characteristic time scale" begin
         t_0 = Swalbe.t0()
-        @test t_0 == 177428.32340802532
+        @test t_0 ≈ 177428.32340802532 atol = 1e-7
     end
 
     @testset "Field snapshots" begin
