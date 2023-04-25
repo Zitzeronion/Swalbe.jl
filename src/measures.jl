@@ -89,11 +89,9 @@ julia> Swalbe.snapshot!(snapshot,h2,20,dumping=10)
 
 julia> @test all(h1 .== reshape(snapshot[1,:],5,5))
 Test Passed
-  Expression: all(h1 .== reshape(snapshot[1, :], 5, 5))
-
+ 
 julia> @test all(h2 .== reshape(snapshot[2,:],5,5))
 Test Passed
-  Expression: all(h2 .== reshape(snapshot[2, :], 5, 5))
 ```
 # References
 
