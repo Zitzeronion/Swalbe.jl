@@ -141,6 +141,7 @@ I am currently writing a paper for which all experiments were done with this pac
 ## **Credit**
 
 - [Stefan Zitz (main developer)](https://forskning.ruc.dk/en/persons/zitz)
+- [Tilman Richter](https://www.hi-ern.de/profile/richter_t)
 - [Manuel Zellhöfer](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zellhoefer/zellhoefer.html)
 - [Andrea Scagliarini](https://www.iac.rm.cnr.it/iacsite/index.php?page=people&id=140)
 - [Jens Harting](https://www.hi-ern.de/de/forschung/dynamik-komplexer-fluide-und-grenzflaechen)
