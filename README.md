@@ -140,6 +140,22 @@ I am currently writing a paper for which all experiments were done with this pac
 
 ## **Credit**
 
+If you use this package please cite it as
+```bibtex
+@article{Zitz2022,
+  doi = {10.21105/joss.04312},
+  url = {https://doi.org/10.21105/joss.04312},
+  year = {2022},
+  publisher = {The Open Journal},
+  volume = {7},
+  number = {77},
+  pages = {4312},
+  author = {Stefan Zitz and Manuel Zellhöfer and Andrea Scagliarini and Jens Harting},
+  title = {Swalbe.jl: A lattice Boltzmann solver for thin film hydrodynamics},
+  journal = {Journal of Open Source Software}
+} 
+```
+
 - [Stefan Zitz (main developer)](https://forskning.ruc.dk/en/persons/zitz)
 - [Tilman Richter](https://www.hi-ern.de/profile/richter_t)
 - [Manuel Zellhöfer](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zellhoefer/zellhoefer.html)
