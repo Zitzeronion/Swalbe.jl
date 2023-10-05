@@ -135,7 +135,6 @@ julia> feq[:,1]
 
 julia> @test all(feq[:,1] .≈ 1 - 0.1/2 - 0.01)
 Test Passed
-  Expression: all(feq[:, 1] .≈ (1 - 0.1 / 2) - 0.01)
 ```
 
 """
