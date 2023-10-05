@@ -88,7 +88,7 @@ function singledroplet(height, radius, θ, center)
     return height
 end
 # For a one dimensional droplet
-function singledroplet(height::Vector, radius, θ, center)
+function singledroplet(height::Vector, radius, θ, center; hcrit=0.05)
     L = size(height)[1]
     # area = 2π * radius^2 * (1- cospi(θ))
     @inbounds for i in 1:L
@@ -96,12 +96,12 @@ function singledroplet(height::Vector, radius, θ, center)
         if circ <= radius
             height[i] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
         else
-            height[i] = 0.05
+            height[i] = hcrit
         end
     end
     @inbounds for i in 1:L
-        if height[i] < 0
-            height[i] = 0.05
+        if height[i] <= hcrit
+            height[i] = hcrit
         end
     end
     return height
@@ -127,7 +127,7 @@ This is work in progress, therefore so far it is only available for the lower di
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200);
+julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs());
 
 julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
 
@@ -139,7 +139,7 @@ Test Passed
 
 See also: 
 """
-function two_droplets(sys::SysConst_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
     dum = zeros(sys.L)
     dum2 = zeros(sys.L)
     height = zeros(sys.L)

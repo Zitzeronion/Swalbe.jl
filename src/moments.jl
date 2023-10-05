@@ -50,34 +50,21 @@ function moments!(height::Matrix, velx, vely, fout)
     vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
     return nothing
 end
-# with new state struct
-function moments!(state::LBM_state_2D)
-    # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(state.fout) 
-    # Compute the height
-    sum!(state.height, state.fout)
-    # and the velocities (as simple as possible)
-    state.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.height
-    state.vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ state.height
-    return nothing
-end
 
 function moments!(height, vel, fout)
-    # Get views of the populations
-    f0, f1, f2 = Swalbe.viewdists_1D(fout) 
-    # Compute the height
-    sum!(height, fout)
-    # and the velocities (as simple as possible)
-    vel .= (f1 .- f2) ./ height
-    return nothing
+  # Get views of the populations
+  f0, f1, f2 = Swalbe.viewdists_1D(fout) 
+  # Compute the height
+  sum!(height, fout)
+  # and the velocities (as simple as possible)
+  vel .= (f1 .- f2) ./ height
+  return nothing
 end
 
-function moments!(state::State_1D)
-    # Get views of the populations
-    f0, f1, f2 = Swalbe.viewdists_1D(state.fout) 
-    # Compute the height
-    sum!(state.height, state.fout)
-    # and the velocities (as simple as possible)
-    state.vel .= (f1 .- f2) ./ state.height
-    return nothing
-end
+moments!(state::LBM_state_2D) = moments!(state.height, state.velx, state.vely, state.fout)
+
+moments!(state::LBM_state_1D) = moments!(state.height, state.vel, state.fout)
+
+moments!(state::Expanded_2D) = moments!(state.basestate.height, state.basestate.velx, state.basestate.vely, state.basestate.fout)
+
+moments!(state::Expanded_1D) = moments!(state.basestate.height, state.basestate.vel, state.basestate.fout)

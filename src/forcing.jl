@@ -40,19 +40,24 @@ and δ being the slip length, or the distance inside the substrate where the flu
 - [Oron, Davis and Bankoff](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.69.931)
 """
 function slippage!(slipx, slipy, height, velx, vely, δ, μ)
-    slipx .= (6μ .* height .* velx) ./ (2 .* (height .* height) .+ 6δ .* height .+ 3 .* (δ .* δ))
-    slipy .= (6μ .* height .* vely) ./ (2 .* (height .* height) .+ 6δ .* height .+ 3 .* (δ .* δ))
+    @. slipx .= (6μ * height * velx) / (2 * height^2 + 6δ * height + 3δ^2 )
+    @. slipy .= (6μ * height * vely) / (2 * height^2 + 6δ * height + 3δ^2 )
     return nothing
 end
-# with state struct
-slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.δ, sys.μ)
+
+slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.param.δ, sys.param.μ)
+
+slippage!(state::Expanded_2D, sys::SysConst) = slippage!(state.basestate.slipx, state.basestate.slipy, state.basestate.height, state.basestate.velx, state.basestate.vely, sys.param.δ, sys.param.μ)
 
 function slippage!(slip, height, vel, δ, μ)
-    slip .= (6μ .* height .* vel) ./ (2 .* height .* height .+ 6δ .* height .+ 3δ .* δ)
+    @. slip .= (6μ * height * vel) / (2 * height^2 + 6δ * height + 3δ^2 )
     return nothing
 end
-# with state struct
-slippage!(state::State_1D, sys::SysConst_1D) = slippage!(state.slip, state.height, state.vel, sys.δ, sys.μ)
+
+slippage!(state::LBM_state_1D, sys::Consts_1D) = slippage!(state.slip, state.height, state.vel, sys.param.δ, sys.param.μ)
+    
+slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(state.basestate.slip, state.basestate.height, state.basestate.vel, sys.param.δ, sys.param.μ)
+
 
 """
     h∇p!(state)
@@ -77,7 +82,7 @@ As such it is the combination of a laplacian term that minimizes the surface are
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10), "CPU");
+julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10, param=Swalbe.Taumucs()), "CPU");
 
 julia> state.pressure .= reshape(collect(1:100),10,10);
 
@@ -111,20 +116,49 @@ function h∇p!(state::LBM_state_2D)
     circshift!(fimjm, state.pressure, (-1,-1))
     circshift!(fipjm, state.pressure, (1,-1))
     # In the end it is just a weighted sum...
-    state.h∇px .= state.height .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
-    state.h∇py .= state.height .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
+    @. state.h∇px .= state.height * (-1/3 * (fip - fim) - 1/12 * (fipjp - fimjp - fimjm + fipjm))
+    @. state.h∇py .= state.height * (-1/3 * (fjp - fjm) - 1/12 * (fipjp + fimjp - fimjm - fipjm))
 
     return nothing
 end
-# One dimensional implementation
-function h∇p!(state::State_1D)
+
+function h∇p!(state::LBM_state_1D)
     fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
     circshift!(fip, state.pressure, 1)
     circshift!(fim, state.pressure, -1)
-    
     # In the end it is just a weighted sum...
     state.h∇p .= state.height .* -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+function h∇p!(state::Expanded_2D)
+    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.basestate.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(fip, state.basestate.pressure, (1,0))
+    circshift!(fjp, state.basestate.pressure, (0,1))
+    circshift!(fim, state.basestate.pressure, (-1,0))
+    circshift!(fjm, state.basestate.pressure, (0,-1))
+    # Diagonal elements  
+    circshift!(fipjp, state.basestate.pressure, (1,1))
+    circshift!(fimjp, state.basestate.pressure, (-1,1))
+    circshift!(fimjm, state.basestate.pressure, (-1,-1))
+    circshift!(fipjm, state.basestate.pressure, (1,-1))
+    # In the end it is just a weighted sum...
+    @. state.basestate.h∇px .= state.basestate.height * (-1/3 * (fip - fim) - 1/12 * (fipjp - fimjp - fimjm + fipjm))
+    @. state.basestate.h∇py .= state.basestate.height * (-1/3 * (fjp - fjm) - 1/12 * (fipjp + fimjp - fimjm - fipjm))
+
+    return nothing
+end
+# One dimensional implementation
+function h∇p!(state::Expanded_1D)
+    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.basestate.pressure, 1)
+    circshift!(fim, state.basestate.pressure, -1)
+    # In the end it is just a weighted sum...
+    state.basestate.h∇p .= state.basestate.height .* -0.5 .* (fip .- fim)
 
     return nothing
 end
@@ -206,6 +240,8 @@ function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     return nothing
 end
 
+thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
+
 function thermal!(fluc, height, kᵦT, μ, δ)
     randn!(fluc)
     fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
@@ -216,9 +252,7 @@ function thermal!(fluc, height, kᵦT, μ, δ)
     return nothing
 end
 
-thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.height, sys.kbt, sys.μ, sys.δ)
-
-thermal!(state::State_thermal_1D, sys::SysConst_1D) = thermal!(state.kbt, state.height, sys.kbt, sys.μ, sys.δ)
+thermal!(state::State_thermal_1D, sys::Consts_1D) = thermal!(state.kbt, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
 
 """
    inclination!(α, state)
@@ -248,14 +282,27 @@ with ``t_0`` being the time lag at which the `tanh` changes sign and ``t_s`` is 
 See also: [Swalbe.run_dropletforced](@ref)
 """
 function inclination!(α::Vector, state::LBM_state_2D; t=1000, tstart=0, tsmooth=1)
-    state.Fx .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
-    state.Fy .+= state.height .* α[2] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+    @. state.Fx .+= state.height * α[1] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
+    @. state.Fy .+= state.height * α[2] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
 
     return nothing
 end
 
-function inclination!(α::Vector, state::State_1D; t=1000, tstart=0, tsmooth=1)
-    state.F .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+function inclination!(α::Vector, state::Expanded_2D; t=1000, tstart=0, tsmooth=1)
+    @. state.basestate.Fx .+= state.basestate.height * α[1] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
+    @. state.basestate.Fy .+= state.basestate.height * α[2] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
+
+    return nothing
+end
+
+function inclination!(α::Float64, state::State_1D; t=1000, tstart=0, tsmooth=1)
+    state.F .+= state.height .* α .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+
+    return nothing
+end
+
+function inclination!(α::Float64, state::Expanded_1D; t=1000, tstart=0, tsmooth=1)
+    state.basestate.F .+= state.basestate.height .* α .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
     return nothing
 end
@@ -278,6 +325,33 @@ function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
 
     rho .+= rho_int
 
+    return nothing
+end
+
+"""
+    surface_tension_gradient!(state)
+
+Computes the gradient of a spatially resolved surface tension field.
+"""
+function ∇γ!(state::T) where {T <: Expanded_1D}
+    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.γ, 1)
+    circshift!(fim, state.γ, -1)
+    
+    # In the end it is just a weighted sum...
+    state.∇γ .= -3/2 .* ((fip .- fim) ./ 2.0)
+    return nothing
+end
+
+function ∇γ!(state::T, sys::SysConst_1D) where {T <: Expanded_1D}
+    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.γ, 1)
+    circshift!(fim, state.γ, -1)
+    
+    # Here I try to get rid of the slippage term in the gradient
+    state.∇γ .=  (2 .* state.basestate.height.^2 .+ 6 .* sys.param.δ .* state.basestate.height .+ 3*sys.param.δ^2 ) ./ (6 .* state.basestate.height) .* state.basestate.height ./ 2 .* ((fip .- fim) ./ 2.0)
     return nothing
 end
 
