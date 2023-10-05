@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.5
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -595,6 +595,46 @@ function bridge_height(df; time=100:100:5000000, L=L, r0=171)
 	return df_
 end
 
+# ╔═╡ 56ca66b1-4f03-4132-9693-16a9cb173a24
+"""
+	bridge_height2(df; time=100:100:5000000, L=L, r0=171)
+
+Measurement of bridge height, neck position and skewness.
+Time corrected
+"""
+function bridge_height2(df; time=100:100:5000000, L=L, r0=171, label_dict=tanh_v_dict)
+	df_ = DataFrame()
+	# Parameter
+	center = L÷2
+	# Controll values
+	time_list = []
+	grad_list = []
+	# Computed data
+	height_list = []
+	skew_list = []
+	pos_min_list = []
+	# Loop through data
+	for i in values(label_dict)
+		tmp = @subset(df, :sw .== i) 
+		for t in time
+			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
+			hmin = argmin(neck_region)
+			push!(time_list, t * 2)
+			push!(grad_list, i)
+			push!(height_list, minimum(neck_region))
+			push!(pos_min_list, argmin(neck_region))
+			push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
+		end
+	end
+	df_[!, "width"] = grad_list
+	df_[!, "time"] = time_list
+	df_[!, "bridge_height"] = height_list
+	df_[!, "neck_min"] = pos_min_list
+	df_[!, "skewness"] = skew_list
+
+	return df_
+end
+
 # ╔═╡ 20d4019f-7f79-4f25-bbdd-e439f936fa62
 """
 	simple_curvature(x; appr = zeros(length(x)))
@@ -954,10 +994,49 @@ The temporal resolution is not a 100Δt but 200Δt, see the time corrected argum
 The parameter we are most interested in is the bridge height $h_0(t)$.
 Let us try to extract the data similar to above using the function `bridge_height2` on `df3`."
 
+# ╔═╡ bba72789-ce4a-46df-8cc8-3e74476e6dbb
+begin
+	analysis_tanh = "Neck_bridge_skew_tanh.csv"
+	frame_analysis_tanh = string(data_path, analysis_tanh)
+	if isfile(frame_analysis_tanh)
+		df_tanh = CSV.File(frame_analysis_tanh) |> DataFrame
+	else
+		df_tanh = bridge_height2(df3, label_dict=tanh_value_dict)
+		CSV.write(frame_analysis_tanh, df_tanh)
+	end
+end
+
 # ╔═╡ c6708c4e-1613-44ca-938e-695ae95f7643
 md"The data we have collected in `df_tanh` can be used to plot the evolution of the bridge height.
 Similar to the plots above, we use a subset of data to have understandable log log plot.
 "
+
+# ╔═╡ f49ce948-6a6f-4418-b8ba-1af6b7c5c695
+begin
+	tr2 = @subset(df_tanh, :width .== 10).time ./ tau_ic() 
+	p_bridge_tanh = plot(tr[some_list], @subset(df_secsweep, :nablaG .== "default").bridge_height[some_list] ./ 171,
+	ylabel = "h₀/R₀", 
+	xlabel = "t/τ",
+	label = "default",
+	title = "Evolution bridge height",
+	m = (9, :auto, 0.6),
+	st = :scatter, 
+	xaxis = :log, 
+	yaxis = :log,
+	xticks=([0.001, 0.01, 0.1, 1, 10], 
+	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
+	legendfontsize = 14,		# legend font size
+    tickfontsize = 14,			# tick font and size
+    guidefontsize = 15,
+	legend=:topleft)
+	plot!(tr[some_list], @subset(df_secsweep, :nablaG .== "step").bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) = Θ(x)")
+	plot!(tr2[some_list], @subset(df_tanh, :width .== 10).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=10)")
+	plot!(tr2[some_list], @subset(df_tanh, :width .== 11).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=11)")
+	plot!(tr2[some_list], @subset(df_tanh, :width .== 12).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=12)")
+	# Some fit
+	plot!(fit_t, 0.019 .* fit_t.^(exponent), l=(3, :black), label="f(x) ∝ t^(2/3)")
+	plot!(xlim=(5e-4, 30), ylim=(1e-3, 0.1))
+end
 
 # ╔═╡ ba37695d-7f37-4bfe-96b4-118d6253391e
 md"Good thing we did not call it a day after the first dataset with the smoothed step surface tension.
@@ -1003,85 +1082,6 @@ begin
 		# Print that you are done
 		println("Done with iteration $(tanh_l_dict[i])")
 	end
-end
-
-# ╔═╡ 56ca66b1-4f03-4132-9693-16a9cb173a24
-"""
-	bridge_height2(df; time=100:100:5000000, L=L, r0=171)
-
-Measurement of bridge height, neck position and skewness.
-Time corrected
-"""
-function bridge_height2(df; time=100:100:5000000, L=L, r0=171, label_dict=tanh_v_dict)
-	df_ = DataFrame()
-	# Parameter
-	center = L÷2
-	# Controll values
-	time_list = []
-	grad_list = []
-	# Computed data
-	height_list = []
-	skew_list = []
-	pos_min_list = []
-	# Loop through data
-	for i in values(label_dict)
-		tmp = @subset(df, :sw .== i) 
-		for t in time
-			neck_region = tmp[!, Symbol("h_$(t)")][center-r0:center+r0]
-			hmin = argmin(neck_region)
-			push!(time_list, t * 2)
-			push!(grad_list, i)
-			push!(height_list, minimum(neck_region))
-			push!(pos_min_list, argmin(neck_region))
-			push!(skew_list, maximum(reverse(tmp[!, Symbol("h_$(t)")][hmin-100:hmin]) - tmp[!, Symbol("h_$(t)")][hmin+1:hmin+101]))
-		end
-	end
-	df_[!, "width"] = grad_list
-	df_[!, "time"] = time_list
-	df_[!, "bridge_height"] = height_list
-	df_[!, "neck_min"] = pos_min_list
-	df_[!, "skewness"] = skew_list
-
-	return df_
-end
-
-# ╔═╡ bba72789-ce4a-46df-8cc8-3e74476e6dbb
-begin
-	analysis_tanh = "Neck_bridge_skew_tanh.csv"
-	frame_analysis_tanh = string(data_path, analysis_tanh)
-	if isfile(frame_analysis_tanh)
-		df_tanh = CSV.File(frame_analysis_tanh) |> DataFrame
-	else
-		df_tanh = bridge_height2(df3, label_dict=tanh_value_dict)
-		CSV.write(frame_analysis_tanh, df_tanh)
-	end
-end
-
-# ╔═╡ f49ce948-6a6f-4418-b8ba-1af6b7c5c695
-begin
-	tr2 = @subset(df_tanh, :width .== 10).time ./ tau_ic() 
-	p_bridge_tanh = plot(tr[some_list], @subset(df_secsweep, :nablaG .== "default").bridge_height[some_list] ./ 171,
-	ylabel = "h₀/R₀", 
-	xlabel = "t/τ",
-	label = "default",
-	title = "Evolution bridge height",
-	m = (9, :auto, 0.6),
-	st = :scatter, 
-	xaxis = :log, 
-	yaxis = :log,
-	xticks=([0.001, 0.01, 0.1, 1, 10], 
-	        ["10⁻³", "10⁻²", "10⁻¹", "10⁰", "10¹"]), # Axis labeling
-	legendfontsize = 14,		# legend font size
-    tickfontsize = 14,			# tick font and size
-    guidefontsize = 15,
-	legend=:topleft)
-	plot!(tr[some_list], @subset(df_secsweep, :nablaG .== "step").bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) = Θ(x)")
-	plot!(tr2[some_list], @subset(df_tanh, :width .== 10).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=10)")
-	plot!(tr2[some_list], @subset(df_tanh, :width .== 11).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=11)")
-	plot!(tr2[some_list], @subset(df_tanh, :width .== 12).bridge_height[some_list] ./ 171, m = (9, :auto, 0.6), st = :scatter, label="γ(x) ∝ s(x; b=12)")
-	# Some fit
-	plot!(fit_t, 0.019 .* fit_t.^(exponent), l=(3, :black), label="f(x) ∝ t^(2/3)")
-	plot!(xlim=(5e-4, 30), ylim=(1e-3, 0.1))
 end
 
 # ╔═╡ 8df94264-e377-4ac3-8866-963c1f97bd35

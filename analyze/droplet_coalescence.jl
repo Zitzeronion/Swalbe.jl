@@ -16,15 +16,26 @@ TLow = 1000
 t1000 = 1000:1000:TM
 t10 = 10:10:TLow
 # Data path
-which = "long"
-data_path = "data\\Drop_coalescence_$(which)\\"
+which = ["long", "single"]
+data_path = "data\\Drop_coalescence_$(which[2])\\"
 
 #-----------------------------------------------------------#
 # 			   Surface tension gardients   					#	
 #-----------------------------------------------------------#
+"""
+	const_gamma()
+
+Creates a constant surface tension field.
+"""
 function const_gamma(;L=L, γ=γ₀)
     return fill(γ, L)
 end
+
+"""
+	step_gamma()
+
+Creates a constant surface tension field with a step.
+"""
 function step_gamma(;L=L, γ=γ₀, perc=20, periodic=false, boundary_l=50)
     x = ones(L)
     for i in 1:L
@@ -45,6 +56,12 @@ function step_gamma(;L=L, γ=γ₀, perc=20, periodic=false, boundary_l=50)
 	end
     return x
 end
+
+"""
+	tanh_gamma()
+
+Creates a surface tension field with a smoothed step.
+"""
 function tanh_gamma(;L=L, γ=γ₀, perc=20, sl=1, periodic=false, boundary_l=50)
     l = collect(1.0:L)
     function smooth(l, L, sl)
@@ -61,6 +78,27 @@ function tanh_gamma(;L=L, γ=γ₀, perc=20, sl=1, periodic=false, boundary_l=50
 			x[i[2]] = γ - Δ + i[1]/boundary_l * Δ/2
 		end
 	end
+	return x
+end
+
+"""
+	lin_gamma()
+
+Creates a constant surface tension gradient for a transition region.
+"""
+function lin_gamma(;L=L, γ=γ₀, perc=20, width=10)
+	# Used to compute the discretization of the gradient
+	l = collect(1:width+1)
+	# The surface tension field
+	x = ones(L)
+	# Split into three regions:
+	# 1. Constant region with γ
+	# 2. Transition region with constant gradient
+	# 3. Constant region with γ*(100-20)/100
+	x[begin:(L÷2 - width÷2 - 1)] .= γ
+	x[(L÷2 - width÷2):(L÷2 + width÷2)] .= γ .- ((γ .* perc ./ 100) .* (l ./ (width + 1)))
+	x[(L÷2 + width÷2 + 1):end] .= (γ*(100-perc)/100)
+	# Return the resulting field
 	return x
 end
 
@@ -130,6 +168,67 @@ function run_gamma_periodic(
     
 end
 
+"""
+    run_gamma_single(sys, gamma; r=115, θ₀=1/9, verbos=true, dump = 100, fluid=zeros(sys.param.Tmax÷dump, sys.L))
+
+Simulation of coalescing droplets on a bounded domain
+"""
+function run_gamma_single(
+    sys::Swalbe.SysConst_1D,
+    gamma::Vector;
+    r=115, 
+    θ₀=1/9,
+	drop_cent=sys.L/2,  
+    verbos=true, 
+    dump = 100, 
+	pressures = false,
+    fluid=zeros(sys.param.Tmax÷dump, sys.L)
+)
+    println("Simulating droplet coalecense with surface tension gardient on a periodic domain")
+	if pressures
+		lap=zeros(sys.param.Tmax÷dump, sys.L)
+		disj=zeros(sys.param.Tmax÷dump, sys.L)
+	end
+    state = Swalbe.Sys(sys, kind="gamma")
+    state.basestate.height .= Swalbe.singledroplet(ones(length(state.basestate.height)), r, θ₀, drop_cent)
+    Swalbe.equilibrium!(state, sys)
+    state.γ .= gamma
+	Swalbe.∇γ!(state)
+	state.∇γ[L-4:L] .= 0
+	state.∇γ[1:4] .= 0
+    println("Starting the lattice Boltzmann time loop")
+    for t in 1:sys.param.Tmax
+        if verbos
+            if t % sys.param.tdump == 0
+                mass = 0.0
+                mass = round(sum(state.basestate.height), digits=3)
+				if isnan(mass)
+					println("Something went wrong, mass is not a number")
+					break
+				end
+                println("Time step $t \n droplet maximum at $(argmax(state.basestate.height)) \n total mass $(mass)")
+            end
+        end
+        Swalbe.filmpressure!(state, sys, γ=gamma)
+		if pressures
+			Swalbe.snapshot!(lap, state.basestate.ftemp[:,3], t, dumping = dump)
+			Swalbe.snapshot!(disj, state.basestate.ftemp[:,2], t, dumping = dump)
+		end
+        Swalbe.h∇p!(state)
+        Swalbe.slippage!(state, sys)
+        state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .+ state.∇γ
+        Swalbe.equilibrium!(state, sys)
+        Swalbe.BGKandStream!(state, sys)
+        Swalbe.moments!(state)
+        
+        Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
+    end
+	if pressures
+		return lap, disj
+	end
+    return fluid
+    
+end
 #-----------------------------------------------------------#
 # 					   Plot function						#
 #-----------------------------------------------------------#
@@ -351,6 +450,43 @@ function do_step_scan_p()
 		# Create an animation
 	
 		println("Done with simulation $(count)")
+	end
+
+end
+
+
+function do_single()
+	# TODO: 18.5 last five surface tension gradients starting with tanh10
+	gamnames = ["lin", "tanh100"] # 
+	
+	gammas = 1e-5
+	count = 0
+	tLong = 1000:1000:10000000
+	tSmall = 10:10:9990
+	tChoice = tLong
+					
+	# Different surface tension gradients
+	gamgrads = [lin_gamma(γ=gammas, width=400), tanh_gamma(sl=100, γ=gammas)] 
+	# Loop over gradients
+	for gam in enumerate(gamgrads)
+		# The system specific constants
+		sys_loop = Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=tChoice[end], hmin=0.12, hcrit=0.03, δ=12.0))
+		# The actual simulations
+		result = run_gamma_single(sys_loop, gam[2], r=500, dump=tChoice[1])
+		# Data paths
+		result_path = "single_$(gamnames[gam[1]]).jld2"
+		save_file = string(data_path, result_path)
+		df_ = Dict()
+		# Loop through the time once more to store the data in a dictonary
+		for t in 1:size(result)[1]
+			df_["single_$(tChoice[t])"] = result[t,:]
+		end
+		# Save it to disc
+		save(save_file, df_)
+		# Create an animation
+		
+		println("Done with simulation $(count)")
+		count += 1
 	end
 
 end
