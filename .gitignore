@@ -9,3 +9,5 @@
 #/analyze
 /videos
 .vscode
+# Not needed
+Manifest.toml
