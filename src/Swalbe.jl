@@ -1,8 +1,12 @@
 module Swalbe
 # Coding
-import Revise, CUDA, Statistics, Random, Base, LazySets 
+import Revise, CUDA, Statistics, Random, Base
+import LazySets: VPolygon, Ellipsoid 
 # Datatypes and output
-import FileIO, JLD2, BSON, DataFrames
+import FileIO, BSON 
+import DataFrames: DataFrame
+import JLD2: load, save
+
 
 include("initialize.jl")
 include("initialvalues.jl")

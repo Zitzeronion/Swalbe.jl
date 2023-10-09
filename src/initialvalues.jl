@@ -26,7 +26,7 @@ function randinterface!(height, h₀, ϵ)
     # Used to perform the accumulate operation
     height .= 1.0
     # This we get n nice sine waves
-    randn!(hdummy) 
+    Random.randn!(hdummy) 
     # Still need to use the correct undulation ϵ and initial height
     height .= h₀ .* (1.0 .+ ϵ .* hdummy)
     return nothing

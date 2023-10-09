@@ -227,8 +227,8 @@ Test Passed
 See also: [`Swalbe.slippage!`](@ref)
 """ 
 function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
-    randn!(fluc_x)
-    randn!(fluc_y)
+    Random.randn!(fluc_x)
+    Random.randn!(fluc_y)
     fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
                     (2 .* height .* height .+
                      6 .* height .* δ .+
@@ -243,7 +243,7 @@ end
 thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
 
 function thermal!(fluc, height, kᵦT, μ, δ)
-    randn!(fluc)
+    Random.randn!(fluc)
     fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
                   (2 .* height .* height .+
                    6 .* height .* δ .+
