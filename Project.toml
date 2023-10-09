@@ -24,7 +24,7 @@ JLD2 = ">=0.4"
 Parameters = ">=0.12"
 Revise = ">=3"
 julia = ">=1"
-LazySets = ">=2.7"
+LazySets = ">=2.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
