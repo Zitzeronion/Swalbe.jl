@@ -194,10 +194,10 @@ Similar to `CuState_thermal` without the thermal fields.
 
 # Arguments
 
-- `fout :: CuArray{T,N}`: Output distribution function
-- `ftemp :: CuArray{T,N}`: Temporary distribution function, only used if `sys.τ ≠ 1`
-- `feq :: CuArray{T,N}`: Equilibrium distribution function
-- `height :: CuArray{T}`: Field that stores the scalar height values
+- `fout :: CUDA.CuArray{T,N}`: Output distribution function
+- `ftemp :: CUDA.CuArray{T,N}`: Temporary distribution function, only used if `sys.τ ≠ 1`
+- `feq :: CUDA.CuArray{T,N}`: Equilibrium distribution function
+- `height :: CUDA.CuArray{T}`: Field that stores the scalar height values
 - `velx :: CuMatrix{T}`: Field that stores the x-component of the velocity vector
 - `vely :: Matrix{T}`: Field that stores the y-component of the velocity vector
 - `vsq :: Matrix{T}`: Field that stores the velocity squared, used in `equilibrium!`
@@ -213,46 +213,46 @@ Similar to `CuState_thermal` without the thermal fields.
 """
 struct CuState <: LBM_state_2D
     # Distribution functions
-    fout :: CuArray
-    ftemp :: CuArray
-    feq :: CuArray 
+    fout :: CUDA.CuArray
+    ftemp :: CUDA.CuArray
+    feq :: CUDA.CuArray 
     # Macroscopic variables and moments 
-    height :: CuArray
-    velx :: CuArray
-    vely :: CuArray
-    vsq :: CuArray
-    pressure :: CuArray
+    height :: CUDA.CuArray
+    velx :: CUDA.CuArray
+    vely :: CUDA.CuArray
+    vsq :: CUDA.CuArray
+    pressure :: CUDA.CuArray
     # Forces and a dummy for the gradient
-    Fx :: CuArray 
-    Fy :: CuArray 
-    slipx :: CuArray
-    slipy :: CuArray 
-    h∇px :: CuArray 
-    h∇py :: CuArray 
-    dgrad :: CuArray
+    Fx :: CUDA.CuArray 
+    Fy :: CUDA.CuArray 
+    slipx :: CUDA.CuArray
+    slipy :: CUDA.CuArray 
+    h∇px :: CUDA.CuArray 
+    h∇py :: CUDA.CuArray 
+    dgrad :: CUDA.CuArray
 end
 
 struct CuState_thermal <: LBM_state_2D
     # Distribution functions
-    fout :: CuArray
-    ftemp :: CuArray
-    feq :: CuArray 
+    fout :: CUDA.CuArray
+    ftemp :: CUDA.CuArray
+    feq :: CUDA.CuArray 
     # Macroscopic variables and moments 
-    height :: CuArray
-    velx :: CuArray
-    vely :: CuArray
-    vsq :: CuArray
-    pressure :: CuArray
+    height :: CUDA.CuArray
+    velx :: CUDA.CuArray
+    vely :: CUDA.CuArray
+    vsq :: CUDA.CuArray
+    pressure :: CUDA.CuArray
     # Forces and a dummy for the gradient
-    Fx :: CuArray 
-    Fy :: CuArray 
-    slipx :: CuArray
-    slipy :: CuArray 
-    h∇px :: CuArray 
-    h∇py :: CuArray 
-    kbtx :: CuArray 
-    kbty :: CuArray
-    dgrad :: CuArray
+    Fx :: CUDA.CuArray 
+    Fy :: CUDA.CuArray 
+    slipx :: CUDA.CuArray
+    slipy :: CUDA.CuArray 
+    h∇px :: CUDA.CuArray 
+    h∇py :: CUDA.CuArray 
+    kbtx :: CUDA.CuArray 
+    kbty :: CUDA.CuArray
+    dgrad :: CUDA.CuArray
 end
 
 """
