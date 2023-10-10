@@ -37,10 +37,26 @@
         rad = 45
         θ = 1/4
         sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs())
-        height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
+        height = Swalbe.twodroplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
         @test isa(height, Vector{Float64})
         @test size(height) == (200,)
         @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.01
+    end
+
+    @testset "Rivulet" begin
+        rad = 45
+        θ = 1/4
+        lx, ly = 150, 200
+        c = 80
+        sys = Swalbe.SysConst(Lx=lx, Ly=ly, param=Swalbe.Taumucs())
+        height = Swalbe.rivulet(sys, radius=rad, θ=θ, center=c)
+        @test isa(height, Matrix{Float64})
+        @test size(height) == (lx,ly)
+        @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.0001
+        @test sum(height[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
+        # Test with different orientation
+        height = Swalbe.rivulet(sys, radius=rad, orientation=:x, θ=θ, center=c)
+        @test sum(height[:,c]) ≈ (rad * (1 - cospi(θ)))*sys.Lx atol=0.0001
     end
 
     @testset "Restart height" begin

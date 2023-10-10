@@ -33,7 +33,77 @@ function randinterface!(height, h₀, ϵ)
 end
 
 """
-    singledroplet(T, size(θ,1), size(θ,2), radius, θ, center, device=false)
+    rivulet(sys; radius, θ, center)
+
+Generates a rivulet with contact angle `θ`, sphere radius `radius` and centered at `center`.
+
+# Arguments
+
+- `sys::SysConst{T}`: Contains size of the domain
+- `radius::AbstractFloat`: radius of the underlying sphere from which the spherical cap is cut
+- `θ::AbstractFloat`: contact angle in multiples of `π`
+- `orientation::Symbol`: extrusion direction of cap shape
+- `center::Int`: coordinate of the center of the cap
+
+# Examples
+
+```jldoctest
+julia> using Swalbe, Test
+
+julia> rad = 45; sys = Swalbe.SysConst(Lx=200, Ly=200, param=Swalbe.Taumucs());
+
+julia> height = Swalbe.rivulet(sys,radius=rad, center=100);
+
+julia> @test maximum(height) == rad * (1 - cospi(sys.param.θ)) # Simple geometry
+Test Passed
+
+julia> argmax(height) # Which is constistent with the center!
+CartesianIndex(100, 1)
+
+```
+
+# References
+
+See also: [`singledroplet`](@ref), [`two_droplets`](@ref)
+"""
+function rivulet(sys::SysConst; radius=50, θ=sys.param.θ, orientation=:y, center=50)
+    # area = 2π * radius^2 * (1- cospi(θ))
+    height = zeros(sys.Lx, sys.Ly)
+    if orientation == :y
+        @inbounds for i in 1:sys.Lx
+            for j in 1:sys.Ly
+                circ = sqrt((i-center)^2)
+                if circ <= radius
+                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+                else
+                    height[i,j] = sys.param.hcrit
+                end
+            end
+        end
+    elseif orientation == :x 
+        @inbounds for i in 1:sys.Lx
+            for j in 1:sys.Ly
+                circ = sqrt((j-center)^2)
+                if circ <= radius
+                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+                else
+                    height[i,j] = sys.param.hcrit
+                end
+            end
+        end
+    end
+    @inbounds for i in 1:sys.Lx
+        for j in 1:sys.Ly
+            if height[i,j] <= sys.param.hcrit
+                height[i,j] = sys.param.hcrit
+            end
+        end
+    end
+    return height
+end
+
+"""
+    singledroplet(height, radius, θ, center)
 
 Generates a fluid configuration of a single droplet in the shape of spherical cap with contact angle `θ`, sphere radius `radius` and centered at `center`.
 
@@ -108,7 +178,7 @@ function singledroplet(height::Vector, radius, θ, center; hcrit=0.05)
 end
 
 """
-    two_droplets(sys)
+    twodroplets(sys)
 
 Generates a fluid configuration of a two droplets in the shape of spherical cap with contact angles `θ₁`, `θ₂`, sphere radius `r₁`, `r₂` and centers at `center`.
 
@@ -129,7 +199,7 @@ julia> using Swalbe, Test
 
 julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs());
 
-julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
+julia> height = Swalbe.twodroplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
 
 julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) atol=0.01 # Simple geometry
 Test Passed
@@ -139,7 +209,7 @@ Test Passed
 
 See also: 
 """
-function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+function twodroplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
     dum = zeros(sys.L)
     dum2 = zeros(sys.L)
     height = zeros(sys.L)
