@@ -5,8 +5,8 @@
 /images/*
 /data/*
 /figures/*
+/analyze/*
 /data_cleaned
-#/analyze
 /videos
 .vscode
 *.toml
