@@ -512,7 +512,7 @@ First momentum of the thickness field interpreted as a distribution.
 function mymean(h)
 	μ=0
 	m=sum(h)
-	for i in 1:length(h)
+	for i in eachindex(h)
 		μ+= (h[i]/m)*i
 	end
 	return μ
@@ -527,7 +527,7 @@ function mystd(h)
 	σ=0
 	m=sum(h)
 	μ=mymean(h)
-	for i in 1:length(h)
+	for i in eachindex(h)
 		σ += (h[i]/m)*((i-μ)^2)
 	end
 	return sqrt(σ)
@@ -543,7 +543,7 @@ function myskew(h)
 	μ=mymean(h)
 	m=sum(h)
 	s=0
-	for i in 1:length(h)
+	for i in eachindex(h)
 		s += (h[i]/m)*(((i-μ)/σ)^3)
 	end
 	return s

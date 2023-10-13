@@ -517,7 +517,7 @@ First momentum of the thickness field interpreted as a distribution.
 function mymean(h)
 	μ=0
 	m=sum(h)
-	for i in 1:length(h)
+	for i in eachindex(h)
 		μ+= (h[i]/m)*i
 	end
 	return μ
@@ -533,7 +533,7 @@ function mystd(h)
 	σ=0
 	m=sum(h)
 	μ=mymean(h)
-	for i in 1:length(h)
+	for i in eachindex(h)
 		σ += (h[i]/m)*((i-μ)^2)
 	end
 	return sqrt(σ)
@@ -550,7 +550,7 @@ function myskew(h)
 	μ=mymean(h)
 	m=sum(h)
 	s=0
-	for i in 1:length(h)
+	for i in eachindex(h)
 		s += (h[i]/m)*(((i-μ)/σ)^3)
 	end
 	return s
@@ -1065,7 +1065,7 @@ begin
 	tanh_l_dict = Dict(1 => "sw_20", 2 => "sw_30", 3 => "sw_40", 4 => "sw_50")
 	tanh_v_dict = Dict(1 => 20, 2 => 30, 3 => 40, 4 => 50)
 	df_l = DataFrame()
-	for i in 1:length(tanh_l_dict)  
+	for i in eachindex(tanh_l_dict)  
     	# Check if there is already a file created
     	sim_name_tanh = "gamma_tanh_width_$(tanh_l_dict[i])_tmax_$(sys_long.param.Tmax).jld2"
     	save_file = string(data_path, sim_name_tanh)
@@ -1181,7 +1181,7 @@ begin
 	tanh_l2_dict = Dict(1 => "sw_1", 2 => "sw_2", 3 => "sw_5", 4 => "sw_10")
 	tanh_v2_dict = Dict(1 => 1, 2 => 2, 3 => 5, 4 => 10)
 	df_sw = DataFrame()
-	for i in 1:length(tanh_l2_dict)  
+	for i in eachindex(tanh_l2_dict)  
     	# Check if there is already a file created
     	sim_name_tanh = "gamma_tanh_width_$(tanh_l2_dict[i])_tmax_$(sys_sw.param.Tmax).jld2"
     	save_file = string(data_path, sim_name_tanh)
