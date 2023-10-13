@@ -40,7 +40,7 @@ Test Passed
 - [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
 - [Zitz, Scagliarini and Harting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 """
-function moments!(height::Matrix, velx, vely, fout)
+function moments!(height, velx, vely, fout)
     # Get views of the populations
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
     # Compute the height
@@ -51,7 +51,7 @@ function moments!(height::Matrix, velx, vely, fout)
     return nothing
 end
 
-function moments!(height, vel, fout)
+function moments!(height::Vector, vel, fout)
   # Get views of the populations
   f0, f1, f2 = Swalbe.viewdists_1D(fout) 
   # Compute the height
