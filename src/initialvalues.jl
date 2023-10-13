@@ -353,7 +353,7 @@ function boxpattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36
     xcoords = [center[1]-side/2 center[1]-side/2 center[1]+side/2 center[1]+side/2]
     ycoords = [center[2]-side/2 center[2]+side/2 center[2]-side/2 center[2]+side/2]
     # Check if the vertices are on the grid
-    for i in 1:length(xcoords)
+    for i in eachindex(xcoords)
         if xcoords[i] < 1 || xcoords[i] > size(θ,1)
             xcoords[i] = 1 # If not push them to the origin
         elseif ycoords[i] < 1 || ycoords[i] > size(θ,2)
@@ -367,7 +367,7 @@ function boxpattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36
     vertex₄ = [xcoords[4], ycoords[4]]
     # Build a posize(θ,2)gon
     P = VPolygon([vertex₁, vertex₂, vertex₃, vertex₄])
-    for i in 1:size(θ,1), j in 1:size(θ,2)
+    for i in eachindex(θ[:,1]), j in eachindex(θ[1,:])
         if [Float64(i), Float64(j)] ∈ P
             θ[j,i] = θ₀ + δₐ
         else
@@ -420,7 +420,7 @@ function ellipsepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=
     shape₁ = a^(2)
     shape₂ = b^(2)
     P = Ellipsoid(mid, [shape₁ 0.0; 0.0 shape₂])
-    for i=1:size(θ,1), j=1:size(θ,2)
+    for i in eachindex(θ[:,1]), j in eachindex(θ[1,:])
         if [Float64(i), Float64(j)] ∈ P
             θ[j,i] = θ₀ + δₐ
         else
@@ -466,7 +466,7 @@ function trianglepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ
     xcoords = [center[1]-side/2 center[1]+side/2 center[1]]
     ycoords = [center[2]-height/3 center[2]-height/3 center[2]+2*height/3]
     # Check if the vertices are on the grid
-    for i in 1:length(xcoords)
+    for i in eachindex(xcoords)
         if xcoords[i] < 1 || xcoords[i] > size(θ,1)
             xcoords[i] = 1 # If not push them to the origin
         elseif ycoords[i] < 1 || ycoords[i] > size(θ,2)
@@ -477,7 +477,7 @@ function trianglepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ
     vertex₂ = [xcoords[2], ycoords[2]]
     vertex₃ = [xcoords[3], ycoords[3]]
     P = VPolygon([vertex₁, vertex₂, vertex₃])
-    for i in 1:size(θ,1), j in 1:size(θ,2)
+    for i in eachindex(θ[:,1]), j in eachindex(θ[1,:])
         if [Float64(i), Float64(j)] ∈ P
             θ[j,i] = θ₀ + δₐ
         else
