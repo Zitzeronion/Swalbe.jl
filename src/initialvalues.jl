@@ -66,6 +66,7 @@ CartesianIndex(100, 1)
 
 See also: [`singledroplet`](@ref), [`two_droplets`](@ref)
 """
+
 function rivulet(sys::SysConst; radius=50, θ=sys.param.θ, orientation=:y, center=50)
     # area = 2π * radius^2 * (1- cospi(θ))
     height = zeros(sys.Lx, sys.Ly)
@@ -101,6 +102,58 @@ function rivulet(sys::SysConst; radius=50, θ=sys.param.θ, orientation=:y, cent
     end
     return height
 end
+
+"""
+    torus(lx, ly, r₁, R₂, θ, center, hmin)
+
+Generates a cut torus with contact angle `θ`, (`x`,`y`) radius `R₂` and (`x`,`z`) radius `r₁` centered at `center`.
+
+# Arguments
+
+- `lx::Int`: Size of the domain in x-direction
+- `ly::Int`: Size of the domain in y-direction
+- `r₁::AbstractFloat`: Radius in (x,z)-plane
+- `R₂::AbstractFloat`: Radius in (x,y)-plane
+- `θ::AbstractFloat`: contact angle in multiples of `π`
+- `center::Tuple{Int, Int}`: Center position of the torus  
+- `hmin::AbstractFloat`: small value above 0.0
+
+# Examples
+
+```jldoctest
+julia> using Swalbe, Test
+
+julia> rad = 45; sys = Swalbe.SysConst(Lx=200, Ly=200, param=Swalbe.Taumucs());
+
+julia> height = Swalbe.rivulet(sys,radius=rad, center=100);
+
+julia> @test maximum(height) == rad * (1 - cospi(sys.param.θ)) # Simple geometry
+Test Passed
+
+julia> argmax(height) # Which is constistent with the center!
+CartesianIndex(100, 1)
+
+```
+
+# References
+
+See also: [`rivulet`](@ref), [`singledroplet`](@ref), [`two_droplets`](@ref)
+"""
+function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05)
+	h = zeros(lx,ly)
+	for i in 1:lx, j in 1:ly
+		coord = sqrt((i-center[1])^2 + (j-center[2])^2)
+		half = (r₁*(1 - cospi(θ)))^2 - (coord - R₂)^2
+		if half <= 0.0
+			h[i,j] = hmin
+		else
+			h[i,j] = sqrt(half)
+		end
+	end
+	return h
+end
+
+torus(sys::SysConst, r₁, R₂, center) = torus(sys.Lx, sys.Ly, r₁, R₂, sys.param.θ, center, sys.param.hcrit)
 
 """
     singledroplet(height, radius, θ, center)

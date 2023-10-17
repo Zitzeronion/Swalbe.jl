@@ -59,6 +59,24 @@
         @test sum(height[:,c]) ≈ (rad * (1 - cospi(θ)))*sys.Lx atol=0.0001
     end
 
+    @testset "Torus" begin
+        R = 45
+        rr = 10
+        lx, ly = 150, 200
+        c = (80, 80)
+        sys = Swalbe.SysConst(Lx=lx, Ly=ly, param=Swalbe.Taumucs())
+        height = Swalbe.torus(sys, rr, R, c)
+        @test isa(height, Matrix{Float64})
+        @test size(height) == (lx,ly)
+        @test minimum(height) == sys.param.hcrit
+        @test maximum(height) ≈ (1 - cospi(sys.param.θ))*rr
+        # @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.0001
+        # @test sum(height[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
+        # Test with different orientation
+        # height = Swalbe.rivulet(sys, radius=rad, orientation=:x, θ=θ, center=c)
+        # @test sum(height[:,c]) ≈ (rad * (1 - cospi(θ)))*sys.Lx atol=0.0001
+    end
+
     @testset "Restart height" begin
         h1 = rand(10,10)
         h2 = rand(10,10)
