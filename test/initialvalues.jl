@@ -70,7 +70,7 @@
         @test size(height) == (lx,ly)
         @test minimum(height) == sys.param.hcrit
         @test maximum(height) ≈ (1 - cospi(sys.param.θ))*rr
-        # @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.0001
+        @test findmax(height)[2] == CartesianIndex(80, 35)
         # @test sum(height[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
         # Test with different orientation
         # height = Swalbe.rivulet(sys, radius=rad, orientation=:x, θ=θ, center=c)

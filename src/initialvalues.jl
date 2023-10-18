@@ -141,15 +141,25 @@ See also: [`rivulet`](@ref), [`singledroplet`](@ref), [`two_droplets`](@ref)
 """
 function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05)
 	h = zeros(lx,ly)
-	for i in 1:lx, j in 1:ly
+	for i in eachindex(h[:,1]), j in eachindex(h[1,:])
 		coord = sqrt((i-center[1])^2 + (j-center[2])^2)
-		half = (r₁*(1 - cospi(θ)))^2 - (coord - R₂)^2
+		half = (r₁)^2 - (coord - R₂)^2
 		if half <= 0.0
 			h[i,j] = hmin
 		else
 			h[i,j] = sqrt(half)
 		end
 	end
+    # Second loop to have a well defined contact angle
+    for i in eachindex(h[:,1]), j in eachindex(h[1,:])
+        # Cut the half sphere to the desired contact angle θ
+        correction = h[i,j] - r₁ * cospi(θ)
+        if correction < hmin
+            h[i,j] = hmin
+        else
+            h[i,j] = correction
+        end
+    end
 	return h
 end
 
