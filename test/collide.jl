@@ -129,14 +129,24 @@
     sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(τ=0.75))
     st1d = Swalbe.Sys(sys)
     st1d2 = Swalbe.Sys(sys, kind="thermal")
+    # Using a wall
+    obst = zeros(30 )
+    obst[1]=1
+    obst[end]=1
+    sysBC = Swalbe.SysConstWithBound_1D{Float64}(obs=obst, L=30, param=Swalbe.Taumucs(τ=0.75))
+    Swalbe.obslist!(sysBC)
+    st1dBC = Swalbe.Sys(sysBC, kind="gamma_bound")
     onebytau = 1.0/0.75
     omega = 1.0 - 1.0/0.75
     @testset "Dummy dists τ=1 no forces 1D" begin
         sys = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(τ=1.0))
+        sysBC = Swalbe.SysConstWithBound_1D{Float64}(obs=obst, L=30, param=Swalbe.Taumucs(τ=1.0))
         Swalbe.BGKandStream!(fout, feq, ftemp, zeros(30), 1.0)
         Swalbe.BGKandStream!(st1d, sys)
         Swalbe.BGKandStream!(st1d2, sys)
-        for i in [(fout, feq), (st1d.fout, st1d.feq), (st1d2.basestate.fout, st1d2.basestate.feq)]
+        Swalbe.BGKandStream!(st1dBC, sysBC)
+        for i in [(fout, feq), (st1d.fout, st1d.feq), (st1d2.basestate.fout, st1d2.basestate.feq), 
+            (st1dBC.basestate.fout, st1dBC.basestate.feq)]
             @test all(i[1][:,1] .== i[2][:,1])
             @test all(i[1][:,2] .== circshift(i[2][:,1],1))
             @test all(i[1][:,3] .== circshift(i[2][:,1],-1))
