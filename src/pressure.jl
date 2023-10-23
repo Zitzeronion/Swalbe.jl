@@ -100,7 +100,7 @@ function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
                    .- 10/3 .* f)
     return nothing
 end
-
+# Use the function above for fluctuating simulations on the GPU
 filmpressure!(state::CuState_thermal, sys::SysConst) = filmpressure!(state.pressure, state.height, state.dgrad, sys.param.γ, sys.param.θ, sys.param.n, sys.param.m, sys.param.hmin, sys.param.hcrit)
 # Film pressure with the state struct
 function filmpressure!(state::LBM_state_2D, sys::SysConst; 
