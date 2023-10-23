@@ -494,8 +494,6 @@ function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
-                # For gradients
-                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
                 # Forces
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
@@ -504,7 +502,9 @@ function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
-                CUDA.zeros(T, sysc.Lx, sysc.Ly)
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
+                # For gradients
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8)
             )
             return dyn
         end

@@ -242,6 +242,20 @@ end
 
 thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
 
+function thermal!(state::CuState_thermal, sys::SysConst)
+    CUDA.randn!(state.kbtx)
+    CUDA.randn!(state.kbty)
+    state.kbtx .*= @. sqrt(2 * sys.param.kbt * sys.param.μ * 6 * state.height /
+                    (2 * state.height * state.height +
+                     6 * state.height * sys.param.δ +
+                     3 * sys.param.δ * sys.param.δ))
+    state.kbty .*= @. sqrt(2 * sys.param.kbt * sys.param.μ * 6 * state.height /
+                    (2 * state.height * state.height +
+                     6 * state.height * sys.param.δ +
+                     3 * sys.param.δ * sys.param.δ))
+    return nothing
+end
+
 function thermal!(fluc, height, kᵦT, μ, δ)
     Random.randn!(fluc)
     fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
