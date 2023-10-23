@@ -22,13 +22,13 @@ function torus_stability(
 )
     println("Running a simulation on rivulet stability\nThe rivulet is curved and resembles a torus")
     state = Swalbe.Sys(sys, device)
-    height = Swalbe.torus(sys.Lx, sys.Ly, rr, R, 0.5, (sys.Lx÷2, sys.Ly÷2))
-    h = (height ./ maximum(height)) .* h₀ .+ randn() .* ϵ
-
+    # Set up initial condition
+    h = Swalbe.torus(sys.Lx, sys.Ly, rr, R, sys.param.θ, (sys.Lx÷2, sys.Ly÷2))
+    # Push it to the desired device
     if device == "CPU"
         state.height .= h
     elseif device == "GPU"
-        state.height = CUDA.adapt(CUDA.CuArray, h)
+        CUDA.copyto!(state.height, h)
     end
     println("Initial condition has been computed on the $(device)")
     Swalbe.equilibrium!(state, sys)

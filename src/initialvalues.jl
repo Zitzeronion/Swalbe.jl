@@ -139,7 +139,7 @@ CartesianIndex(100, 1)
 
 See also: [`rivulet`](@ref), [`singledroplet`](@ref), [`two_droplets`](@ref)
 """
-function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05)
+function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05; noise=0.0)
 	h = zeros(lx,ly)
 	for i in eachindex(h[:,1]), j in eachindex(h[1,:])
 		coord = sqrt((i-center[1])^2 + (j-center[2])^2)
@@ -157,7 +157,7 @@ function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05)
         if correction < hmin
             h[i,j] = hmin
         else
-            h[i,j] = correction
+            h[i,j] = correction + randn()*noise
         end
     end
 	return h
