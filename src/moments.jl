@@ -42,18 +42,18 @@ Test Passed
 """
 function moments!(height, velx, vely, fout)
     # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
+    _, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
     # Compute the height
     sum!(height, fout)
     # and the velocities (as simple as possible)
-    velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ height
-    vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
+    velx .= @. (f1 - f3 + f5 - f6 - f7 + f8) / height
+    vely .= @. (f2 - f4 + f5 + f6 - f7 - f8) / height
     return nothing
 end
 
 function moments!(height::Vector, vel, fout)
   # Get views of the populations
-  f0, f1, f2 = Swalbe.viewdists_1D(fout) 
+  _, f1, f2 = Swalbe.viewdists_1D(fout) 
   # Compute the height
   sum!(height, fout)
   # and the velocities (as simple as possible)

@@ -63,35 +63,35 @@ Test Passed
 function equilibrium!(feq, height, velocityx, velocityy, vsquare, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(feq) 
-    # Some constants, gravity and weights
+    # Gravity and weights
     g0 = 1.5 * gravity
     w1 = 1/9
     w5 = 1/36
+    # Expansion coefficients velocity space
+    b = 3
+    c = 4.5
+    d = 1.5
 
-    vsquare .= velocityx .* velocityx .+ velocityy .* velocityy 
+    vsquare .= @. velocityx * velocityx + velocityy * velocityy 
 
     # Zeroth dist
-    f0 .= height .* (1 .- 5/6 .* gravity .* height .- 2/3 .* vsquare)
+    f0 .= @. height * (1 - 5/6 * gravity * height - 2/3 * vsquare)
     # First
-    f1 .= w1 .* height .* (g0 .* height .+ 3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
+    f1 .= @. w1 * height * (g0 * height + b * velocityx + c * velocityx^2 - d * vsquare)
     # Second
-    f2 .= w1 .* height .* (g0 .* height .+ 3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
+    f2 .= @. w1 * height * (g0 * height + b * velocityy + c * velocityy^2 - d * vsquare)
     # Third
-    f3 .= w1 .* height .* (g0 .* height .- 3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
+    f3 .= @. w1 * height * (g0 * height - b * velocityx + c * velocityx^2 - d * vsquare)
     # Forth
-    f4 .= w1 .* height .* (g0 .* height .- 3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
+    f4 .= @. w1 * height * (g0 * height - b * velocityy + c * velocityy^2 - d * vsquare)
     # Fifth
-    f5 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityx .+ velocityy) .+ 
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
+    f5 .= @. w5 * height * (g0 * height + b * (velocityx + velocityy) + c * (velocityx + velocityy)^2 - d * vsquare)
     # Sixth
-    f6 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityy .- velocityx) .+ 
-                         4.5 .* (velocityy .- velocityx).^2 .- 1.5 .* vsquare)
+    f6 .= @. w5 * height * (g0 * height + b * (velocityy - velocityx) + c * (velocityy - velocityx)^2 - d * vsquare)
     # Seventh
-    f7 .= w5 .* height .* (g0 .* height .- 3 .* (velocityx .+ velocityy) .+
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
+    f7 .= @. w5 * height * (g0 * height - b * (velocityx + velocityy) + c * (velocityx + velocityy)^2 - d * vsquare)
     # Eigth
-    f8 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityx .- velocityy) .+ 
-                         4.5 .* (velocityx .- velocityy).^2 .- 1.5 .* vsquare)
+    f8 .= @. w5 * height * (g0 * height + b * (velocityx - velocityy) + c * (velocityx - velocityy)^2 - d * vsquare)
     return nothing
 end
 
@@ -141,13 +141,15 @@ Test Passed
 function equilibrium!(feq, height, velocity, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
     f0, f1, f2 = viewdists_1D(feq) 
-    
+    a = 0.25
+    b = 0.5
+
     # Zeroth dist
-    f0 .= height .* (1 .- 0.5 .* gravity .* height .- velocity.^2)
+    f0 .= @. height * (1 - b * gravity * height - velocity^2)
     # First
-    f1 .= height .* (0.25 .* gravity .* height .+ 0.5 .* velocity .+ 0.5 .* velocity.^2)
+    f1 .= @. height * (a * gravity * height + b * velocity + b * velocity^2)
     # Second
-    f2 .= height .* (0.25 .* gravity .* height .- 0.5 .* velocity .+ 0.5 .* velocity.^2)
+    f2 .= @. height * (a * gravity * height - b * velocity + b * velocity^2)
     
     return nothing
 end
