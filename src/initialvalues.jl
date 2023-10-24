@@ -67,41 +67,44 @@ CartesianIndex(100, 1)
 See also: [`singledroplet`](@ref), [`two_droplets`](@ref)
 """
 
-function rivulet(sys::SysConst; radius=50, θ=sys.param.θ, orientation=:y, center=50)
+function rivulet(Lx, Ly, radius, θ, orientation, center, hmin=0.05; noise=0.0)
     # area = 2π * radius^2 * (1- cospi(θ))
-    height = zeros(sys.Lx, sys.Ly)
+    height = zeros(Lx, Ly)
     if orientation == :y
-        @inbounds for i in 1:sys.Lx
-            for j in 1:sys.Ly
+        @inbounds for i in eachindex(height[:,begin])
+            for j in eachindex(height[begin, :])
                 circ = sqrt((i-center)^2)
                 if circ <= radius
-                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius + randn()*noise
                 else
-                    height[i,j] = sys.param.hcrit
+                    height[i,j] = hmin
                 end
             end
         end
     elseif orientation == :x 
-        @inbounds for i in 1:sys.Lx
-            for j in 1:sys.Ly
+        @inbounds for i in eachindex(height[:,begin])
+            for j in eachindex(height[begin, :])
                 circ = sqrt((j-center)^2)
                 if circ <= radius
-                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius + randn()*noise
                 else
-                    height[i,j] = sys.param.hcrit
+                    height[i,j] = hmin
                 end
             end
         end
     end
-    @inbounds for i in 1:sys.Lx
-        for j in 1:sys.Ly
-            if height[i,j] <= sys.param.hcrit
-                height[i,j] = sys.param.hcrit
+    @inbounds for i in eachindex(height[:,begin])
+        for j in eachindex(height[begin, :])
+            if height[i,j] <=  hmin
+                height[i,j] = hmin
             end
         end
     end
     return height
 end
+
+rivulet(sys::Swalbe.SysConst, radius, orientation, center) = rivulet(sys.Lx, sys.Ly, radius, sys.param.θ, 
+                                                                     orientation, center, sys.param.hcrit)
 
 """
     torus(lx, ly, r₁, R₂, θ, center, hmin)

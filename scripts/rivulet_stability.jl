@@ -1,13 +1,13 @@
 using DrWatson
-@quickactivate "Swalbe"
+@quickactivate :Swalbe
 using CUDA, DataFrames, FileIO, Dates
 # CUDA.device!(1)
 
 # Fluid dynamics we need for the experiment
 """
-    torus_stability
+    rivulet_stability
 
-Simulation of a thin liquid ring with little noise added to the interface.
+Simulation of a thin liquid rivulet with little noise added to the interface.
 
 Checking the stability of a liquid rivulet under the influence of different forces.
 What we consider here is the athermal or deterministic case as well as the fluctuating case.
@@ -24,9 +24,10 @@ The thermal fluctuations are considered using the fluctuating thin film equation
 - `verbos::bool`: Switch to make the simulation write to console while running
 
 """
-function torus_stability(
+function rivulet_stability(
     sys::Swalbe.SysConst, 
-    device::String; 
+    device::String;
+    shape = :ring, 
     R = 150,
     rr = 100,
     ϵ = 0.01,
@@ -37,7 +38,11 @@ function torus_stability(
     println("Running a simulation on rivulet stability\nThe rivulet is curved and resembles a torus")
     state = Swalbe.Sys(sys, device, kind="thermal")
     # Set up initial condition
-    h = Swalbe.torus(sys.Lx, sys.Ly, rr, R, sys.param.θ, (sys.Lx÷2, sys.Ly÷2), noise=ϵ)
+    if shape == :ring
+        h = Swalbe.torus(sys.Lx, sys.Ly, rr, R, sys.param.θ, (sys.Lx÷2, sys.Ly÷2), noise=ϵ)
+    elseif shape == :rivulet
+        h = Swalbe.rivulet(sys.Lx, sys.Ly, rr, sys.param.θ, :y, sys.Lx÷2, sys.param.hcrit, noise=ϵ)
+    end
     # Push it to the desired device
     if device == "CPU"
         state.height .= h
@@ -79,14 +84,15 @@ function torus_stability(
 end
 
 # Set up the simulation 
-sys = Swalbe.SysConst(256, 256, Swalbe.Taumucs(Tmax=100000))
+sys = Swalbe.SysConst(256, 256, Swalbe.Taumucs(Tmax=10000, kbt=0.0))
 
-f = torus_stability(sys, "GPU", R=100, rr=80, dump=sys.param.tdump)
-
-for t in sys.param.Tmax÷sys.param.tdump
-    df_fluid["h_$(t*sys.tdump)"] = fluid[t,:]
+fluid = torus_stability(sys, "GPU", R=100, rr=80, dump=sys.param.tdump)
+df_fluid = Dict()
+for t in 1:sys.param.Tmax÷sys.param.tdump
+    println("In saving loop at $(t) with $(size(fluid[t,:]))")
+    df_fluid["h_$(t*sys.param.tdump)"] = fluid[t,:]
 end
 
 println("Saving rivulet snapshots to disk")
 save_ang = Int(round(rad2deg(π*sys.param.θ)))
-save("data/Rivulets/height_tmax_$(sys.param.Tmax)_runDate_$(year(today()))_$(month(today()))_$(day(today()))_$(hour(today()))_$(minute(today()))_$(second(today())).jld2", df_fluid)
+save("data/Rivulets/height_ang_$(save_ang)_kbt_$(sys.param.kbt)_runDate_$(year(today()))_$(month(today()))_$(day(today()))_$(hour(now()))_$(minute(now()))_$(second(now())).jld2", df_fluid)

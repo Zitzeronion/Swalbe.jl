@@ -48,14 +48,17 @@
         θ = 1/4
         lx, ly = 150, 200
         c = 80
-        sys = Swalbe.SysConst(Lx=lx, Ly=ly, param=Swalbe.Taumucs())
-        height = Swalbe.rivulet(sys, radius=rad, θ=θ, center=c)
-        @test isa(height, Matrix{Float64})
-        @test size(height) == (lx,ly)
-        @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.0001
-        @test sum(height[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
+        h = Swalbe.rivulet(lx, ly, rad, θ, :y, c, 0.05)
+        sys = Swalbe.SysConst(Lx=lx, Ly=ly, param=Swalbe.Taumucs(θ=θ))
+        height = Swalbe.rivulet(sys, rad, :y, c)
+        for i in [h, height]
+            @test isa(i, Matrix{Float64})
+            @test size(i) == (lx,ly)
+            @test findmax(i)[1] ≈ rad * (1 - cospi(θ)) atol=0.0001
+            @test sum(i[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
+        end
         # Test with different orientation
-        height = Swalbe.rivulet(sys, radius=rad, orientation=:x, θ=θ, center=c)
+        height = Swalbe.rivulet(sys, rad, :x, c)
         @test sum(height[:,c]) ≈ (rad * (1 - cospi(θ)))*sys.Lx atol=0.0001
     end
 
