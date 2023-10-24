@@ -87,17 +87,14 @@ function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
     2. Part due to the powerlaw
     =#
     if n == 9 && m == 3
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                     .* (fast_93.(hmin./(f .+ hcrit))))
+        output .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) * (fast_93(hmin/(f + hcrit))))
     elseif n==3 && m==2
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                     .* (fast_32.(hmin./(f .+ hcrit))))
+        output .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) * (fast_32(hmin/(f + hcrit))))
     else 
         throw(DomainError((n,m), "These exponents have not been used so far please take a look at `pressure.jl` and open an issue if there are questions"))
     end
-    output .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* f)
+    output .-= @. γ * (2/3 * (hjp + hip + him + hjm) 
+                     + 1/6 * (hipjp + himjp + himjm + hipjm) - 10/3 * f)
     return nothing
 end
 # Use the function above for fluctuating simulations on the GPU
@@ -117,13 +114,12 @@ function filmpressure!(state::LBM_state_2D, sys::SysConst;
     circshift!(himjm, state.height, (-1,-1))
     circshift!(hipjm, state.height, (1,-1))
     # First the contact angle parameter part
-    state.pressure .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                      .* (power_broad.(hmin ./ (state.height .+ hcrit), n)
-                      .- power_broad.(hmin ./ (state.height .+ hcrit), m)) )
+    state.pressure .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+                      * (power_broad(hmin / (state.height + hcrit), n)
+                      - power_broad(hmin / (state.height + hcrit), m)))
     # Now the gradient
-    state.pressure .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* state.height)
+    state.pressure .-= @. γ * (2/3 * (hjp + hip + him + hjm) 
+                             + 1/6 * (hipjp + himjp + himjm + hipjm) - 10/3 * state.height)
     return nothing
 end
 
@@ -141,13 +137,12 @@ function filmpressure!(state::Expanded_2D, sys::SysConst;
     circshift!(himjm, state.basestate.height, (-1,-1))
     circshift!(hipjm, state.basestate.height, (1,-1))
     # First the contact angle parameter part
-    state.basestate.pressure .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                      .* (power_broad.(hmin ./ (state.basestate.height .+ hcrit), n)
-                      .- power_broad.(hmin ./ (state.basestate.height .+ hcrit), m)) )
+    state.basestate.pressure .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+                      * (power_broad(hmin / (state.basestate.height + hcrit), n)
+                      - power_broad(hmin / (state.basestate.height + hcrit), m)))
     # Now the gradient
-    state.basestate.pressure .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* state.basestate.height)
+    state.basestate.pressure .-= @. γ * (2/3 * (hjp + hip + him + hjm) 
+                                       + 1/6 * (hipjp + himjp + himjm + hipjm) - 10/3 * state.basestate.height)
     return nothing
 end
 
@@ -163,15 +158,13 @@ function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
     2. Part due to the powerlaw
     =#
     if n == 9 && m == 3
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                     .* (fast_93.(hmin./(f .+ hcrit))))
+        output .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) * (fast_93(hmin/(f + hcrit))))
     elseif n==3 && m==2
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-        .* (fast_32.(hmin./(f .+ hcrit))))
+        output .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) * (fast_32(hmin/(f + hcrit))))
     else
         throw(DomainError((n,m), "These exponents have not been used so far please take a look at `pressure.jl` and open an issue if there are questions"))
     end
-    output .-= γ .* (hip .- 2 .* f .+ him)
+    output .-= @. γ * (hip - 2 * f + him)
     return nothing
 end
 
@@ -184,11 +177,11 @@ function filmpressure!(state::LBM_state_1D, sys::Consts_1D;
     circshift!(hip, state.height, 1)
     circshift!(him, state.height, -1)
     
-    @. state.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+    state.pressure .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
                  * (power_broad(hmin/(state.height + hcrit), n)
                   - power_broad(hmin/(state.height + hcrit), m)) )
 
-    @. state.pressure .-= γ * (hip - 2 * state.height + him)
+    state.pressure .-= @. γ * (hip - 2 * state.height + him)
     return nothing
 end
 
@@ -200,11 +193,11 @@ hip, him = viewneighbors_1D(state.basestate.dgrad)
 circshift!(hip, state.basestate.height, 1)
 circshift!(him, state.basestate.height, -1)
 
-@. state.basestate.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+state.basestate.pressure .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
              * (power_broad(hmin/(state.basestate.height + hcrit), n)
               - power_broad(hmin/(state.basestate.height + hcrit), m)) )
 
-@. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
+state.basestate.pressure .-= @. γ * (hip - 2 * state.basestate.height + him)
 return nothing
 end
 
@@ -216,16 +209,16 @@ hip, him = viewneighbors_1D(state.basestate.dgrad)
 circshift!(hip, state.basestate.height, 1)
 circshift!(him, state.basestate.height, -1)
 
-@. state.basestate.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+state.basestate.pressure .= @. -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
              * (power_broad(hmin/(state.basestate.height + hcrit), n)
               - power_broad(hmin/(state.basestate.height + hcrit), m)) )
 # Should be fine as long as τ = 1
-ft0, ft1, ft2 = viewdists_1D(state.basestate.ftemp)
+_, ft1, ft2 = viewdists_1D(state.basestate.ftemp)
 # Save pressure contributions so one can evalute their overall contribution
 ft1 .= state.basestate.pressure
 ft2 .= -γ .* (hip .- 2 .* state.basestate.height .+ him)
 
-@. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
+state.basestate.pressure .-= @. γ * (hip - 2 * state.basestate.height + him)
 return nothing
 end
 
@@ -240,11 +233,11 @@ function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit;
     1. Constant part due to angle, n, m, hmin
     2. Part due to the powerlaw
     =#
-    output .= - (γ .+ Gamma .* rho) .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                 .* (power_broad.(hmin./(f .+ hcrit), n)
-                  .- power_broad.(hmin./(f .+ hcrit), m)) )
+    output .= @. - (γ + Gamma * rho) * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
+                 * (power_broad(hmin/(f + hcrit), n)
+                  - power_broad(hmin/(f + hcrit), m)) )
 
-    output .-= (γ .+ Gamma .* rho) .* (hip .- 2 .* f .+ him)
+    output .-= @. (γ + Gamma * rho) * (hip - 2 * f + him)
     return nothing
 end
 
