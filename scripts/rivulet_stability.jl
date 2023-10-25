@@ -5,7 +5,7 @@ using CUDA, DataFrames, FileIO, Dates
 
 # Fluid dynamics we need for the experiment
 """
-    rivulet_stability
+    rivulet_run
 
 Simulation of a thin liquid rivulet with little noise added to the interface.
 
@@ -24,7 +24,7 @@ The thermal fluctuations are considered using the fluctuating thin film equation
 - `verbos::bool`: Switch to make the simulation write to console while running
 
 """
-function rivulet_stability(
+function rivulet_run(
     sys::Swalbe.SysConst, 
     device::String;
     shape = :ring, 
@@ -86,7 +86,7 @@ end
 # Set up the simulation 
 sys = Swalbe.SysConst(256, 256, Swalbe.Taumucs(Tmax=10000, kbt=0.0))
 
-fluid = torus_stability(sys, "GPU", R=100, rr=80, dump=sys.param.tdump)
+fluid = rivulet_run(sys, "GPU", R=100, rr=80, dump=sys.param.tdump)
 df_fluid = Dict()
 for t in 1:sys.param.Tmax÷sys.param.tdump
     println("In saving loop at $(t) with $(size(fluid[t,:]))")
