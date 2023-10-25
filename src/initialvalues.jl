@@ -50,9 +50,9 @@ Generates a rivulet with contact angle `θ`, sphere radius `radius` and centered
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> rad = 45; sys = Swalbe.SysConst(Lx=200, Ly=200, param=Swalbe.Taumucs());
+julia> rad = 45; c = 100; sys = Swalbe.SysConst(Lx=200, Ly=200, param=Swalbe.Taumucs());
 
-julia> height = Swalbe.rivulet(sys,radius=rad, center=100);
+julia> height = Swalbe.rivulet(sys, rad, :y, c);
 
 julia> @test maximum(height) == rad * (1 - cospi(sys.param.θ)) # Simple geometry
 Test Passed
