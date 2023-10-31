@@ -126,15 +126,15 @@ Generates a cut torus with contact angle `θ`, (`x`,`y`) radius `R₂` and (`x`,
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> rad = 45; sys = Swalbe.SysConst(Lx=200, Ly=200, param=Swalbe.Taumucs());
+julia> rad = 45; R = 80; θ = 1/9; center = (128, 128);
 
-julia> height = Swalbe.rivulet(sys,radius=rad, center=100);
+julia> height = Swalbe.torus(256, 256, rad, R, θ, center);
 
-julia> @test maximum(height) == rad * (1 - cospi(sys.param.θ)) # Simple geometry
+julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) # Simple geometry
 Test Passed
 
-julia> argmax(height) # Which is constistent with the center!
-CartesianIndex(100, 1)
+julia> argmax(height) # On the outer ring!
+CartesianIndex(128, 48)
 
 ```
 
