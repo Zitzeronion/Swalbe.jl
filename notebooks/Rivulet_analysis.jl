@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.30
+# v0.19.31
 
 using Markdown
 using InteractiveUtils
@@ -77,6 +77,10 @@ data_n3m2 = [(30, 80, 0.0, 26, 18, 27), #1
 	(80, 120, 0.0, 27, 9, 0), 			#6
 	(30, 80, 1.0e-6, 27, 12, 0), 		#7
 	(30, 120, 1.0e-6, 27, 14, 54), 		#8
+	(50, 80, 1.0e-6, 27, 17, 47), 		#9
+	(50, 120, 1.0e-6, 27, 20, 43), 		#10
+	(80, 80, 1.0e-6, 27, 23, 37), 		#11
+	(80, 120, 1.0e-6, 28, 2, 32), 		#12
 ]
 
 # ╔═╡ 0d903368-aef8-4b8d-96f9-c15dcb895a05
@@ -109,15 +113,30 @@ begin
 	heatmap_data(data32, t=25000)
 end
 
-# ╔═╡ da3d16c0-efd5-4818-800f-d51a54201544
-begin
-	p = heatmap_data(data32, t=25000)
+# ╔═╡ 81d255ea-1ab3-4635-ab4c-66100a820b28
+"""
+	do_gif(data, filename::String)
+
+Creates an animation of the heightfield for the available time steps.
+"""
+function do_gif(data, filename::String)
+	p = heatmap_data(data, t=25000)
 	anim = Animation()
-	for x = 50000:25000:5000000
-    	plot!(heatmap_data(data32, t=x))
-    	frame(anim)
+	for x in 50000:25000:5000000
+		plot(heatmap_data(data, t=x))
+		frame(anim)
 	end
-	gif(anim, "../assets/torus-droplet.gif")
+	gif(anim, "../assets/$(filename).gif")
+end
+
+# ╔═╡ da3d16c0-efd5-4818-800f-d51a54201544
+for i in 1:12
+	data = read_data(R=data_n3m2[i][1], r=data_n3m2[i][2], kbT=data_n3m2[i][3], day=data_n3m2[i][4], hour=data_n3m2[i][5], minute=data_n3m2[i][6], nm=32)
+	if data_n3m2[i][3] == 0.0
+		do_gif(data, "R_$(data_n3m2[i][1])_rr_$(data_n3m2[i][2])_kbt_off")
+	elseif data_n3m2[i][3] == 1.0e-6
+		do_gif(data, "R_$(data_n3m2[i][1])_rr_$(data_n3m2[i][2])_kbt_on")
+	end
 end
 
 # ╔═╡ 0d5a3663-ef90-43e8-963d-217f6e5e9847
@@ -1344,13 +1363,14 @@ version = "1.4.1+1"
 # ╟─0acf9712-b27c-40c8-9bec-64d6389ce2c4
 # ╟─eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
 # ╟─2aa6c0df-ec1f-4f78-a478-173ad3122057
-# ╟─c9572357-8d97-47a7-914a-91c0b452eb6b
+# ╠═c9572357-8d97-47a7-914a-91c0b452eb6b
 # ╠═0d903368-aef8-4b8d-96f9-c15dcb895a05
-# ╠═3f1fd3f7-580c-43cf-8f1c-a7f592c159d6
-# ╠═f72c334d-dff7-4ad0-8965-ab41c0100fb0
+# ╟─3f1fd3f7-580c-43cf-8f1c-a7f592c159d6
+# ╟─f72c334d-dff7-4ad0-8965-ab41c0100fb0
 # ╠═723f00bc-425b-4ec4-bd3a-eaebb7cb2d06
 # ╠═44ebbc4c-752f-4d36-b5d0-c185d6650972
 # ╠═d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
+# ╠═81d255ea-1ab3-4635-ab4c-66100a820b28
 # ╠═da3d16c0-efd5-4818-800f-d51a54201544
 # ╠═0d5a3663-ef90-43e8-963d-217f6e5e9847
 # ╟─00000000-0000-0000-0000-000000000001

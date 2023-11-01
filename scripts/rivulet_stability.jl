@@ -89,10 +89,10 @@ timeInterval = 25000
 # Make a parameter sweep
 for kb in [0.0, 1e-6]
     sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=5000000, kbt=kb, n=3, m=2))
-    for outerRad in [30, 50, 80]
-            for innerRad in [80, 120]
+    for outerRad in [30, 50, 80, 120]
+            for innerRad in [40, 80, 120, 200]
                     # Run the simulation
-                    fluid = rivulet_run(sys, "GPU", R=100, rr=80, dump=timeInterval)
+                    fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, dump=timeInterval)
                     df_fluid = Dict()
                     nSnapshots = sys.param.Tmax ÷ timeInterval
                     for t in 1:nSnapshots
