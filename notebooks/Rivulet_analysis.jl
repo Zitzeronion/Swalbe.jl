@@ -1,18 +1,8 @@
 ### A Pluto.jl notebook ###
-# v0.19.31
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
-
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
 
 # ╔═╡ f268582b-0756-41cf-910d-7a57b698451d
 using FileIO, PlutoUI, Plots, DataFrames, CSV, JLD2
@@ -20,16 +10,25 @@ using FileIO, PlutoUI, Plots, DataFrames, CSV, JLD2
 # ╔═╡ 94b9bdb0-73ee-11ee-10e9-e93688ea4523
 md"# Rivulet analysis"
 
-# ╔═╡ 78c4e52b-cf96-4d9c-92f6-e3aa03022ed1
-pwd()
-
 # ╔═╡ 0acf9712-b27c-40c8-9bec-64d6389ce2c4
+"""
+	read_data()
+
+Read data from a well defined path based on parameters
+
+# Arguments
+- R : Radius of the (x,y)-plane
+- r : Radius of the (x,z) or (y,z)-plane
+- kbt : Energy that drives thermal fluctuations
+- nm : Parameters of the disjoining pressure, only 32 available
+- θ : Contact angle of the substrate
+- day : Day the simulation ended
+- month : Month the simulation ended in
+- hour : Hour at which the simulation finished
+- minute : Minute at which the simulation ended
+"""
 function read_data(;R=50, r=80, kbT=0.0, nm=93, θ=20, day=26, month=10, hour=7, minute=5)
-	if nm == 93
-		file_name = "../data/Rivulets/height_R_$(R)_r_$(r)ang_$(θ)_kbt_$(kbT)_runDate_2023_$(month)_$(day)_$(hour)_$(minute).jld2"
-	elseif nm == 32
-		file_name = "../data/Rivulets/height_R_$(R)_r_$(r)_ang_$(θ)_kbt_$(kbT)_nm_3-2_runDate_2023_$(month)_$(day)_$(hour)_$(minute).jld2"
-	end
+	file_name = "../data/Rivulets/height_R_$(R)_r_$(r)_ang_$(θ)_kbt_$(kbT)_nm_3-2_runDate_2023$(month)$(day)$(hour)$(minute).jld2"
 	if isfile(file_name) 
 		data = load(file_name)
 	else 
@@ -40,77 +39,14 @@ function read_data(;R=50, r=80, kbT=0.0, nm=93, θ=20, day=26, month=10, hour=7,
 end
 
 # ╔═╡ eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
+"""
+	heatmap_data(data; time)
+
+Plots a heatmap of the height of some simulation `data` at given `time`.
+"""
 function heatmap_data(data; t=25000)
 	h = reshape(data["h_$(t)"], 512, 512)
 	heatmap(h, aspect_ratio=1, c=:viridis)
-end
-
-# ╔═╡ 2aa6c0df-ec1f-4f78-a478-173ad3122057
-availdata = [(50, 80, 0.0, 25, 16, 45), #1
-	(50, 90, 0.0, 25, 19, 38), 			#2
-	(50, 100, 0.0, 25, 22, 29), 		#3
-	(60, 80, 0.0, 26, 1, 25), 			#4
-	(60, 90, 0.0, 26, 4, 19), 			#5
-	(60, 100, 0.0, 26, 7, 15), 			#6
-	(70, 80, 0.0, 26, 10, 10), 			#7
-	(70, 90, 0.0, 26, 13, 7), 			#8
-	(70, 100, 0.0, 26, 16, 3), 			#9
-	(80, 80, 0.0, 26, 19, 5), 			#10
-	(80, 90, 0.0, 26, 22, 5), 			#11
-	(80, 100, 0.0, 27, 1, 7), 			#12
-	(50, 80, 1.0e-6, 26, 13, 40), 		#13
-	(50, 90, 1.0e-6, 26, 16, 56), 		#14
-	(50, 100, 1.0e-6, 26, 20, 12), 		#15
-	(60, 80, 1.0e-6, 26, 23, 29), 		#16
-	(60, 90, 1.0e-6, 27, 2, 46), 		#17
-	(60, 100, 1.0e-6, 27, 6, 3), 		#18
-	(70, 80, 1.0e-6, 27, 9, 20), 		#19
-	(70, 90, 1.0e-6, 27, 12, 37), 		#20
-]
-
-# ╔═╡ c9572357-8d97-47a7-914a-91c0b452eb6b
-data_n3m2 = [(30, 80, 0.0, 26, 18, 27), #1 
-	(30, 120, 0.0, 26, 21, 21), 		#2
-	(50, 80, 0.0, 27, 0, 23), 			#3
-	(50, 120, 0.0, 27, 3, 17), 			#4
-	(80, 80, 0.0, 27, 6, 9), 			#5
-	(80, 120, 0.0, 27, 9, 0), 			#6
-	(30, 80, 1.0e-6, 27, 12, 0), 		#7
-	(30, 120, 1.0e-6, 27, 14, 54), 		#8
-	(50, 80, 1.0e-6, 27, 17, 47), 		#9
-	(50, 120, 1.0e-6, 27, 20, 43), 		#10
-	(80, 80, 1.0e-6, 27, 23, 37), 		#11
-	(80, 120, 1.0e-6, 28, 2, 32), 		#12
-]
-
-# ╔═╡ 0d903368-aef8-4b8d-96f9-c15dcb895a05
-@bind t Slider(1:200)
-
-# ╔═╡ 3f1fd3f7-580c-43cf-8f1c-a7f592c159d6
-begin
-	dataset = 15
-	data = read_data(R=availdata[dataset][1], r=availdata[dataset][2], kbT=availdata[dataset][3], day=availdata[dataset][4], hour=availdata[dataset][5], minute=availdata[dataset][6])
-	Δt = t*25000
-	heatmap_data(data, t=Δt)
-end
-
-# ╔═╡ f72c334d-dff7-4ad0-8965-ab41c0100fb0
-diff = data["h_25000"] .- data["h_5000000"]
-
-# ╔═╡ 723f00bc-425b-4ec4-bd3a-eaebb7cb2d06
-heatmap(reshape(diff, 512, 512), aspect_ratio=1, c=:viridis)
-
-# ╔═╡ 44ebbc4c-752f-4d36-b5d0-c185d6650972
-begin
-	plot(reshape(data["h_25000"], 512,512)[256, 100:200], l=(3, :solid), label="t25k")
-	plot!(reshape(data["h_5000000"], 512,512)[256, 100:200], l=(3, :dash), label="t5m")
-end
-
-# ╔═╡ d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
-begin
-	nmset = 1
-	data32 = read_data(R=data_n3m2[nmset][1], r=data_n3m2[nmset][2], kbT=data_n3m2[nmset][3], day=data_n3m2[nmset][4], hour=data_n3m2[nmset][5], minute=data_n3m2[nmset][6], nm=32)
-	heatmap_data(data32, t=25000)
 end
 
 # ╔═╡ 81d255ea-1ab3-4635-ab4c-66100a820b28
@@ -129,18 +65,58 @@ function do_gif(data, filename::String)
 	gif(anim, "../assets/$(filename).gif")
 end
 
+# ╔═╡ 6e82547e-c935-4a3e-b736-a0dae07bfb50
+"""
+	measure_radius(data)
+
+Measures the diameter of the fluid torus.
+"""
+function measure_radius(data; t=25000, δ=0.055)
+	h_data_slice = reshape(data["h_$(t)"], 512, 512)[256, :]
+	findfirst(h_data_slice .> δ)
+end
+
+# ╔═╡ c9572357-8d97-47a7-914a-91c0b452eb6b
+data = [(30, 40, 0.0, 10, 31, 19, 47),  #1 
+	(30, 80, 0.0, 10, 31, 22, 40), 		#2
+	(30, 120, 0.0, 11, 1, 1, 35), 		#3
+	(30, 200, 0.0, 11, 1, 4, 31), 		#4
+	(50, 40, 0.0, 11, 1, 7, 26), 		#5
+	(50, 80, 0.0, 11, 1, 10, 21), 		#6
+	(50, 120, 0.0, 11, 1, 13, 16), 		#7
+	(50, 200, 0.0, 11, 1, 16, 11), 		#8
+	(80, 40, 0.0, 11, 1, 19, 6), 		#9
+	(80, 80, 0.0, 11, 1, 22, 0), 		#10
+	(80, 120, 0.0, 11, 2, 0, 55), 		#11
+	(80, 200, 0.0, 11, 2, 3, 49), 		#12
+	(120, 40, 0.0, 11, 2, 6, 43), 		#13
+	(120, 80, 0.0, 11, 2, 9, 37), 		#14
+]
+
+# ╔═╡ d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
+begin
+	nmset = 13
+	dataH = read_data(R=data[nmset][1], r=data[nmset][2], kbT=data[nmset][3], month=data[nmset][4], day=data[nmset][5], hour=data[nmset][6], minute=data[nmset][7], nm=32)
+	heatmap_data(dataH, t=25000)
+end
+
 # ╔═╡ da3d16c0-efd5-4818-800f-d51a54201544
-for i in 1:12
-	data = read_data(R=data_n3m2[i][1], r=data_n3m2[i][2], kbT=data_n3m2[i][3], day=data_n3m2[i][4], hour=data_n3m2[i][5], minute=data_n3m2[i][6], nm=32)
-	if data_n3m2[i][3] == 0.0
-		do_gif(data, "R_$(data_n3m2[i][1])_rr_$(data_n3m2[i][2])_kbt_off")
-	elseif data_n3m2[i][3] == 1.0e-6
-		do_gif(data, "R_$(data_n3m2[i][1])_rr_$(data_n3m2[i][2])_kbt_on")
+for i in 1:14
+	filename = "../assets/R_$(data[i][1])_rr_$(data[i][2])_kbt_off.gif"
+	if isfile(filename)
+		println("There is alread a file called R_$(data[i][1])_rr_$(data[i][2])_kbt_off.gif in the assets folder")
+	else
+		h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], nm=32)
+		if data[i][3] == 0.0
+			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_off")
+		elseif data[i][3] == 1.0e-6
+			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_on")
+		end
 	end
 end
 
 # ╔═╡ 0d5a3663-ef90-43e8-963d-217f6e5e9847
-# Write a measure_Δh function tomorrow.
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1359,18 +1335,12 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═94b9bdb0-73ee-11ee-10e9-e93688ea4523
 # ╠═f268582b-0756-41cf-910d-7a57b698451d
-# ╠═78c4e52b-cf96-4d9c-92f6-e3aa03022ed1
 # ╟─0acf9712-b27c-40c8-9bec-64d6389ce2c4
-# ╟─eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
-# ╟─2aa6c0df-ec1f-4f78-a478-173ad3122057
+# ╠═eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
+# ╟─81d255ea-1ab3-4635-ab4c-66100a820b28
+# ╠═6e82547e-c935-4a3e-b736-a0dae07bfb50
 # ╠═c9572357-8d97-47a7-914a-91c0b452eb6b
-# ╠═0d903368-aef8-4b8d-96f9-c15dcb895a05
-# ╟─3f1fd3f7-580c-43cf-8f1c-a7f592c159d6
-# ╟─f72c334d-dff7-4ad0-8965-ab41c0100fb0
-# ╠═723f00bc-425b-4ec4-bd3a-eaebb7cb2d06
-# ╠═44ebbc4c-752f-4d36-b5d0-c185d6650972
 # ╠═d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
-# ╠═81d255ea-1ab3-4635-ab4c-66100a820b28
 # ╠═da3d16c0-efd5-4818-800f-d51a54201544
 # ╠═0d5a3663-ef90-43e8-963d-217f6e5e9847
 # ╟─00000000-0000-0000-0000-000000000001

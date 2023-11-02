@@ -88,9 +88,9 @@ timeInterval = 25000
 
 # Make a parameter sweep
 for kb in [0.0, 1e-6]
-    sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=5000000, kbt=kb, n=3, m=2))
-    for outerRad in [30, 50, 80, 120]
-            for innerRad in [40, 80, 120, 200]
+    sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, kbt=kb, n=3, m=2))
+    for outerRad in [150, 180, 200]
+            for innerRad in [20, 40, 80]
                     # Run the simulation
                     fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, dump=timeInterval)
                     df_fluid = Dict()
@@ -102,7 +102,7 @@ for kb in [0.0, 1e-6]
 
                     println("Saving rivulet snapshots for R=$(outerRad) and r=$(innerRad) to disk")
                     save_ang = Int(round(rad2deg(π*sys.param.θ)))
-                    file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))_$(month(today()))_$(day(today()))_$(hour(now()))_$(minute(now())).jld2"
+                    file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
                     save(file_name, df_fluid)
                     CUDA.reclaim()
                 end
