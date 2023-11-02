@@ -49,16 +49,31 @@ function heatmap_data(data; t=25000)
 	heatmap(h, aspect_ratio=1, c=:viridis)
 end
 
+# ╔═╡ 789e9f0e-863a-4cd5-8f99-f830120e8960
+"""
+	plot_slice(data)
+
+Plots a cut through the rivulet
+"""
+function plot_slice(data; t=25000, window=(false, 80, 110))
+	h = reshape(data["h_$(t)"], 512, 512)
+	if window[1]
+		plot(h[256, window[2]:window[3]])
+	else
+		plot(h[256, :])
+	end
+end
+
 # ╔═╡ 81d255ea-1ab3-4635-ab4c-66100a820b28
 """
 	do_gif(data, filename::String)
 
 Creates an animation of the heightfield for the available time steps.
 """
-function do_gif(data, filename::String)
+function do_gif(data, filename::String; timeMax=5000000)
 	p = heatmap_data(data, t=25000)
 	anim = Animation()
-	for x in 50000:25000:5000000
+	for x in 50000:25000:timeMax
 		plot(heatmap_data(data, t=x))
 		frame(anim)
 	end
@@ -67,56 +82,91 @@ end
 
 # ╔═╡ 6e82547e-c935-4a3e-b736-a0dae07bfb50
 """
-	measure_radius(data)
+	measure_diameter(data)
 
 Measures the diameter of the fluid torus.
 """
-function measure_radius(data; t=25000, δ=0.055)
+function measure_diameter(data; t=25000, δ=0.055)
+	distance = 0
 	h_data_slice = reshape(data["h_$(t)"], 512, 512)[256, :]
-	findfirst(h_data_slice .> δ)
+	riv = findall(h_data_slice .> δ)
+	for j in eachindex(riv[begin+1:end-1])
+		#  Points inside the rivulet -->  do nothing
+		if riv[j+1] - riv[j] == 1
+		# Points next to the "dry" inbetween --> measure distance
+		else
+			# println("These are the values $(riv[j]) $(riv[j+1])")
+			distance = riv[j+1] - riv[j]
+			# println("This is the distance $(riv[j+1] - riv[j])")
+		end
+	end
+	return distance
 end
 
 # ╔═╡ c9572357-8d97-47a7-914a-91c0b452eb6b
 data = [(30, 40, 0.0, 10, 31, 19, 47),  #1 
 	(30, 80, 0.0, 10, 31, 22, 40), 		#2
-	(30, 120, 0.0, 11, 1, 1, 35), 		#3
-	(30, 200, 0.0, 11, 1, 4, 31), 		#4
-	(50, 40, 0.0, 11, 1, 7, 26), 		#5
-	(50, 80, 0.0, 11, 1, 10, 21), 		#6
-	(50, 120, 0.0, 11, 1, 13, 16), 		#7
-	(50, 200, 0.0, 11, 1, 16, 11), 		#8
-	(80, 40, 0.0, 11, 1, 19, 6), 		#9
-	(80, 80, 0.0, 11, 1, 22, 0), 		#10
-	(80, 120, 0.0, 11, 2, 0, 55), 		#11
-	(80, 200, 0.0, 11, 2, 3, 49), 		#12
-	(120, 40, 0.0, 11, 2, 6, 43), 		#13
-	(120, 80, 0.0, 11, 2, 9, 37), 		#14
+	(50, 40, 0.0, 11, 1, 7, 26), 		#3
+	(50, 80, 0.0, 11, 1, 10, 21), 		#4
+	(80, 40, 0.0, 11, 1, 19, 6), 		#5
+	(80, 80, 0.0, 11, 1, 22, 0), 		#6
+	(80, 120, 0.0, 11, 2, 0, 55), 		#7
+	(80, 200, 0.0, 11, 2, 3, 49), 		#8
+	(120, 40, 0.0, 11, 2, 6, 43), 		#9
+	(120, 80, 0.0, 11, 2, 9, 37), 		#10
+	(150, 20, 0.0, 11, 2, 13, 0), 		#11
+	(150, 40, 0.0, 11, 2, 14, 26), 		#12
+	(150, 80, 0.0, 11, 2, 15, 54), 		#13
 ]
 
 # ╔═╡ d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
 begin
-	nmset = 13
+	nmset = 11
 	dataH = read_data(R=data[nmset][1], r=data[nmset][2], kbT=data[nmset][3], month=data[nmset][4], day=data[nmset][5], hour=data[nmset][6], minute=data[nmset][7], nm=32)
 	heatmap_data(dataH, t=25000)
 end
 
+# ╔═╡ 0d6d1370-3e89-438b-8992-a19c55e2b928
+plot_slice(dataH, window=(true, 108, 406))
+
 # ╔═╡ da3d16c0-efd5-4818-800f-d51a54201544
-for i in 1:14
+for i in eachindex(data)
 	filename = "../assets/R_$(data[i][1])_rr_$(data[i][2])_kbt_off.gif"
 	if isfile(filename)
 		println("There is alread a file called R_$(data[i][1])_rr_$(data[i][2])_kbt_off.gif in the assets folder")
 	else
 		h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], nm=32)
 		if data[i][3] == 0.0
-			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_off")
+			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_off", timeMax=2500000)
 		elseif data[i][3] == 1.0e-6
-			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_on")
+			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_on", timeMax=2500000)
 		end
 	end
 end
 
-# ╔═╡ 0d5a3663-ef90-43e8-963d-217f6e5e9847
+# ╔═╡ 4e7487ad-b8e6-43f7-aff1-99d826ee1963
+begin 
+	measurements = DataFrame()
+	for i in eachindex(data)
+		someFrame = DataFrame()
+		h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], nm=32)
+		R = Float64[]
+		for j in 25000:25000:2500000
+			R_measure = measure_diameter(dataH, t=25000)/2
+			push!(R, R_measure)
+		end
+		someFrame.innerR = R
+		someFrame.R = fill(data[i][1],100)
+		someFrame.rr = fill(data[i][2],100)
+		someFrame.kbt = fill(data[i][3],100)
+		someFrame.time = 25000:25000:2500000
+		measurements = hcat(measurements, someFrame)
+	end
+	measurements
+end
 
+# ╔═╡ adf3dbe5-ade0-4949-9507-10b5c8164ddd
+measurements
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1336,12 +1386,15 @@ version = "1.4.1+1"
 # ╠═94b9bdb0-73ee-11ee-10e9-e93688ea4523
 # ╠═f268582b-0756-41cf-910d-7a57b698451d
 # ╟─0acf9712-b27c-40c8-9bec-64d6389ce2c4
-# ╠═eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
+# ╟─eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
+# ╟─789e9f0e-863a-4cd5-8f99-f830120e8960
 # ╟─81d255ea-1ab3-4635-ab4c-66100a820b28
-# ╠═6e82547e-c935-4a3e-b736-a0dae07bfb50
+# ╟─6e82547e-c935-4a3e-b736-a0dae07bfb50
 # ╠═c9572357-8d97-47a7-914a-91c0b452eb6b
 # ╠═d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
+# ╠═0d6d1370-3e89-438b-8992-a19c55e2b928
 # ╠═da3d16c0-efd5-4818-800f-d51a54201544
-# ╠═0d5a3663-ef90-43e8-963d-217f6e5e9847
+# ╠═4e7487ad-b8e6-43f7-aff1-99d826ee1963
+# ╠═adf3dbe5-ade0-4949-9507-10b5c8164ddd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
