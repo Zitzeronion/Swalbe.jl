@@ -87,24 +87,28 @@ end
 timeInterval = 25000
 
 # Make a parameter sweep
-for kb in [0.0, 1e-6]
-    sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, kbt=kb, n=3, m=2))
-    for outerRad in [150, 180, 200]
-            for innerRad in [20, 40, 80]
-                    # Run the simulation
-                    fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, dump=timeInterval)
-                    df_fluid = Dict()
-                    nSnapshots = sys.param.Tmax ÷ timeInterval
-                    for t in 1:nSnapshots
-                        println("In saving loop at $(t) with $(size(fluid[t,:]))")
-                        df_fluid["h_$(t * timeInterval)"] = fluid[t,:]
+for ang in [2/9, 1/6, 1/18]
+    for kb in [0.0, 1e-6]
+        sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, kbt=kb, n=3, m=2, θ=ang))
+        for outerRad in [150, 180, 200]
+                for innerRad in [20, 40, 80]
+                        # Run the simulation
+                        fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, dump=timeInterval)
+                        df_fluid = Dict()
+                        nSnapshots = sys.param.Tmax ÷ timeInterval
+                        for t in 1:nSnapshots
+                            # println("In saving loop at $(t) with $(size(fluid[t,:]))")
+                            df_fluid["h_$(t * timeInterval)"] = fluid[t,:]
+                        end
+                        println("Saving rivulet snapshots for R=$(outerRad) and r=$(innerRad) to disk")
+                        save_ang = Int(round(rad2deg(π*sys.param.θ)))
+                        file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
+                        save(file_name, df_fluid)
+                        CUDA.reclaim()
+                        fluid .= 0.0
+                        df_fluid = Dict()
+                        println("Done with $(ang) $(kb) $(outerRad) $(innerRad)")
                     end
-
-                    println("Saving rivulet snapshots for R=$(outerRad) and r=$(innerRad) to disk")
-                    save_ang = Int(round(rad2deg(π*sys.param.θ)))
-                    file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
-                    save(file_name, df_fluid)
-                    CUDA.reclaim()
                 end
             end
         end

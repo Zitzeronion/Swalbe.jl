@@ -88,19 +88,20 @@ Measures the diameter of the fluid torus.
 """
 function measure_diameter(data; t=25000, δ=0.055)
 	distance = 0
+	inner = 0
+	allr = 0
 	h_data_slice = reshape(data["h_$(t)"], 512, 512)[256, :]
 	riv = findall(h_data_slice .> δ)
-	for j in eachindex(riv[begin+1:end-1])
-		#  Points inside the rivulet -->  do nothing
-		if riv[j+1] - riv[j] == 1
-		# Points next to the "dry" inbetween --> measure distance
-		else
-			# println("These are the values $(riv[j]) $(riv[j+1])")
-			distance = riv[j+1] - riv[j]
-			# println("This is the distance $(riv[j+1] - riv[j])")
+	if length(riv) > 1
+		allr = riv[end] - riv[begin]
+		for j in eachindex(riv[begin+1:end-1])
+			if riv[j+1] - riv[j] > 1
+				distance = riv[j+1] - riv[j]
+				inner = riv[j] - riv[begin]
+			end
 		end
 	end
-	return distance
+	return distance, inner, allr
 end
 
 # ╔═╡ c9572357-8d97-47a7-914a-91c0b452eb6b
@@ -117,6 +118,20 @@ data = [(30, 40, 0.0, 10, 31, 19, 47),  #1
 	(150, 20, 0.0, 11, 2, 13, 0), 		#11
 	(150, 40, 0.0, 11, 2, 14, 26), 		#12
 	(150, 80, 0.0, 11, 2, 15, 54), 		#13
+	(180, 20, 0.0, 11, 2, 17, 23), 		#14
+	(180, 40, 0.0, 11, 2, 18, 49), 		#15
+	(180, 80, 0.0, 11, 2, 20, 16), 		#16
+	(200, 20, 0.0, 11, 2, 21, 43), 		#17
+	(200, 40, 0.0, 11, 2, 23, 8), 		#18
+	(200, 80, 0.0, 11, 3, 0, 34), 		#19
+	(150, 20, 1.0e-6, 11, 3, 1, 59), 	#20
+	(150, 40, 1.0e-6, 11, 3, 3, 25), 	#21
+	(150, 80, 1.0e-6, 11, 3, 4, 50), 	#22
+	(180, 20, 1.0e-6, 11, 3, 6, 16), 	#23
+	(180, 40, 1.0e-6, 11, 3, 7, 41), 	#24
+	(180, 80, 1.0e-6, 11, 3, 9, 7), 	#25
+	(200, 20, 1.0e-6, 11, 3, 10, 32), 	#26
+	(200, 40, 1.0e-6, 11, 3, 15, 17), 	#27
 ]
 
 # ╔═╡ d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
@@ -131,38 +146,52 @@ plot_slice(dataH, window=(true, 108, 406))
 
 # ╔═╡ da3d16c0-efd5-4818-800f-d51a54201544
 for i in eachindex(data)
-	filename = "../assets/R_$(data[i][1])_rr_$(data[i][2])_kbt_off.gif"
+	kbtDict = Dict(0.0 => "kbt_off", 1.0e-6 => "kbt_on")
+	filename = "../assets/R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]]).gif"
 	if isfile(filename)
-		println("There is alread a file called R_$(data[i][1])_rr_$(data[i][2])_kbt_off.gif in the assets folder")
+		println("There is alread a file called R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]]).gif  in the assets folder")
 	else
 		h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], nm=32)
+		println("R=$(data[i][1]) with rr=$(data[i][2]) and kbt=$(data[i][3])")
 		if data[i][3] == 0.0
-			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_off", timeMax=2500000)
+			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]])", timeMax=2500000)
 		elseif data[i][3] == 1.0e-6
-			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_kbt_on", timeMax=2500000)
+			do_gif(h, "R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]])", timeMax=2500000)
 		end
 	end
 end
 
 # ╔═╡ 4e7487ad-b8e6-43f7-aff1-99d826ee1963
 begin 
-	measurements = DataFrame()
-	for i in eachindex(data)
-		someFrame = DataFrame()
-		h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], nm=32)
-		R = Float64[]
-		for j in 25000:25000:2500000
-			R_measure = measure_diameter(dataH, t=25000)/2
-			push!(R, R_measure)
+	path = "/net/euler/zitz/Swalbe.jl/data/DataFrames/radii.csv"
+	measurements = CSV.read(path, DataFrame)
+	measure_new = false
+	if measure_new
+		measurements = DataFrame()
+		for i in eachindex(data)
+			someFrame = DataFrame()
+			h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], nm=32)
+			R = Float64[]
+			rr = Float64[]
+			allr = Float64[]
+			for j in 25000:25000:2500000
+				R_measure = measure_diameter(h, t=j)
+				# Push the radii not the diameters
+				push!(R, R_measure[1]/2)
+				push!(rr, R_measure[2]/2)
+				push!(allr, R_measure[3]/2)
+			end
+			someFrame.major = R
+			someFrame.minor = rr
+			someFrame.outerR = allr
+			someFrame.R = fill(data[i][1],100)
+			someFrame.rr = fill(data[i][2],100)
+			someFrame.kbt = fill(data[i][3],100)
+			someFrame.time = 25000:25000:2500000
+			measurements = vcat(measurements, someFrame)
 		end
-		someFrame.innerR = R
-		someFrame.R = fill(data[i][1],100)
-		someFrame.rr = fill(data[i][2],100)
-		someFrame.kbt = fill(data[i][3],100)
-		someFrame.time = 25000:25000:2500000
-		measurements = hcat(measurements, someFrame)
+		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/radii.csv", measurements)
 	end
-	measurements
 end
 
 # ╔═╡ adf3dbe5-ade0-4949-9507-10b5c8164ddd
@@ -1389,11 +1418,11 @@ version = "1.4.1+1"
 # ╟─eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
 # ╟─789e9f0e-863a-4cd5-8f99-f830120e8960
 # ╟─81d255ea-1ab3-4635-ab4c-66100a820b28
-# ╟─6e82547e-c935-4a3e-b736-a0dae07bfb50
+# ╠═6e82547e-c935-4a3e-b736-a0dae07bfb50
 # ╠═c9572357-8d97-47a7-914a-91c0b452eb6b
-# ╠═d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
-# ╠═0d6d1370-3e89-438b-8992-a19c55e2b928
-# ╠═da3d16c0-efd5-4818-800f-d51a54201544
+# ╟─d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
+# ╟─0d6d1370-3e89-438b-8992-a19c55e2b928
+# ╟─da3d16c0-efd5-4818-800f-d51a54201544
 # ╠═4e7487ad-b8e6-43f7-aff1-99d826ee1963
 # ╠═adf3dbe5-ade0-4949-9507-10b5c8164ddd
 # ╟─00000000-0000-0000-0000-000000000001
