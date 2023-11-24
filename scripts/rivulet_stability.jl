@@ -28,6 +28,7 @@ function rivulet_run(
     sys::Swalbe.SysConst, 
     device::String;
     shape = :ring, 
+    arrested = false,
     R = 150,
     rr = 100,
     ϵ = 0.01,
@@ -43,11 +44,27 @@ function rivulet_run(
     elseif shape == :rivulet
         h = Swalbe.rivulet(sys.Lx, sys.Ly, rr, sys.param.θ, :y, sys.Lx÷2, sys.param.hcrit, noise=ϵ)
     end
-    # Push it to the desired device
+    if arrested
+        theta = zeros(sys.Lx, sys.Ly)
+        # Build a mask with more area
+        mask = Swalbe.torus(sys.Lx, sys.Ly, rr, R, sys.param.θ + 1/36, (sys.Lx÷2, sys.Ly÷2), noise=ϵ)
+        for i in eachindex(mask)
+            if mask[i] > 0.0505
+                theta[i] = sys.param.θ
+            else
+                theta[i] = 1/3
+            end
+        end
+    end
+        # Push it to the desired device
     if device == "CPU"
         state.height .= h
     elseif device == "GPU"
         CUDA.copyto!(state.height, h)
+        if arrested
+            pinned = CUDA.zeros(Float64, sys.Lx, sys.Ly)
+            CUDA.copyto!(pinned, theta)
+        end
     end
     println("Initial condition has been computed on the $(device)")
     Swalbe.equilibrium!(state, sys)
@@ -62,7 +79,11 @@ function rivulet_run(
             end
         end
         
-        Swalbe.filmpressure!(state, sys)
+        if arrested
+            Swalbe.filmpressure!(state.pressure, state.height, state.dgrad, sys.param.γ, pinned, sys.param.n, sys.param.m, sys.param.hmin, sys.param.hcrit)
+        else
+            Swalbe.filmpressure!(state, sys)
+        end
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         # Forces are 
@@ -90,26 +111,24 @@ timeInterval = 25000
 for ang in [2/9, 1/6, 1/18]
     for kb in [0.0, 1e-6]
         sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, kbt=kb, n=3, m=2, θ=ang))
-        for outerRad in [150, 180, 200]
-                for innerRad in [20, 40, 80]
-                        # Run the simulation
-                        fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, dump=timeInterval)
-                        df_fluid = Dict()
-                        nSnapshots = sys.param.Tmax ÷ timeInterval
-                        for t in 1:nSnapshots
-                            # println("In saving loop at $(t) with $(size(fluid[t,:]))")
-                            df_fluid["h_$(t * timeInterval)"] = fluid[t,:]
-                        end
-                        println("Saving rivulet snapshots for R=$(outerRad) and r=$(innerRad) to disk")
-                        save_ang = Int(round(rad2deg(π*sys.param.θ)))
-                        file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
-                        save(file_name, df_fluid)
-                        CUDA.reclaim()
-                        fluid .= 0.0
-                        df_fluid = Dict()
-                        println("Done with $(ang) $(kb) $(outerRad) $(innerRad)")
-                    end
+        for outerRad in [160, 180, 200]
+            for innerRad in [20, 30, 40]
+                # Run the simulation
+                fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, arrested=true, dump=timeInterval)
+                df_fluid = Dict()
+                nSnapshots = sys.param.Tmax ÷ timeInterval
+                for t in 1:nSnapshots
+                    # println("In saving loop at $(t) with $(size(fluid[t,:]))")
+                    df_fluid["h_$(t * timeInterval)"] = fluid[t,:]
                 end
+                println("Saving rivulet snapshots for R=$(outerRad) and r=$(innerRad) to disk")
+                save_ang = Int(round(rad2deg(π*sys.param.θ)))
+                file_name = "data/Rivulets/arrested_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
+                save(file_name, df_fluid)
+                CUDA.reclaim()
+                fluid .= 0.0
+                df_fluid = Dict()
+                println("Done with $(ang) $(kb) $(outerRad) $(innerRad)")
             end
         end
     end
