@@ -108,7 +108,7 @@ end
 timeInterval = 25000
 
 # Make a parameter sweep
-for ang in [2/9, 1/6, 1/18]
+for ang in [1/9] # 2/9, 1/6, 1/18
     for kb in [0.0, 1e-6]
         sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, kbt=kb, n=3, m=2, θ=ang))
         for outerRad in [160, 180, 200]

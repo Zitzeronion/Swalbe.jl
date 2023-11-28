@@ -72,9 +72,13 @@ Read data from a well defined path based on parameters
 - month : Month the simulation ended in
 - hour : Hour at which the simulation finished
 - minute : Minute at which the simulation ended
+- arrested : Rivulet limited by contact angle field
 """
-function read_data(;R=50, r=80, kbT=0.0, nm=93, θ=20, day=26, month=10, hour=7, minute=5)
+function read_data(;R=50, r=80, kbT=0.0, nm=93, θ=20, day=26, month=10, hour=7, minute=5, arrested=false)
 	file_name = "../data/Rivulets/height_R_$(R)_r_$(r)_ang_$(θ)_kbt_$(kbT)_nm_3-2_runDate_2023$(month)$(day)$(hour)$(minute).jld2"
+	if arrested
+		file_name = "../data/Rivulets/arrested_height_R_$(R)_r_$(r)_ang_$(θ)_kbt_$(kbT)_nm_3-2_runDate_2023$(month)$(day)$(hour)$(minute).jld2"
+	end
 	if isfile(file_name) 
 		data = load(file_name)
 	else 
@@ -88,11 +92,11 @@ end
 """
 	heatmap_data(data; time)
 
-Plots a heatmap of the height of some simulation `data` at given `time`.
+Creates a heatmap of the height of some simulation `data` at given `time`.
 """
 function heatmap_data(data; t=25000)
 	h = reshape(data["h_$(t)"], 512, 512)
-	heatmap(h, aspect_ratio=1, c=:viridis)
+	heatmap(h, aspect_ratio=1, c=:viridis, colorbar_title="height")
 end
 
 # ╔═╡ 789e9f0e-863a-4cd5-8f99-f830120e8960
@@ -108,6 +112,7 @@ function plot_slice(data; t=25000, window=(false, 80, 110))
 	else
 		plot(h[256, :])
 	end
+	# println(maximum(h))
 end
 
 # ╔═╡ 81d255ea-1ab3-4635-ab4c-66100a820b28
@@ -204,6 +209,28 @@ function measure_cluster(data; t=25000)
 	return clusters
 end
 
+# ╔═╡ 20d68b97-40d4-41a4-b4df-bde6a3abb587
+"""
+	compute_droplet(h, θ; δ=0.052)
+
+Computes the equivalent base radius of a spherical cap for a given initial condition.
+
+# Returns
+
+- `baserad::Float`: Size of the baseradius of the droplet.
+- `vol::Float`: Volume of the liquid rivulet.
+- `baserad::Float`: Cap height of the droplet given rivulet volume and contact angle.
+"""
+function compute_droplet(h, θ; δ=0.0505)
+	riv = findall(h .> δ)
+	vol = sum(h[riv])
+	rad = cbrt(3vol/(π * (2+cospi(θ)) * (1-cospi(θ))^2))
+	baserad = rad * sinpi(θ)
+	capheight = rad * (1 - cospi(θ))
+
+	return baserad, vol, capheight
+end
+
 # ╔═╡ 34042674-6eaf-46ea-84ca-8f0a7b6d1bff
 """
 	compute_Oh(R; μ=1/6, ρ=1, γ=0.01)
@@ -218,6 +245,34 @@ Computes the Ohnesorge number based on the minor radius.
 function compute_Oh(R; μ=1/6, ρ=1, γ=0.01)
 	return μ/sqrt(ρ*R*γ)
 end
+
+# ╔═╡ d140fb71-f7bd-4b7e-91df-bba58474ff27
+"""
+	get_random_color(seed)
+
+Picks a random color from the RGB space.
+"""
+function get_random_color(seed)
+    Random.seed!(seed)
+    rand(RGB{N0f8})
+end
+
+# ╔═╡ 5aad6dcc-8400-4a7a-a2bc-69105b32e09f
+md" ### Time scales
+
+The following few functions introduce relevant time scales
+- The visco-capillary time scale $t_0$
+``t_0 = \frac{\mu r}{\gamma}``
+- The inertia-capillary time scale $t_{ic}$
+`` t_{ic} = \sqrt{\frac{\rho r^3}{\gamma}} ``
+- Rim retraction time scale $\tau_{rim}$
+``\tau_{rim} = \frac{9(R_0 - R_f)\mu}{\gamma\theta^3}``
+- Capillary time scale for microscopic rivulets $t_s$
+``t_s = \frac{3\mu h_{\ast}}{\gamma}\left[\frac{M}{1-\cos\theta}\right]^2``
+- Spinodial dewetting time $\tau$
+``\tau = \frac{3\mu}{\gamma h_{\ast}^3q_0^4} \\ q_0 = \frac{1}{2\gamma}\partial_h \Pi(h)|_{h=h_0}`` 
+
+"
 
 # ╔═╡ 0dcaae09-b57b-49b4-b924-537e59ac777b
 """
@@ -296,6 +351,12 @@ function t_00(h, θ; μ=1/6, γ=0.01, hs=0.1)
 	return 3μ/(γ*h^3*q₀²*q₀²)
 end
 
+# ╔═╡ 351d01de-7225-40e0-b650-0ef40b1a1cf7
+md" ### Initial condition
+
+All our simulations are started with the initial condition described below.
+The relevant parameters here are the larger radius `R₂` and the minor radius `r₁` as well as the contact angle `θ`."
+
 # ╔═╡ dad911c1-c8b2-4315-9c3b-b1859d44719b
 """
     torus(lx, ly, r₁, R₂, θ, center, hmin)
@@ -353,6 +414,21 @@ function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05; noise=0.0)
 	return h
 end
 
+# ╔═╡ 7cf4ce88-33de-472c-99c6-5b3ae258f3d1
+md" With its visual representation shown below."
+
+# ╔═╡ 0361d281-4a64-4792-812f-7eb9d268d2ae
+# ╠═╡ disabled = true
+#=╠═╡
+a,v = compute_droplet(torus(512, 512, 20, 180, 1/9, (256,256)), 1/9)
+  ╠═╡ =#
+
+# ╔═╡ 70da13b0-6111-4d5d-a6f5-49fcc0499738
+md" ### Data analysis 
+
+The data analysis is usually the most effort.
+Here are some functions that should help with data analysis."
+
 # ╔═╡ 5baa1023-db81-4374-913d-1e88bacdb2ac
 """
 	select_subset(data; ...)
@@ -364,44 +440,16 @@ function select_subset(data; θ=20, R=180, rr=40, kbt=0.0)
 	return data_part
 end
 
-# ╔═╡ 20d68b97-40d4-41a4-b4df-bde6a3abb587
+# ╔═╡ b3ae647b-1de9-4f56-b786-8719705c1e09
 """
-	compute_droplet(h, θ; δ=0.052)
+	t0_data()
 
-Computes the equivalent base radius of a spherical cap for a given initial condition.
+Computes different parameters from the initial condition, as such the true radii, liquid volume and many more.
 
 # Returns
-
-- `baserad::Float`: Size of the baseradius of the droplet.
-- `vol::Float`: Volume of the liquid rivulet.
-- `baserad::Float`: Cap height of the droplet given rivulet volume and contact angle.
+- `initial_data::Dataframe` : A dataframe with multiple case specific datapoints.
 """
-function compute_droplet(h, θ; δ=0.0505)
-	riv = findall(h .> δ)
-	vol = sum(h[riv])
-	rad = cbrt(3vol/(π * (2+cospi(θ)) * (1-cospi(θ))^2))
-	baserad = rad * sinpi(θ)
-	capheight = rad * (1 - cospi(θ))
-
-	return baserad, vol, capheight
-end
-
-# ╔═╡ 0361d281-4a64-4792-812f-7eb9d268d2ae
-a,v = compute_droplet(torus(512, 512, 20, 180, 1/9, (256,256)), 1/9)
-
-# ╔═╡ d140fb71-f7bd-4b7e-91df-bba58474ff27
-"""
-	get_random_color(seed)
-
-Picks a random color from the RGB space.
-"""
-function get_random_color(seed)
-    Random.seed!(seed)
-    rand(RGB{N0f8})
-end
-
-# ╔═╡ b3ae647b-1de9-4f56-b786-8719705c1e09
-begin
+function t0_data()
 	initial_data = DataFrame()
 	angs = Float64[]
 	Rs = Float64[]
@@ -415,8 +463,8 @@ begin
 	droph = Float64[]
 	Ohs = Float64[]
 	for angle in [2/9, 1/6, 1/9, 1/18]
-		for R in [150, 180, 200]
-			for rr in [20, 40, 80]
+		for R in [150, 160, 180, 200]
+			for rr in [20, 30, 40, 80]
 				h = torus(512, 512, rr, R, angle, (256, 256))
 				drop_radius, drop_vol, drop_h = compute_droplet(h, angle)
 				geometry = measure_diameter(h)
@@ -451,25 +499,27 @@ begin
 	initial_data.ts = round.(t_s.(droph, angs))
 	initial_data.t00 = round.(t_00.(m2, angs))
 	initial_data.Oh = Ohs 
+
+	return initial_data
 end
 
 # ╔═╡ 41aee571-9016-4759-859a-c99eb143a410
-initial_data
+initial_data = t0_data()
 
 # ╔═╡ c9572357-8d97-47a7-914a-91c0b452eb6b
 data = [
-	(80,  40, 0.0,    11, 1, 19, 6,  20), 		#
-	(120, 40, 0.0,    11, 2, 6,  43, 20), 		#
-	(120, 80, 0.0,    11, 2, 9,  37, 20), 		#
-	(150, 20, 0.0,    11, 2, 13, 0,  20), 		#
-	(150, 40, 0.0,    11, 2, 14, 26, 20), 		#
-	(150, 80, 0.0,    11, 2, 15, 54, 20), 		#
-	(180, 20, 0.0,    11, 2, 17, 23, 20), 		# little smaller little larger
-	(180, 40, 0.0,    11, 2, 18, 49, 20), 		#
-	(180, 80, 0.0,    11, 2, 20, 16, 20), 		#
-	(200, 20, 0.0,    11, 2, 21, 43, 20), 		#
-	(200, 40, 0.0,    11, 2, 23, 8,  20), 		#
-	(200, 80, 0.0,    11, 3, 0,  34, 20), 		#
+	(80,  40, 0.0,    11, 1, 19, 6,  20), 	#
+	(120, 40, 0.0,    11, 2, 6,  43, 20), 	#
+	(120, 80, 0.0,    11, 2, 9,  37, 20), 	#
+	(150, 20, 0.0,    11, 2, 13, 0,  20), 	#
+	(150, 40, 0.0,    11, 2, 14, 26, 20), 	#
+	(150, 80, 0.0,    11, 2, 15, 54, 20), 	#
+	(180, 20, 0.0,    11, 2, 17, 23, 20), 	# little smaller little larger
+	(180, 40, 0.0,    11, 2, 18, 49, 20), 	#
+	(180, 80, 0.0,    11, 2, 20, 16, 20), 	#
+	(200, 20, 0.0,    11, 2, 21, 43, 20), 	#
+	(200, 40, 0.0,    11, 2, 23, 8,  20), 	#
+	(200, 80, 0.0,    11, 3, 0,  34, 20), 	#
 	(150, 20, 1.0e-6, 11, 3, 1,  59, 20), 	#
 	(150, 40, 1.0e-6, 11, 3, 3,  25, 20), 	#
 	(150, 80, 1.0e-6, 11, 3, 4,  50, 20), 	#
@@ -535,6 +585,90 @@ data = [
 	(200, 80, 1.0e-6, 11, 6, 22, 32, 10), 	#
 ]
 
+# ╔═╡ 8b2c77d3-f743-4840-a9d9-9308e05be28d
+begin
+	set = 8
+	data0 = read_data(R=data[set][1], r=data[set][2], kbT=data[set][3], month=data[set][4], day=data[set][5], hour=data[set][6], minute=data[set][7], θ=data[set][8], nm=32)
+	# println(typeof(dataH), " ", typeof(dataH) == Dict{String, Any})
+	heatmap_data(data0, t=25000)
+end
+
+# ╔═╡ 846ebcbe-34d6-48a4-bc23-cbd04bacf526
+data_arrested = [
+	(160, 20, 0.0,    11,24, 13, 24, 40), 	#
+	(160, 30, 0.0,    11,24, 14, 47, 40), 	#
+	(160, 40, 0.0,    11,24, 16,  9, 40), 	#
+	(180, 20, 0.0,    11,24, 17, 32, 40), 	#
+	(180, 30, 0.0,    11,24, 18, 55, 40), 	#
+	(180, 40, 0.0,    11,24, 20, 18, 40), 	#
+	(200, 20, 0.0,    11,24, 21, 41, 40), 	#
+	(200, 30, 0.0,    11,24, 23,  5, 40), 	#
+	(200, 40, 0.0,    11,25,  0, 28, 40), 	#
+	(160, 20, 1.0e-6, 11,25,  1, 51, 40), 	#
+	(160, 30, 1.0e-6, 11,25,  3, 14, 40), 	#
+	(160, 40, 1.0e-6, 11,25,  4, 37, 40), 	#
+	(180, 20, 1.0e-6, 11,25,  6,  0, 40), 	#
+	(180, 30, 1.0e-6, 11,25,  7, 23, 40), 	#
+	(180, 40, 1.0e-6, 11,25,  8, 47, 40), 	#
+	(200, 20, 1.0e-6, 11,25, 10, 10, 40), 	#
+	(200, 30, 1.0e-6, 11,25, 11, 33, 40), 	#
+	(200, 40, 1.0e-6, 11,25, 12, 56, 40), 	#
+	(160, 20, 0.0,    11,25, 14, 19, 30), 	#
+	(160, 30, 0.0,    11,25, 15, 42, 30), 	#
+	(160, 40, 0.0,    11,25, 17,  4, 30), 	#
+	(180, 20, 0.0,    11,25, 18, 27, 30), 	#
+	(180, 30, 0.0,    11,25, 19, 48, 30), 	#
+	(180, 40, 0.0,    11,25, 21,  7, 30), 	#
+	(200, 20, 0.0,    11,25, 22, 23, 30), 	#
+	(200, 30, 0.0,    11,25, 23, 40, 30), 	#
+	(200, 40, 0.0,    11,26,  1,  2, 30), 	#
+	(160, 20, 1.0e-6, 11,26,  2, 24, 30), 	#
+	(160, 30, 1.0e-6, 11,26,  3, 45, 30), 	#
+	(160, 40, 1.0e-6, 11,26,  5,  7, 30), 	#
+	(180, 20, 1.0e-6, 11,26,  6, 28, 30), 	#
+	(180, 30, 1.0e-6, 11,26,  7, 50, 30), 	#
+	(180, 40, 1.0e-6, 11,26,  9, 12, 30), 	#
+	(200, 20, 1.0e-6, 11,26, 10, 33, 30), 	#
+	(200, 30, 1.0e-6, 11,26, 11, 55, 30), 	#
+	(200, 40, 1.0e-6, 11,26, 13, 16, 30), 	#
+	(160, 20, 0.0,    11,27, 14, 51, 20), 	#
+	(160, 30, 0.0,    11,27, 16, 12, 20), 	#
+	(160, 40, 0.0,    11,27, 17, 33, 20), 	#
+	(180, 20, 0.0,    11,27, 18, 54, 20), 	#
+	(180, 30, 0.0,    11,27, 20, 15, 20), 	#
+	(180, 40, 0.0,    11,27, 21, 36, 20), 	#
+	(200, 20, 0.0,    11,27, 22, 57, 20), 	#
+	(200, 30, 0.0,    11,28,  0, 18, 20), 	#
+	(200, 40, 0.0,    11,28,  1, 39, 20), 	#
+	(160, 20, 1.0e-6, 11,28,  3,  0, 20), 	#
+	(160, 30, 1.0e-6, 11,28,  4, 22, 20), 	#
+	(160, 40, 1.0e-6, 11,28,  5, 42, 20), 	#
+	(180, 20, 1.0e-6, 11,28,  7,  3, 20), 	#
+	(180, 30, 1.0e-6, 11,28,  8, 24, 20), 	#
+	(180, 40, 1.0e-6, 11,28,  9, 45, 20), 	#
+	(200, 20, 1.0e-6, 11,28, 11,  6, 20), 	#
+	(200, 30, 1.0e-6, 11,28, 12, 27, 20), 	#
+	(200, 40, 1.0e-6, 11,28, 13, 47, 20), 	#
+	(160, 20, 0.0,    11,26, 14, 38, 10), 	#
+	(160, 30, 0.0,    11,26, 15, 59, 10), 	#
+	(160, 40, 0.0,    11,26, 17, 21, 10), 	#
+	(180, 20, 0.0,    11,26, 18, 42, 10), 	#
+	(180, 30, 0.0,    11,26, 20,  3, 10), 	#
+	(180, 40, 0.0,    11,26, 21, 24, 10), 	#
+	(200, 20, 0.0,    11,26, 22, 45, 10), 	#
+	(200, 30, 0.0,    11,27,  0,  5, 10), 	#
+	(200, 40, 0.0,    11,27,  1, 26, 10), 	#
+	(160, 20, 1.0e-6, 11,27,  2, 47, 10), 	#
+	(160, 30, 1.0e-6, 11,27,  4,  8, 10), 	#
+	(160, 40, 1.0e-6, 11,27,  5, 25, 10), 	#
+	(180, 20, 1.0e-6, 11,27,  6, 39, 10), 	#
+	(180, 30, 1.0e-6, 11,27,  7, 56, 10), 	#
+	(180, 40, 1.0e-6, 11,27,  9, 17, 10), 	#
+	(200, 20, 1.0e-6, 11,27, 10, 38, 10), 	#
+	(200, 30, 1.0e-6, 11,27, 11, 59, 10), 	#
+	(200, 40, 1.0e-6, 11,27, 13, 20, 10), 	#
+]
+
 # ╔═╡ d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
 begin
 	nmset = 10
@@ -574,6 +708,30 @@ for i in eachindex(data)
 	end
 end
 
+# ╔═╡ e117ed84-b7b9-4057-ad89-2add2dae0aac
+for i in eachindex(data_arrested)
+	kbtDict = Dict(0.0 => "kbt_off", 1.0e-6 => "kbt_on")
+	filename = "../assets/arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]]).gif"
+	if isfile(filename)
+		println("There is alread a file called arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]]).gif  in the assets folder")
+	else
+		h = read_data(R=data_arrested[i][1], r=data_arrested[i][2], kbT=data_arrested[i][3], month=data_arrested[i][4], day=data_arrested[i][5], hour=data_arrested[i][6], minute=data_arrested[i][7], θ=data_arrested[i][8], nm=32, arrested=true)
+		println("R=$(data_arrested[i][1]) with rr=$(data_arrested[i][2]) and ang=$(data_arrested[i][8]) and kbt=$(data_arrested[i][3])")
+		if data_arrested[i][3] == 0.0
+			do_gif(h, "arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]])", timeMax=2500000)
+		elseif data_arrested[i][3] == 1.0e-6
+			do_gif(h, "arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]])", timeMax=2500000)
+		end
+	end
+end
+
+# ╔═╡ 2df8c833-7ca7-4d7a-ade5-0df083a013a1
+begin
+	h_some = 
+	plot_slice(read_data(R=180, r=40, kbT=0.0, month=11, day=5, hour=1, minute=28, θ=30, nm=32, arrested=false), t=2500000)
+	
+end
+
 # ╔═╡ 4e7487ad-b8e6-43f7-aff1-99d826ee1963
 begin 
 	measure_new = false
@@ -610,14 +768,16 @@ begin
 			someFrame.time = 25000:25000:2500000
 			measurements = vcat(measurements, someFrame)
 		end
-		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/radii_theta_kbt_deltah_watershed.csv", measurements)
+		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/radii_theta_kbt_deltah_watershed_2.csv", measurements)
 	else
-		path = "/net/euler/zitz/Swalbe.jl/data/DataFrames/radii_theta_kbt_deltah_watershed.csv"
+		path = "/net/euler/zitz/Swalbe.jl/data/DataFrames/radii_theta_kbt_deltah_watershed_2.csv"
 		measurements = CSV.read(path, DataFrame)
 	end
 end
 
 # ╔═╡ 627c3c50-b22f-4e95-a755-26f2197fff92
+# ╠═╡ disabled = true
+#=╠═╡
 function breakup_detection(df::DataFrame)
 	droplets = DataFrame()
 	frag = Bool[]
@@ -654,21 +814,34 @@ function breakup_detection(df::DataFrame)
 	droplets.theta = angles
 	CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/breakups_and_wavelengths.csv", droplets)
 end
+  ╠═╡ =#
 
 # ╔═╡ 2c0926ac-98d0-4ecd-a55d-2b0e928b9131
+# ╠═╡ disabled = true
+#=╠═╡
 simpleBreakup = CSV.read("/net/euler/zitz/Swalbe.jl/data/DataFrames/breakups_and_wavelengths.csv", DataFrame)
+  ╠═╡ =#
 
 # ╔═╡ adf3dbe5-ade0-4949-9507-10b5c8164ddd
+# ╠═╡ disabled = true
+#=╠═╡
 df_sub = select_subset(measurements)
+  ╠═╡ =#
 
 # ╔═╡ df08506c-f66d-430a-b235-4c9dfb80d414
+#=╠═╡
 plot(df_sub.time./10^6, df_sub.clusters, xlabel="time/10⁶ [a.u.]", ylabel="# clusters",
 l = (3, :solid))
+  ╠═╡ =#
 
 # ╔═╡ ecba3acb-6bc1-4722-9cee-a388a2442fae
+# ╠═╡ disabled = true
+#=╠═╡
 h20040 = measurements[(measurements.R .== 200) .& (measurements.rr .== 40) .& (measurements.kbt .== 0.0), :]
+  ╠═╡ =#
 
 # ╔═╡ 87c627a8-2c54-44ff-aa66-d9b5c379f646
+#=╠═╡
 begin
 	markers1 = [:circle, :ut, :s]
 	linesty1 = [:solid, :dash, :dashdot]
@@ -711,8 +884,10 @@ begin
 	p
 	
 end
+  ╠═╡ =#
 
 # ╔═╡ c848d2cf-5d36-4437-b53a-e278150e75ef
+#=╠═╡
 begin
 	p2 = plot(timescale ./ t0, 
 		h20040[h20040.theta .== 20, :dH] ./ h0, 
@@ -751,8 +926,10 @@ begin
 	p2
 	
 end
+  ╠═╡ =#
 
 # ╔═╡ 1007c151-b6ab-4f81-8421-4746dc3b67f4
+#=╠═╡
 begin
 	p3 = plot(timescale ./ initial_data[(initial_data.R0 .== 200) .& (initial_data.rr0 .== 40) .& (initial_data.angle .== 20), :tau][1], 
 		h20040[h20040.theta .== 20, :dH] ./ h0, 
@@ -793,8 +970,10 @@ begin
 	p3
 	
 end
+  ╠═╡ =#
 
 # ╔═╡ a32e4478-585f-431e-b4f0-bb6b92010cde
+#=╠═╡
 begin
 	p4 = plot(timescale ./ initial_data[(initial_data.R0 .== 200) .& (initial_data.rr0 .== 40) .& (initial_data.angle .== 20), :t00][1], 
 		h20040[h20040.theta .== 20, :dH] ./ h0, 
@@ -835,8 +1014,10 @@ begin
 	p4
 	
 end
+  ╠═╡ =#
 
 # ╔═╡ 5ed1e95e-bf40-4c96-8434-ac83e54e9362
+#=╠═╡
 begin
 	p5 = plot(timescale ./ initial_data[(initial_data.R0 .== 200) .& (initial_data.rr0 .== 40) .& (initial_data.angle .== 20), :ts][1], 
 		h20040[h20040.theta .== 20, :dH] ./ h0, 
@@ -877,6 +1058,7 @@ begin
 	p5
 	
 end
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2703,24 +2885,32 @@ version = "1.4.1+1"
 # ╟─6e82547e-c935-4a3e-b736-a0dae07bfb50
 # ╟─9da027de-9ee2-487c-b978-cbfd77e35fef
 # ╟─f25c4971-572f-41e2-be87-ad513c86e737
+# ╟─20d68b97-40d4-41a4-b4df-bde6a3abb587
 # ╟─34042674-6eaf-46ea-84ca-8f0a7b6d1bff
+# ╟─d140fb71-f7bd-4b7e-91df-bba58474ff27
+# ╟─5aad6dcc-8400-4a7a-a2bc-69105b32e09f
 # ╟─0dcaae09-b57b-49b4-b924-537e59ac777b
 # ╟─7429ac5f-5f38-4461-b11c-bc1a6c14c706
 # ╟─3a17c4be-9d17-427b-9c9b-3faf22db4e9d
 # ╟─0598d3b1-4be3-4df3-83d0-785ae7e6c446
 # ╟─0297792d-eec8-4a9a-82e1-06b8fe579f64
+# ╟─351d01de-7225-40e0-b650-0ef40b1a1cf7
 # ╟─dad911c1-c8b2-4315-9c3b-b1859d44719b
-# ╟─5baa1023-db81-4374-913d-1e88bacdb2ac
-# ╠═20d68b97-40d4-41a4-b4df-bde6a3abb587
+# ╟─7cf4ce88-33de-472c-99c6-5b3ae258f3d1
+# ╟─8b2c77d3-f743-4840-a9d9-9308e05be28d
 # ╠═0361d281-4a64-4792-812f-7eb9d268d2ae
-# ╟─d140fb71-f7bd-4b7e-91df-bba58474ff27
-# ╠═b3ae647b-1de9-4f56-b786-8719705c1e09
-# ╠═41aee571-9016-4759-859a-c99eb143a410
+# ╟─70da13b0-6111-4d5d-a6f5-49fcc0499738
+# ╟─5baa1023-db81-4374-913d-1e88bacdb2ac
+# ╟─b3ae647b-1de9-4f56-b786-8719705c1e09
+# ╟─41aee571-9016-4759-859a-c99eb143a410
 # ╟─c9572357-8d97-47a7-914a-91c0b452eb6b
+# ╟─846ebcbe-34d6-48a4-bc23-cbd04bacf526
 # ╠═d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
 # ╠═c945050f-3ddc-4d0e-80dd-af909c3f4ab5
 # ╠═485c5a66-af96-493d-a66e-8f62eee1336a
 # ╟─da3d16c0-efd5-4818-800f-d51a54201544
+# ╠═e117ed84-b7b9-4057-ad89-2add2dae0aac
+# ╠═2df8c833-7ca7-4d7a-ade5-0df083a013a1
 # ╠═4e7487ad-b8e6-43f7-aff1-99d826ee1963
 # ╠═627c3c50-b22f-4e95-a755-26f2197fff92
 # ╠═2c0926ac-98d0-4ecd-a55d-2b0e928b9131
