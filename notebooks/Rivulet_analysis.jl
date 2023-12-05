@@ -108,11 +108,18 @@ Plots a cut through the rivulet
 function plot_slice(data; t=25000, window=(false, 80, 110))
 	h = reshape(data["h_$(t)"], 512, 512)
 	if window[1]
-		plot(h[256, window[2]:window[3]])
+		plot(h[256, window[2]:window[3]], label="t=$(t)Δt", xlabel="x/[Δx]", ylabel="height")
 	else
-		plot(h[256, :])
+		plot(h[256, :], label="t=$(t)Δt", xlabel="x/[Δx]", ylabel="height")
 	end
 	# println(maximum(h))
+end
+
+# ╔═╡ 2df8c833-7ca7-4d7a-ade5-0df083a013a1
+begin
+	h_some = 
+	plot_slice(read_data(R=180, r=40, kbT=0.0, month=11, day=5, hour=1, minute=28, θ=30, nm=32, arrested=false), t=2500000)
+	
 end
 
 # ╔═╡ 81d255ea-1ab3-4635-ab4c-66100a820b28
@@ -196,7 +203,8 @@ Measures the number of clusters, thus rivulet = 1, droplets = n
 function measure_cluster(data; t=25000)
 	clusters = Int64(0)
 	h = reshape(data["h_$(t)"], 512,512)
-	bw = Gray.(h) .< 0.056
+	threshold = 0.06
+	bw = Gray.(h) .< threshold
 	dist = 1 .- distance_transform(feature_transform(bw))
 	markers = label_components(dist .< -5)
 	segments = watershed(dist, markers)
@@ -208,6 +216,16 @@ function measure_cluster(data; t=25000)
 	# newH = map(i->get_random_color(i), labels_map(segments)) .* (1 .-bw)
 	return clusters
 end
+
+# ╔═╡ 04e344a3-3d5b-449e-9222-481df24015c7
+# (160, 20, 0.0,    11,27, 14, 51, 20
+begin
+hja = read_data(R=160, r=20, kbT=0.0, month=11, day=27, hour=14, minute=51, θ=20 ,nm=32, arrested=true)
+measure_cluster(hja, t=2500000)
+end
+
+# ╔═╡ 974c334e-38fb-436e-842b-bb016854d136
+heatmap_data(hja, t=2500000)
 
 # ╔═╡ 20d68b97-40d4-41a4-b4df-bde6a3abb587
 """
@@ -257,10 +275,30 @@ function get_random_color(seed)
     rand(RGB{N0f8})
 end
 
+# ╔═╡ 0dd77f66-ec27-4cdf-81e8-bcecfbcfcf29
+"""
+	segment_image(h_data, t)
+
+Plots the result of the image segmentation, thus colorates all found clusters.
+"""
+function segment_image(h_data, t)
+	hTry = reshape(h_data["h_$(t)"], 512,512)
+	bw = Gray.(hTry) .< 0.06
+	dist = 1 .- distance_transform(feature_transform(bw))
+	markers = label_components(dist .< -8)
+	segments = watershed(dist, markers)
+	println(segments)
+	newH = map(i->get_random_color(i), labels_map(segments)) .* (1 .-bw)
+end
+
 # ╔═╡ 5aad6dcc-8400-4a7a-a2bc-69105b32e09f
 md" ### Time scales
 
-The following few functions introduce relevant time scales
+All simulations are based on lattice Boltzmann units (l.b.u.) which is an arbitrary unit. 
+To put this results into perspective we need to indentify relevant time and length scales to non-dimensionalize our units.
+While this seem straightforward for the length scale, the minor radius of the rivulet, for the time scale it is more challenging.
+
+The following few functions introduce possible time scales
 - The visco-capillary time scale $t_0$
 ``t_0 = \frac{\mu r}{\gamma}``
 - The inertia-capillary time scale $t_{ic}$
@@ -354,8 +392,19 @@ end
 # ╔═╡ 351d01de-7225-40e0-b650-0ef40b1a1cf7
 md" ### Initial condition
 
-All our simulations are started with the initial condition described below.
-The relevant parameters here are the larger radius `R₂` and the minor radius `r₁` as well as the contact angle `θ`."
+Computational fluid dynamics (CFD) relys heavily on the choice of initial and boundary conditions. 
+For the boundary conditions we put our trust in the good old biperiodic lattice.
+The initial condition is a velocity free donut as shown in the image below.
+
+All our simulations are started with the function `torus()` described below.
+The relevant parameters here are the larger radius `R₂` and the minor radius `r₁` as well as the contact angle `θ`.
+We solve
+
+`` (\sqrt{x^2 + y^2} - R)^2 + z^2 = r^2 ``
+
+for $z$ instead of $r$ such that we have a representation for the thickness.
+In a second step we cut from this structure, which is a half a donut, to make it fit to the chosen contact angle `θ`. 
+"
 
 # ╔═╡ dad911c1-c8b2-4315-9c3b-b1859d44719b
 """
@@ -451,26 +500,31 @@ Computes different parameters from the initial condition, as such the true radii
 """
 function t0_data()
 	initial_data = DataFrame()
-	angs = Float64[]
-	Rs = Float64[]
-	rrs = Float64[]
-	m1 = Float64[]
-	m2 = Float64[]
-	m3 = Float64[]
-	maxh = Float64[]
-	vols = Float64[]
-	dropR = Float64[]
-	droph = Float64[]
-	Ohs = Float64[]
+	angs = Float64[] 	# initial condition angle
+	Rs = Float64[] 		# initial condition major radius
+	rrs = Float64[] 	# initial condition minor radius
+	m1 = Float64[] 		# measured outer radius
+	m2 = Float64[] 		# measured minor radius
+	m3 = Float64[] 		# measured outer-minor radius 
+	beta = Float64[] 	# measured relation minor/major
+	maxh = Float64[] 	# maximal rivulet height at t=0
+	vols = Float64[] 	# liquid volume of the rivulet
+	dropR = Float64[] 	# radius of a droplet containing all liquid
+	droph = Float64[] 	# maximal height of a droplet containing all liquid
+	Ohs = Float64[] 	# Ohnesorge number
+	# Loop through initial conditions
 	for angle in [2/9, 1/6, 1/9, 1/18]
 		for R in [150, 160, 180, 200]
 			for rr in [20, 30, 40, 80]
+				# Create initial condition
 				h = torus(512, 512, rr, R, angle, (256, 256))
+				# measure relevant parameter
 				drop_radius, drop_vol, drop_h = compute_droplet(h, angle)
 				geometry = measure_diameter(h)
 				push!(m1, geometry[1]/2)
 				push!(m2, geometry[2]/2)
 				push!(m3, geometry[3]/2)
+				push!(beta, (geometry[2]/2)/R)
 				push!(angs, angle)
 				push!(Ohs, compute_Oh(geometry[2]/2))
 				push!(Rs, R)
@@ -488,6 +542,7 @@ function t0_data()
 	initial_data.realR = m3
 	initial_data.realrr = m2
 	initial_data.realOR = m1
+	initial_data.beta = beta
 	initial_data.maxh0 = maxh
 	initial_data.vol = vols
 	initial_data.rdrop = dropR
@@ -503,8 +558,68 @@ function t0_data()
 	return initial_data
 end
 
+# ╔═╡ 37756334-7859-499d-b355-658349aa1805
+"""
+	data2gif(data; prefix)
+
+Generates video files in gif formate for the supplied set of `data`.
+"""
+function data2gif(data; prefix="")
+	kbtDict = Dict(0.0 => "kbt_off", 1.0e-6 => "kbt_on")
+	maxtimestep = 2500000
+	for i in eachindex(data)
+		filename = "../assets/$(prefix)ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]]).gif"
+		if isfile(filename)
+			println("There is alread a file called $(prefix)ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]]).gif  in the assets folder")
+		else
+			h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], θ=data[i][8], nm=32)
+			println("R=$(data[i][1]) with rr=$(data[i][2]) and kbt=$(data[i][3])")
+			if data[i][3] == 0.0
+				do_gif(h, "$(prefix)ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]])", timeMax=maxtimestep)
+			elseif data[i][3] == 1.0e-6
+				do_gif(h, "$(prefix)ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]])", timeMax=maxtimestep)
+			end
+		end
+	end
+end
+
+# ╔═╡ 063757cb-b822-44e3-8a2b-57808c6f30cf
+"""
+	csv2df(file_name)
+
+Read a `.csv` to a dataframe.
+"""
+function csv2df(file_name)
+	path = "/net/euler/zitz/Swalbe.jl/data/DataFrames/$(file_name).csv"
+	measurements = CSV.read(path, DataFrame)
+	return measurements
+end
+
+# ╔═╡ 4fb1d7ad-47f2-4adf-a2ba-0ecc0fc8eeb0
+md" ## The Data
+
+Below we create three dataframes that hosts a load of information.
+Arguably too much information to have a clear picture what we want to say.
+However, with the steps outlined below we hope to clear up some of the confusion.
+
+The three dataframes host:
+- Initial geometrical data: `initial_data`
+- Simulation data: `data`
+- Simulation data on patterned substrates: `data_arrested`
+
+
+"
+
 # ╔═╡ 41aee571-9016-4759-859a-c99eb143a410
 initial_data = t0_data()
+
+# ╔═╡ 13ce2bea-889f-4727-a126-71a5006a86ab
+md"A single simulation creates one data file, which is about 500mb in size. 
+The data file contains the temporal evolution of the height field. 
+Every 25000Δt we make a snapshot of the system until we reach the end of the time loop at 2500000Δt.
+The file that contains this series is uniquely labeled with date and parameters for the initial condition (`torus()`).
+Every entry in the `data` and `data_arrested` array points towards one such files.
+"
 
 # ╔═╡ c9572357-8d97-47a7-914a-91c0b452eb6b
 data = [
@@ -669,6 +784,14 @@ data_arrested = [
 	(200, 40, 1.0e-6, 11,27, 13, 20, 10), 	#
 ]
 
+# ╔═╡ 0f204a06-71b2-438a-bb49-4af8ebda0001
+md" ## Results
+
+So what does the simulations produce?
+Below is an image of the state at the end of the time loop.
+Clearly the rivulet has broken into droplets.
+"
+
 # ╔═╡ d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
 begin
 	nmset = 10
@@ -678,72 +801,79 @@ begin
 	heatmap_data(dataH, t=ts)
 end
 
+# ╔═╡ ab5b4c7c-ae24-4aae-a528-1dc427a7f1f1
+md"While a picture says more than a thousand words, it's not always to best way to describe data.
+For example the number of droplets and the wavelength assozitated with that number.
+
+That is why we use the `Image.jl` library to extract image features.
+Luckily one of the features is the number of clusters which equivalent to the number of droplets.
+In the image below we do this analysis for a single state and colorate each feature with a random color."
+
 # ╔═╡ c945050f-3ddc-4d0e-80dd-af909c3f4ab5
-begin
-	hTry = reshape(dataH["h_$(ts)"], 512,512)
-	bw = Gray.(hTry) .< 0.056
-	dist = 1 .- distance_transform(feature_transform(bw))
-	markers = label_components(dist .< -5)
-	segments = watershed(dist, markers)
-	newH = map(i->get_random_color(i), labels_map(segments)) .* (1 .-bw)
-end
+segment_image(dataH, ts)
 
-# ╔═╡ 485c5a66-af96-493d-a66e-8f62eee1336a
-segments
+# ╔═╡ 89045ff9-bfb2-43e7-865b-235181cdf9f7
+md" ### Dynamics
 
-# ╔═╡ da3d16c0-efd5-4818-800f-d51a54201544
-for i in eachindex(data)
-	kbtDict = Dict(0.0 => "kbt_off", 1.0e-6 => "kbt_on")
-	filename = "../assets/ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]]).gif"
-	if isfile(filename)
-		println("There is alread a file called ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]]).gif  in the assets folder")
-	else
-		h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], θ=data[i][8], nm=32)
-		println("R=$(data[i][1]) with rr=$(data[i][2]) and kbt=$(data[i][3])")
-		if data[i][3] == 0.0
-			do_gif(h, "ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]])", timeMax=2500000)
-		elseif data[i][3] == 1.0e-6
-			do_gif(h, "ang_$(data[i][8])_R_$(data[i][1])_rr_$(data[i][2])_$(kbtDict[data[i][3]])", timeMax=2500000)
-		end
-	end
-end
+The easist way to identify what is going on, is to just see whats going on.
+This is why we generate a `.gif` file for each individual simulation.
+We use the function `data2gif()` to do this.
 
-# ╔═╡ e117ed84-b7b9-4057-ad89-2add2dae0aac
-for i in eachindex(data_arrested)
-	kbtDict = Dict(0.0 => "kbt_off", 1.0e-6 => "kbt_on")
-	filename = "../assets/arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]]).gif"
-	if isfile(filename)
-		println("There is alread a file called arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]]).gif  in the assets folder")
-	else
-		h = read_data(R=data_arrested[i][1], r=data_arrested[i][2], kbT=data_arrested[i][3], month=data_arrested[i][4], day=data_arrested[i][5], hour=data_arrested[i][6], minute=data_arrested[i][7], θ=data_arrested[i][8], nm=32, arrested=true)
-		println("R=$(data_arrested[i][1]) with rr=$(data_arrested[i][2]) and ang=$(data_arrested[i][8]) and kbt=$(data_arrested[i][3])")
-		if data_arrested[i][3] == 0.0
-			do_gif(h, "arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]])", timeMax=2500000)
-		elseif data_arrested[i][3] == 1.0e-6
-			do_gif(h, "arr_ang_$(data_arrested[i][8])_R_$(data_arrested[i][1])_rr_$(data_arrested[i][2])_$(kbtDict[data_arrested[i][3]])", timeMax=2500000)
-		end
-	end
-end
+#### The quartet of possibilities
 
-# ╔═╡ 2df8c833-7ca7-4d7a-ade5-0df083a013a1
-begin
-	h_some = 
-	plot_slice(read_data(R=180, r=40, kbT=0.0, month=11, day=5, hour=1, minute=28, θ=30, nm=32, arrested=false), t=2500000)
-	
-end
+In the next three cells we show what the rivulet can do by loading the gifs.
+1. Retract
+"
+
+# ╔═╡ a58ec747-09cb-4cba-a9f0-4de683c80052
+LocalResource("../assets/ang_40_R_180_rr_40_kbt_off.gif", :width => 600)
+
+# ╔═╡ c66bac82-feaf-4e77-ab1b-ea7a2a5cf6c7
+md"
+2. Retract into breakup
+"
+
+# ╔═╡ b385a6b2-e2b0-4179-ac81-21a8600f86cf
+LocalResource("../assets/ang_40_R_180_rr_20_kbt_off.gif", :width => 600)
+
+# ╔═╡ 7f8b5fe8-f5d1-46eb-a30e-8f0a6e9707bc
+md"
+3. Breakup without retraction
+"
+
+# ╔═╡ 2e7b7b97-f4b9-4ef8-b360-e086ffc0a025
+LocalResource("../assets/arr_ang_30_R_180_rr_40_kbt_off.gif", :width => 600)
+
+# ╔═╡ dc37fa99-ceb5-40cb-846a-6cdf9d33c2f3
+md"
+4. Don't breakup without retraction
+
+Which we don't show, however there are quite a few of those very stable simulations where essentially nothing happens.
+In the animations you see the height field which color coded and the range is dynamically adjusted.
+
+For a better grip on the dynamics we take all our simulations and perform some simple measures. 
+We are, for example, interested in the growth of the instability on the rivulet. 
+That is why we measure the maximum height difference along the rivulet at every time step.
+On the other hand we want to know if the rivulet has ruptured, thus we use the image analysis introduced in `measure_clusters()`. 
+"
 
 # ╔═╡ 4e7487ad-b8e6-43f7-aff1-99d826ee1963
-begin 
-	measure_new = false
+"""
+	measure_data(data, label::String, remeasure::Bool)
+
+Generates a dataframe of dynamic measurements for a set of `data` and writes it to a `.csv` or reads it from a `.csv`.
+"""
+function measure_data(data, label::String, remeasure::Bool, pat::Bool)
 	measurements = DataFrame()
-	if measure_new
+	if remeasure
 		measurements = DataFrame()
 		for i in eachindex(data)
 			# println(i)
 			someFrame = DataFrame()
-			h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], θ=data[i][8] ,nm=32)
+			h = read_data(R=data[i][1], r=data[i][2], kbT=data[i][3], month=data[i][4], day=data[i][5], hour=data[i][6], minute=data[i][7], θ=data[i][8] ,nm=32, arrested=pat)
 			R = Float64[]
 			rr = Float64[]
+			beta = Float64[]
 			allr = Float64[]
 			deltaH = Float64[]
 			clusters = Int64[]
@@ -753,12 +883,14 @@ begin
 				push!(R, R_measure[1]/2)
 				push!(rr, R_measure[2]/2)
 				push!(allr, R_measure[3]/2)
+				push!(beta, (R_measure[2]/2)/(R_measure[1]/2 + R_measure[2]/2))
 				push!(deltaH, measure_Δh(h, t=j))
 				push!(clusters, measure_cluster(h, t=j))
 			end
 			someFrame.major = R
 			someFrame.minor = rr
 			someFrame.outerR = allr
+			someFrame.beta = beta
 			someFrame.dH = deltaH
 			someFrame.clusters = clusters
 			someFrame.R = fill(data[i][1],100)
@@ -767,72 +899,265 @@ begin
 			someFrame.theta = fill(data[i][8],100)
 			someFrame.time = 25000:25000:2500000
 			measurements = vcat(measurements, someFrame)
+			println("done with $(i) of $(length(data))")
 		end
-		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/radii_theta_kbt_deltah_watershed_2.csv", measurements)
+		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/$(label).csv", measurements)
 	else
-		path = "/net/euler/zitz/Swalbe.jl/data/DataFrames/radii_theta_kbt_deltah_watershed_2.csv"
-		measurements = CSV.read(path, DataFrame)
+		println("No data analysis is performed because remasure is set false")
 	end
 end
+
+# ╔═╡ 38345378-66ee-42c1-b37f-6691119ecc60
+md"
+Below we just read two `.csv`s because we precompiled the data already.
+There is data on  
+- Uniform substrate
+- Patterend substrate
+
+(However to redo the analysis simply change `run_me` to `true` in the cell below.)
+"
+
+# ╔═╡ df519afa-309a-4633-860d-2fe40a384fa9
+for to_analyse in [(data, "dynamics_uniform", false), (data_arrested, "dynamics_patterned", true)]
+	run_me = false
+	measure_data(to_analyse[1], to_analyse[2], run_me, to_analyse[3])
+end
+
+# ╔═╡ 144e23e9-ce3d-4ed6-be2c-dff1fed39e59
+md"For convenience we collect all the data we have into a single dataframe, which for whatever reason is called `all_df`.
+Doing so we use the function `combined_df` that either reads and combines the data or just reads an existing dataframe."
+
+# ╔═╡ f7521761-e9f1-43df-a95c-57aec7c83011
+"""
+	combined_df(name::String; remeasure=false)
+
+Combines the data of the two different substrates.
+"""
+function combined_df(name::String; remeasure=false)
+	if remeasure
+		combined = DataFrame()
+		for csvs in ["dynamics_uniform", "dynamics_patterned"]
+			df = csv2df(csvs)
+			if csvs == "dynamics_uniform"
+				df.substrate = fill(:uniform, length(df.R))
+			elseif csvs == "dynamics_patterned"
+				df.substrate = fill(:patterned, length(df.R))
+			end
+			combined = vcat(combined,df)
+		end
+		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/$(name).csv", combined)
+		return combined
+	else
+		all_df = csv2df(name)
+		return all_df
+	end
+end
+
+# ╔═╡ 77697cb7-40fa-4ed4-9008-8d78cfa0c247
+md"
+In `all_df` we have evaluated if a rivulet has ruptured, when it ruptured, how many droplets it produced and which kind of substrate we started the simulation on.
+There is still a lot of data because we still consider every time step.
+
+We might come back to `all_df` but for the first simple information we want to extract if the rivulets ruptured and when they ruptured.
+"
+
+# ╔═╡ 7f60e96f-9a5e-41f5-a388-f531585e15b0
+all_df = combined_df("data_all_rivulets")
+
+# ╔═╡ 6b34bdad-2518-43f5-9fb0-d28a99a411fe
+md"
+With `breakup_detection()` we reduce every simulation to a single row in a dataframe.
+The only information we want to extract in this row is
+
+- Did the rivulet rupture?
+- When did it rupture?
+- How many droplets are produced?
+
+The answer to the first and third question can be answered with the same information.
+We just ask how many clusters we have at the end of the simulation, if that number is larger than one we set `df.rupture = true`.
+Similar we set `df.drops = data.clusters[tmax]` where `tmax` is the last time simulation time step.
+
+To answer when the rivulet has ruptured we use the function [`findfirst()`](https://docs.julialang.org/en/v1/base/arrays/) and check where `data.clusters > 1` for the first time.
+"
 
 # ╔═╡ 627c3c50-b22f-4e95-a755-26f2197fff92
-# ╠═╡ disabled = true
-#=╠═╡
-function breakup_detection(df::DataFrame)
-	droplets = DataFrame()
-	frag = Bool[]
-	Rs = Int64[]
-	rrs = Int64[]
-	ndrops = Int64[]
-	angles = Float64[]
-	wavelengths = Float64[]
-	for rr in [20, 40, 80]
-		for R in [150, 180, 200]
-			for θ in [1/9, 1/6, 2/9]
-				sim = select_subset(df, θ=round(rad2deg(θ*π)), R=R, rr=rr)
-				# println(sim.clusters[end], " ", rr, " ", R, " ", round(rad2deg(θ*π)))
-				if sim.clusters[end] > 1
-					push!(frag, true)
-					push!(ndrops, sim.clusters[end])
-					push!(wavelengths, 2π*R/sim.clusters[end])
-				else
-					push!(frag, false)
-					push!(ndrops, 0)
-					push!(wavelengths, 512)
+"""
+	breakup_detection(df::DataFrame, label::String)
+
+Scans the time dependent data and extracts if the rivulet breaks up into droplets and many more features. Saves the result to a csv named with `label`.
+"""
+function breakup_detection(df::DataFrame, label::String; remeasure=false)
+	if remeasure
+		droplets = DataFrame()
+		frag = Bool[]
+		Rs = Int64[]
+		rrs = Int64[]
+		rupturetime = Int64[]
+		beta0 = Float64[]
+		betaR = Float64[]
+		kbts = Float64[]
+		ndrops = Int64[]
+		angles = Float64[]
+		wavelengths = Float64[]
+		substrate = String[]
+		existing = String[]
+		for rr in [20, 30, 40, 80]
+			for R in [150, 160, 180, 200]
+				for θ in [1/18, 1/9, 1/6, 2/9]
+					for sub in ["uniform", "patterned"]
+						for kbt in [0.0, 1e-6]
+							sim = df[(df.theta .== round(rad2deg(θ*π))) .& (df.R .== R) .& (df.rr .== rr) .& (df.substrate .== sub) .& (df.kbt .== kbt), :]
+							push!(Rs, R)
+							push!(rrs, rr)
+							push!(kbts, kbt)
+							push!(angles, round(rad2deg(θ*π)))
+							push!(substrate, sub)
+							# Check if there is actual data
+							if length(sim.clusters) > 0
+								# Check if the rivulet ruptured
+								if sim.clusters[end] > 1
+									rt = findfirst(x -> x > 1, sim.clusters)
+									push!(rupturetime, sim.time[rt])
+									push!(frag, true)
+									push!(ndrops, sim.clusters[end])
+									push!(betaR, sim.beta[rt])
+									push!(wavelengths, 2π*R/sim.clusters[end])
+									push!(beta0, sim.beta[begin])
+								else
+									push!(frag, false)
+									push!(rupturetime, 3000000)
+									push!(betaR, sim.beta[end])
+									push!(ndrops, 0)
+									push!(wavelengths, 2π*R+1)
+									push!(beta0, sim.beta[begin])
+								end
+								push!(existing, "Yes")
+							else
+								push!(frag, false)
+								push!(rupturetime, 0)
+								push!(betaR, 0)
+								push!(ndrops, 0)
+								push!(wavelengths, 0)
+								push!(beta0, 0)
+								push!(existing, "No")
+							end
+						end
+					end
 				end
-				push!(Rs, R)
-				push!(rrs, rr)
-				push!(angles, round(rad2deg(θ*π)))
 			end
 		end
+		droplets.R = Rs
+		droplets.rr = rrs
+		droplets.theta = angles
+		droplets.kbt = kbts
+		droplets.substrate = substrate
+		droplets.rupture = frag
+		droplets.rupturetime = rupturetime
+		droplets.drops = ndrops
+		droplets.lambda = wavelengths
+		droplets.beta_start = beta0
+		droplets.beta_rup = betaR
+		droplets.exists = existing
+	
+		CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/$(label).csv", droplets)
+		return droplets
+	else
+		droplets = CSV.read("/net/euler/zitz/Swalbe.jl/data/DataFrames/$(label).csv", DataFrame)
+		return droplets
 	end
-	droplets.breakup = frag
-	droplets.drops = ndrops
-	droplets.lambda = wavelengths
-	droplets.R = Rs
-	droplets.rr = rrs
-	droplets.theta = angles
-	CSV.write("/net/euler/zitz/Swalbe.jl/data/DataFrames/breakups_and_wavelengths.csv", droplets)
 end
-  ╠═╡ =#
 
-# ╔═╡ 2c0926ac-98d0-4ecd-a55d-2b0e928b9131
-# ╠═╡ disabled = true
-#=╠═╡
-simpleBreakup = CSV.read("/net/euler/zitz/Swalbe.jl/data/DataFrames/breakups_and_wavelengths.csv", DataFrame)
-  ╠═╡ =#
+# ╔═╡ bebbf9b7-0d4a-44d0-baa1-aba99b9c59ef
+md"
+In `simpleBreakup` we collected the result of `breakup_detection`, therefore have a rupture flag, a rupture time and the number of droplets as well as a wavelength. 
+
+The keen observer quickly finds a mismatch between `all_df` and `simpleBreakup` in terms of dimensions.
+Ever simulation creates a 100 height field snapshots in the 2.500.000 time steps.
+When reduced to a single rupture or not rupture question, there should be only 147 rows.
+Not all data is equal and simulations on the patterend substrates use slightly different initial conditions.
+Which is why we simply add ghost data and add a column called `df.exists` which has the states Yes or No.
+
+Those rows where `df.exists = No` can be ignored, it was just easier to loop through the data like that.
+"
+
+# ╔═╡ b1953875-92ca-42d1-a22e-2f393141ddbe
+simpleBreakup = breakup_detection(all_df, "stability")
+
+# ╔═╡ 6a1ce8de-49b4-4a97-aa32-1cd20ded4b04
+md"
+Now we can ask which simulations ruptured and find this data in `rupture_only`.
+"
 
 # ╔═╡ adf3dbe5-ade0-4949-9507-10b5c8164ddd
-# ╠═╡ disabled = true
-#=╠═╡
-df_sub = select_subset(measurements)
-  ╠═╡ =#
+rupture_only = simpleBreakup[(simpleBreakup.rupture .== true) .& (simpleBreakup.exists .== "Yes") .& (simpleBreakup.kbt .== 0.0), [:R, :rr, :theta, :substrate, :rupturetime, :drops, :lambda, :beta_start]]
+
+# ╔═╡ b8a96a22-4950-4300-8c28-2c8aedf6b66b
+md"
+Similarly we can ask which existing simulations do not rupture and save that to `stable_only`.
+"
+
+# ╔═╡ 081c009c-0871-458e-9081-365d5102fefd
+stable_only = simpleBreakup[(simpleBreakup.rupture .== false) .& (simpleBreakup.exists .== "Yes") .& (simpleBreakup.kbt .== 0.0), [:R, :rr, :theta, :substrate, :rupturetime, :drops, :lambda, :beta_start]]
+
+# ╔═╡ 14d1a55a-43b0-4857-8dd9-b10c86f8a123
+md"
+## Actual research
+
+So far we have discussed how we generated the data and which initial conditions we are using.
+We showed that there can be four different outcomes and wrote a few functions to get insights into the data.
+But we still lack a real outcome as well as a how our results relate to other studies.
+
+Therefore we have to start some more general questions.
+One of them may be which geometries break and when?
+"
+
+# ╔═╡ 512e1060-eee5-4374-966c-02d7fb62f303
+begin
+	scatter_unstable = scatter(rupture_only[rupture_only.substrate .== "uniform", :].theta, 
+	rupture_only[rupture_only.substrate .== "uniform", :].beta_start,
+	label = "unifrom",
+	xlabel = "θ/[°]",
+	ylabel = "β",
+	m = (:circle, 8, 0.6),
+	title = "Unstable rivulets",
+	)
+	scatter!(rupture_only[rupture_only.substrate .== "patterned", :].theta, 
+	rupture_only[rupture_only.substrate .== "patterned", :].beta_start,
+	label = "patterned",
+	m = (:rect, 8, 0.6),
+	)
+	# savefig(scatter_unstable, "/net/euler/zitz/Swalbe.jl/assets/unstable_scatter.png")
+end
+
+# ╔═╡ 61474944-c347-448a-beb9-aa2e4ef6331e
+begin
+	scatter_stable = scatter(stable_only[stable_only.substrate .== "uniform", :].theta, 
+	stable_only[stable_only.substrate .== "uniform", :].beta_start,
+	label = "uniform",
+	xlabel = "θ/[°]",
+	ylabel = "β",
+	m = (:star5, 8, 0.6, palette(:tab10)[3]),
+	title = "Stable rivulets",
+	)
+	scatter!(stable_only[stable_only.substrate .== "patterned", :].theta, 
+	stable_only[stable_only.substrate .== "patterned", :].beta_start,
+	label = "patterned",
+	m = (:diamond, 8, 0.6, palette(:tab10)[4]),
+	)
+	# savefig(scatter_stable, "/net/euler/zitz/Swalbe.jl/assets/stable_scatter.png")
+end
 
 # ╔═╡ df08506c-f66d-430a-b235-4c9dfb80d414
+# ╠═╡ disabled = true
 #=╠═╡
 plot(df_sub.time./10^6, df_sub.clusters, xlabel="time/10⁶ [a.u.]", ylabel="# clusters",
 l = (3, :solid))
   ╠═╡ =#
+
+# ╔═╡ 44198158-5647-4074-95a6-96627894fadd
+for sims in [(data, ""), (data_arrested, "arr_")]
+	data2gif(sims[1], prefix=sims[2])
+end
 
 # ╔═╡ ecba3acb-6bc1-4722-9cee-a388a2442fae
 # ╠═╡ disabled = true
@@ -2881,10 +3206,14 @@ version = "1.4.1+1"
 # ╟─0acf9712-b27c-40c8-9bec-64d6389ce2c4
 # ╟─eadae383-6b5b-4e4e-80b9-5eb2fc4a5ead
 # ╟─789e9f0e-863a-4cd5-8f99-f830120e8960
+# ╟─2df8c833-7ca7-4d7a-ade5-0df083a013a1
 # ╟─81d255ea-1ab3-4635-ab4c-66100a820b28
 # ╟─6e82547e-c935-4a3e-b736-a0dae07bfb50
 # ╟─9da027de-9ee2-487c-b978-cbfd77e35fef
 # ╟─f25c4971-572f-41e2-be87-ad513c86e737
+# ╟─04e344a3-3d5b-449e-9222-481df24015c7
+# ╠═974c334e-38fb-436e-842b-bb016854d136
+# ╟─0dd77f66-ec27-4cdf-81e8-bcecfbcfcf29
 # ╟─20d68b97-40d4-41a4-b4df-bde6a3abb587
 # ╟─34042674-6eaf-46ea-84ca-8f0a7b6d1bff
 # ╟─d140fb71-f7bd-4b7e-91df-bba58474ff27
@@ -2902,20 +3231,44 @@ version = "1.4.1+1"
 # ╟─70da13b0-6111-4d5d-a6f5-49fcc0499738
 # ╟─5baa1023-db81-4374-913d-1e88bacdb2ac
 # ╟─b3ae647b-1de9-4f56-b786-8719705c1e09
+# ╟─37756334-7859-499d-b355-658349aa1805
+# ╟─063757cb-b822-44e3-8a2b-57808c6f30cf
+# ╟─4fb1d7ad-47f2-4adf-a2ba-0ecc0fc8eeb0
 # ╟─41aee571-9016-4759-859a-c99eb143a410
+# ╟─13ce2bea-889f-4727-a126-71a5006a86ab
 # ╟─c9572357-8d97-47a7-914a-91c0b452eb6b
 # ╟─846ebcbe-34d6-48a4-bc23-cbd04bacf526
-# ╠═d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
-# ╠═c945050f-3ddc-4d0e-80dd-af909c3f4ab5
-# ╠═485c5a66-af96-493d-a66e-8f62eee1336a
-# ╟─da3d16c0-efd5-4818-800f-d51a54201544
-# ╠═e117ed84-b7b9-4057-ad89-2add2dae0aac
-# ╠═2df8c833-7ca7-4d7a-ade5-0df083a013a1
-# ╠═4e7487ad-b8e6-43f7-aff1-99d826ee1963
-# ╠═627c3c50-b22f-4e95-a755-26f2197fff92
-# ╠═2c0926ac-98d0-4ecd-a55d-2b0e928b9131
-# ╠═adf3dbe5-ade0-4949-9507-10b5c8164ddd
+# ╟─0f204a06-71b2-438a-bb49-4af8ebda0001
+# ╟─d5152b67-bc1d-4cc0-b73e-90d79dbadcb4
+# ╟─ab5b4c7c-ae24-4aae-a528-1dc427a7f1f1
+# ╟─c945050f-3ddc-4d0e-80dd-af909c3f4ab5
+# ╟─89045ff9-bfb2-43e7-865b-235181cdf9f7
+# ╟─a58ec747-09cb-4cba-a9f0-4de683c80052
+# ╟─c66bac82-feaf-4e77-ab1b-ea7a2a5cf6c7
+# ╟─b385a6b2-e2b0-4179-ac81-21a8600f86cf
+# ╟─7f8b5fe8-f5d1-46eb-a30e-8f0a6e9707bc
+# ╟─2e7b7b97-f4b9-4ef8-b360-e086ffc0a025
+# ╟─dc37fa99-ceb5-40cb-846a-6cdf9d33c2f3
+# ╟─4e7487ad-b8e6-43f7-aff1-99d826ee1963
+# ╟─38345378-66ee-42c1-b37f-6691119ecc60
+# ╟─df519afa-309a-4633-860d-2fe40a384fa9
+# ╟─144e23e9-ce3d-4ed6-be2c-dff1fed39e59
+# ╟─f7521761-e9f1-43df-a95c-57aec7c83011
+# ╟─77697cb7-40fa-4ed4-9008-8d78cfa0c247
+# ╟─7f60e96f-9a5e-41f5-a388-f531585e15b0
+# ╟─6b34bdad-2518-43f5-9fb0-d28a99a411fe
+# ╟─627c3c50-b22f-4e95-a755-26f2197fff92
+# ╟─bebbf9b7-0d4a-44d0-baa1-aba99b9c59ef
+# ╟─b1953875-92ca-42d1-a22e-2f393141ddbe
+# ╟─6a1ce8de-49b4-4a97-aa32-1cd20ded4b04
+# ╟─adf3dbe5-ade0-4949-9507-10b5c8164ddd
+# ╟─b8a96a22-4950-4300-8c28-2c8aedf6b66b
+# ╟─081c009c-0871-458e-9081-365d5102fefd
+# ╟─14d1a55a-43b0-4857-8dd9-b10c86f8a123
+# ╠═512e1060-eee5-4374-966c-02d7fb62f303
+# ╠═61474944-c347-448a-beb9-aa2e4ef6331e
 # ╠═df08506c-f66d-430a-b235-4c9dfb80d414
+# ╟─44198158-5647-4074-95a6-96627894fadd
 # ╠═ecba3acb-6bc1-4722-9cee-a388a2442fae
 # ╠═87c627a8-2c54-44ff-aa66-d9b5c379f646
 # ╟─c848d2cf-5d36-4437-b53a-e278150e75ef
