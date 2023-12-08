@@ -1,5 +1,5 @@
 """
-    Equilibrium!(feq, height,velocityx, velocityy, vsquare, gravity)
+    equilibrium!(feq, height,velocityx, velocityy, vsquare, gravity)
 
 Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
 
@@ -101,7 +101,7 @@ equilibrium!(state::Expanded_2D, sys::SysConst) = equilibrium!(state.basestate.f
 
 
 """
-Equilibrium!(feq, height, velocity, gravity)
+    equilibrium!(feq, height, velocity, gravity)
 
 Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
 

@@ -397,7 +397,7 @@ end
 """
     run_dropletforced()
 
-Simulates an droplet on a patterned substrate
+Simulates a sliding droplet
 """
 function run_dropletforced(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), fx=0.0, fy=0.0, verbos=true)
     bodyforce = zeros(2)

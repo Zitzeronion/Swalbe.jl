@@ -65,7 +65,7 @@ julia> fout[:,:,6] # The value 2 should have moved one down and one to the right
 - [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
 - [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
 
-See also: [`Swalbe.equilibrium`](@ref)
+See also: [`Swalbe.equilibrium!`](@ref)
 """
 function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     # All distribution functions
@@ -146,7 +146,7 @@ julia> state.fout[:,:,6] # The value 2 should have moved one down and one to the
 
 ```
 
-See also: [`Swalbe.equilibrium`](@ref)
+See also: [`Swalbe.equilibrium!`](@ref)
 """
 BGKandStream!(state::LBM_state_2D, sys::SysConst) = BGKandStream!(state.fout, state.feq, state.ftemp, state.Fx, state.Fy, sys.param.τ)
 
@@ -166,7 +166,7 @@ Performs a BGK collision operation with a WFM forcecorrection and a subsequent s
 - `F :: Vector{<:Number,2}`: Sum of forces acting on the fluid
 - `τ <: Number`: Relaxtion time, if not supplied `` \\tau = 1 `` assumed
 
-See also: [`Swalbe.equilibrium`](@ref)
+See also: [`Swalbe.equilibrium!`](@ref)
 """
 function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     # All distribution functions
@@ -250,7 +250,7 @@ julia> @test all(f3 .== ftest[:,:,4])
 Test Passed
 ```
 
-See also: [`Swalbe.BGKandStream`](@ref)
+See also: [`Swalbe.BGKandStream!`](@ref)
 """
 function viewdists(f)
     f0 = view(f, :, :, 1)
@@ -283,7 +283,7 @@ julia> @test all(f1 .== ftest[:,2])
 Test Passed
 ```
 
-See also: [`Swalbe.BGKandStream`](@ref)
+See also: [`Swalbe.BGKandStream!`](@ref)
 """
 function viewdists_1D(f)
     f0 = view(f, :, 1)

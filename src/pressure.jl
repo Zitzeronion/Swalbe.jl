@@ -267,7 +267,7 @@ julia> Swalbe.power_broad.([2.0 5.0 6.0], 2) # Use the broadcasting operator `.`
 
 ```
 
-See also: [`filmpressure`](@ref)
+See also: [`filmpressure!`](@ref)
 """
 function power_broad(arg::Float64, n::Int)
     temp = 1.0
@@ -314,7 +314,7 @@ end
 """
     fast_93(arg)
 
-Quick computation of a power law potential see [`filmpressure`](@ref)
+Quick computation of a power law potential see [`filmpressure!`](@ref)
 """
 function fast_93(arg::Float64)
     temp = power_3(arg)
@@ -324,7 +324,7 @@ end
 """
     fast_32(arg)
 
-Quick computation of a power law potential see [`filmpressure`](@ref)
+Quick computation of a power law potential see [`filmpressure!`](@ref)
 """
 function fast_32(arg::Float64)
     return power_3(arg)-power_2(arg)

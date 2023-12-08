@@ -285,7 +285,7 @@ Thus the force becomes
 
 with ``t_0`` being the time lag at which the `tanh` changes sign and ``t_s`` is width of interval between -1 and 1.
 
-See also: [Swalbe.run_dropletforced](@ref)
+See also: [`Swalbe.run_dropletforced`](@ref)
 """
 function inclination!(α::Vector, state::LBM_state_2D; t=1000, tstart=0, tsmooth=1)
     @. state.Fx .+= state.height * α[1] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
@@ -312,6 +312,7 @@ function inclination!(α::Float64, state::Expanded_1D; t=1000, tstart=0, tsmooth
 
     return nothing
 end
+
 """
     update_rho()
 

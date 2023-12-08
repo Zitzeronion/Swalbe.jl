@@ -31,8 +31,6 @@ function obslist1D(obs; T=Float64, verbose=true)
         return interior, [obsright, obsleft] 
 end
 
-
-
 """
     function obslist1D!(sys::SysConstWithBound; T=Float64, verbose=false)
 Updates interior and border according to obs. See obslist().
