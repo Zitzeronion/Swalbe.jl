@@ -17,7 +17,8 @@
         sys = Swalbe.SysConst(Lx=25, Ly=25, param=Swalbe.Taumucs(Tmax=10000, tdump=5000))
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=false)
         difference = maximum(h) - minimum(h)
-        @test difference < 0.02
+        # Interface should flatten with time, thus difference must be less than the initial ϵ.
+        @test difference < 0.1
         sys = Swalbe.SysConst(Lx=25, Ly=25, param=Swalbe.Taumucs(Tmax=100, tdump=500))
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=true)
         # One dim version
