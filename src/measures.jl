@@ -57,7 +57,7 @@ function t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
     qsq = hᵦ * (1 - cospi(θ)) * (2 - 3 * hᵦ) 
     charT = 3 * μ / (γ * qsq^2)
 
-    return charT
+    return charT, qsq
 end
 
 """
@@ -89,7 +89,6 @@ julia> Swalbe.snapshot!(snapshot,h2,20,dumping=10)
 
 julia> @test all(h1 .== reshape(snapshot[1,:],5,5))
 Test Passed
- 
 julia> @test all(h2 .== reshape(snapshot[2,:],5,5))
 Test Passed
 ```

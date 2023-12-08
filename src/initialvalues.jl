@@ -332,7 +332,7 @@ julia> θ, P = Swalbe.ellipsepattern(ones(100,100), θ₀); # per default the ce
 
 julia> @test θ[1,1] == θ₀
 Test Passed
- 
+
 julia> @test θ[50,50] == θ₀ + 1/36 # The default increment, is about 5 degrees.
 Test Passed
 ```

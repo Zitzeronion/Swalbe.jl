@@ -62,7 +62,7 @@ function moments!(height::Vector, vel, fout)
 end
 
 moments!(state::LBM_state_2D) = moments!(state.height, state.velx, state.vely, state.fout)
-
+moments!(state::CuState) = moments!(state.height, state.velx, state.vely, state.fout)
 moments!(state::LBM_state_1D) = moments!(state.height, state.vel, state.fout)
 
 moments!(state::Expanded_2D) = moments!(state.basestate.height, state.basestate.velx, state.basestate.vely, state.basestate.fout)
