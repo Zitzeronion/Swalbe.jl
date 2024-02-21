@@ -62,7 +62,7 @@ function rivulet_run(
         dist = zeros(sys.Lx, sys.Ly)
         for i in 1:sys.Lx
             for j in 1:sys.Ly
-                dist[i,j] = round(Int, sqrt((i - Lx÷2)^2 + (j - Ly÷2)^2))
+                dist[i,j] = round(Int, sqrt((i - sys.Lx÷2)^2 + (j - sys.Ly÷2)^2))
             end
         end
         theta .= π/(6R) .* dist .+ π/18
