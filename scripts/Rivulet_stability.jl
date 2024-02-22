@@ -29,7 +29,7 @@ function rivulet_run(
     device::String;
     shape = :ring, 
     arrested = false,
-    gradient = false,
+    gradient = (false, 1/18, 2/9),
     R = 150,
     rr = 100,
     ϵ = 0.01,
@@ -56,7 +56,7 @@ function rivulet_run(
                 theta[i] = 1/3
             end
         end
-    elseif gradient
+    elseif gradient[1]
         # Wettability gradient that radial decreases the contact angle
         theta = zeros(sys.Lx, sys.Ly)
         dist = zeros(sys.Lx, sys.Ly)
@@ -65,15 +65,16 @@ function rivulet_run(
                 dist[i,j] = round(Int, sqrt((i - sys.Lx÷2)^2 + (j - sys.Ly÷2)^2))
             end
         end
-        theta .= π/(6R) .* dist .+ π/18
-        theta[dist .> R] .= 2π/9 
+        # All values will be multiplied with pi inside the pressure calculation
+        theta .= (gradient[3]-gradient[2])/R .* dist .+ gradient[2]
+        theta[dist .> R] .= gradient[3]
     end 
         # Push it to the desired device
     if device == "CPU"
         state.height .= h
     elseif device == "GPU"
         CUDA.copyto!(state.height, h)
-        if arrested || gradient
+        if arrested || gradient[1]
             pinned = CUDA.zeros(Float64, sys.Lx, sys.Ly)
             CUDA.copyto!(pinned, theta)
         end
@@ -91,7 +92,7 @@ function rivulet_run(
             end
         end
         
-        if arrested || gradient
+        if arrested || gradient[1]
             Swalbe.filmpressure!(state.pressure, state.height, state.dgrad, sys.param.γ, pinned, sys.param.n, sys.param.m, sys.param.hmin, sys.param.hcrit)
         else
             Swalbe.filmpressure!(state, sys)
@@ -121,13 +122,14 @@ timeInterval = 25000
 
 # Make a parameter sweep
 for ang in [2/9] # 1/9, 1/6,  
-    for deltas in [1.0] # 0.5, 2.5
-        sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, δ=deltas , n=3, m=2, θ=ang))
+    # for deltas in [1.0] # 0.5, 2.5
+    for mintheta in [1/9, 1/6] # 0.5, 2.5
+        sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=2500000, δ=1.0, n=3, m=2, θ=ang))
         for outerRad in [180]# [160, 180, 200]
             for innerRad in [20]# [60, 80, 100]
             # Run the simulation
                 arr = false #true
-                grad = true #true
+                grad = (true, mintheta, ang) #true
                 slips = false
                 fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, arrested=arr, dump=timeInterval, gradient=grad)
                 df_fluid = Dict()
@@ -137,13 +139,15 @@ for ang in [2/9] # 1/9, 1/6,
                     df_fluid["h_$(t * timeInterval)"] = fluid[t,:]
                 end
                 println("Saving rivulet snapshots for R=$(outerRad) and r=$(innerRad) to disk")
-                save_ang = Int(round(rad2deg(π*sys.param.θ)))
+                save_ang = round(Int,rad2deg(π*sys.param.θ))
+                theta_c = round(Int,rad2deg(π*mintheta))
+                theta_o = round(Int,rad2deg(π*ang))
                 if arr
                     file_name = "data/Rivulets/arrested_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
                 elseif slips
                     file_name = "data/Rivulets/slip_$(Int(10*deltas))_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
                 elseif grad
-                    file_name = "data/Rivulets/wet_grad_lin_1040_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
+                    file_name = "data/Rivulets/wet_grad_lin_$(theta_c)$(theta_o)_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
                 else
                     file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
                 end
