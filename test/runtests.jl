@@ -1,3 +1,7 @@
+using Pkg
+
+Pkg.activate(".")
+
 using Swalbe, Test, Statistics, Parameters, Random, LazySets, BSON, FileIO, DataFrames
 
 @testset "Swalbe.jl" begin
@@ -21,4 +25,6 @@ using Swalbe, Test, Statistics, Parameters, Random, LazySets, BSON, FileIO, Data
     include("measures.jl")
     println("Testing with relevant simulations")
     include("simulate.jl")
+    println("Testing active colloids")
+    include("active.jl")
 end

@@ -120,7 +120,9 @@
                -25.0 0.0 0.0 0.0 25.0;
                -20.0 5.0 5.0 5.0 30.0];
         
-        @test all(isapprox.(output, sol; atol=1e-10))
+        for i in eachindex(sol)
+            @test output[i] .≈ sol[i] atol=1e-10
+        end
     end
 
     @testset "Laplacian 1D" begin

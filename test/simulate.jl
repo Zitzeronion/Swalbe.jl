@@ -1,47 +1,46 @@
 @testset "Simulations" begin
     T = Float64
     @testset "Flat Interface" begin
-        sys = Swalbe.SysConst(Lx=25, Ly=25, param=Swalbe.Taumucs(Tmax=200, tdump=100))
+        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=200, tdump=100)
         h = Swalbe.run_flat(sys, "CPU", verbos=false)
         @test all(h .== 1.0)
         @test sum(h) == 25*25
         h = Swalbe.run_flat(sys, "CPU", verbos=true)
         # One dim version
-        sys = Swalbe.SysConst_1D(L=25, param=Swalbe.Taumucs(Tmax=200, tdump=100))
+        sys = Swalbe.SysConst_1D(L=25, Tmax=200, tdump=100)
         h = Swalbe.run_flat(sys, verbos=false)
         @test all(h .== 1.0)
         @test sum(h) == 25
         h = Swalbe.run_flat(sys, verbos=true)
     end
     @testset "Random Interface" begin
-        sys = Swalbe.SysConst(Lx=25, Ly=25, param=Swalbe.Taumucs(Tmax=10000, tdump=5000))
+        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=10000, tdump=5000)
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=false)
         difference = maximum(h) - minimum(h)
-        # Interface should flatten with time, thus difference must be less than the initial ϵ.
-        @test difference < 0.1
-        sys = Swalbe.SysConst(Lx=25, Ly=25, param=Swalbe.Taumucs(Tmax=100, tdump=500))
+        @test difference < 0.02
+        sys = Swalbe.SysConst(Lx=25, Ly=25, Tmax=100, tdump=500)
         h = Swalbe.run_random(sys, "CPU", ϵ=0.1, verbos=true)
         # One dim version
-        sys = Swalbe.SysConst_1D(L=25, param=Swalbe.Taumucs(Tmax=10000, tdump=5000))
+        sys = Swalbe.SysConst_1D(L=25, Tmax=10000, tdump=5000)
         h = Swalbe.run_random(sys, ϵ=0.1, verbos=false)
         difference = maximum(h) - minimum(h)
         @test difference < 0.02
-        sys = Swalbe.SysConst_1D(L=25, param=Swalbe.Taumucs(Tmax=100, tdump=500))
+        sys = Swalbe.SysConst_1D(L=25, Tmax=100, tdump=500)
         h = Swalbe.run_random(sys, ϵ=0.1, verbos=true)
     end
     @testset "Rayleigh Taylor" begin
-        sys = Swalbe.SysConst(Lx=100, Ly=100, param=Swalbe.Taumucs(Tmax=1000, tdump=500, g=-0.002))
+        sys = Swalbe.SysConst(Lx=100, Ly=100, Tmax=1000, tdump=500, g=-0.002)
         _, diff = Swalbe.run_rayleightaylor(sys, "CPU", kx=4, ky=5, ϵ=0.01, verbos=true)
         @test diff[1] < diff[end]
         # TODO: Write a test to check the growthrate 
         # One dim case
-        sys = Swalbe.SysConst_1D(L = 512, param=Swalbe.Taumucs(Tmax=1000, tdump=500, g=-0.002))
+        sys = Swalbe.SysConst_1D(L = 512, Tmax=1000, tdump=500, g=-0.002)
         _, diff = Swalbe.run_rayleightaylor(sys, k=4, ϵ=0.01, verbos=true)
         @test diff[1] < diff[end]
     end
     @testset "Relaxing droplet" begin
         rads = 35
-        sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=10000, δ=3.0))
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=10000, δ=3.0)
         h, A = Swalbe.run_dropletrelax(sys, "CPU", radius=rads, verbos=false)
         # Initial droplet volume
         vol = π/3 * rads^3 * (2+cospi(1/6)) * (1-cospi(1/6))^2
@@ -58,11 +57,11 @@
         @test vol ≈ vnum atol = vol/100*10
         @test r1 ≈ droprad atol = r1/100*10
         @test A[1] < A[end]
-        sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=100, δ=3.0, tdump=50))
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, δ=3.0, tdump=50)
         h, A = Swalbe.run_dropletrelax(sys, "CPU", radius=rads, verbos=true)
         # One dim case
         thresh = 0.05026
-        sys = Swalbe.SysConst_1D(L = 150, param=Swalbe.Taumucs(Tmax=10000, δ=3.0))
+        sys = Swalbe.SysConst_1D(L = 150, Tmax=10000, δ=3.0)
         h, A = Swalbe.run_dropletrelax(sys, radius=rads, verbos=false)
         # Initial droplet volume
         vol = π/3 * rads^3 * (2+cospi(1/6)) * (1-cospi(1/6))^2
@@ -90,11 +89,11 @@
         # @test ar ≈ sum(drop_ar) atol = ar/100*10
         @test r1 ≈ droprad atol = r1/100*10
         @test A[1] < A[end]
-        sys = Swalbe.SysConst_1D(L = 200, param=Swalbe.Taumucs(Tmax=100, δ=3.0, tdump=50))
+        sys = Swalbe.SysConst_1D(L = 200, Tmax=100, δ=3.0, tdump=50)
         h, A = Swalbe.run_dropletrelax(sys, radius=35, verbos=true)
     end
     @testset "Patterned droplet" begin
-        sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=10000, δ=3.0))
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=10000, δ=3.0)
         h = Swalbe.run_dropletpatterned(sys, "CPU", radius=35, θₛ = fill(1/9,sys.Lx, sys.Ly), verbos=false)
         # Initial droplet volume
         vol = π/3 * 35^3 * (2+cospi(1/6)) * (1-cospi(1/6))^2
@@ -110,11 +109,11 @@
         # Test that the droplet volume has not changed too much
         @test vol ≈ vnum atol = vol/100*10
         @test r1 ≈ droprad atol = r1/100*10
-        sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, tdump=50, δ=3.0)
         h = Swalbe.run_dropletpatterned(sys, "CPU", radius=35, θₛ = fill(1/9,sys.Lx, sys.Ly))
         # One dim case
         thresh = 0.05026
-        sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=10000, δ=3.0))
+        sys = Swalbe.SysConst_1D(L=150, Tmax=10000, δ=3.0)
         h = Swalbe.run_dropletpatterned(sys, radius=35, θₛ = fill(1/9,sys.L), verbos=false)
         # Initial droplet volume
         vol = π/3 * 35^3 * (2+cospi(1/6)) * (1-cospi(1/6))^2
@@ -139,12 +138,12 @@
         # TODO fix me
         # @test ar ≈ sum(drop_ar) atol = ar/100*10
         @test r1 ≈ droprad atol = r1/100*10
-        sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
+        sys = Swalbe.SysConst_1D(L=150, Tmax=100, tdump=50, δ=3.0)
         h = Swalbe.run_dropletpatterned(sys, radius=35, θₛ = fill(1/9,sys.L))
     end
 
     @testset "Sliding droplet" begin
-        sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=5000, δ=2.0))
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=5000, δ=2.0)
         # This will return the hydrodynamic moments: h, u, v
         mom = Swalbe.run_dropletforced(sys, "CPU", radius=35, fx=1e-4, verbos=false)
         # Now check that the center has moved 
@@ -153,18 +152,17 @@
         # Further test that the velocity is not too large
         @test all(mom[2] .< 0.1) 
         @test all(mom[3] .< 0.1) 
-        sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
+        sys = Swalbe.SysConst(Lx=150, Ly=150, Tmax=100, tdump=50, δ=3.0)
         h = Swalbe.run_dropletforced(sys, "CPU", radius=35, fx=1e-4)
         # One dim case
-        
-        sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=5000, δ=2.0))
+        sys = Swalbe.SysConst_1D(L=150, Tmax=5000, δ=2.0)
         # This will return the hydrodynamic moments: h, u, v
         mom = Swalbe.run_dropletforced(sys, radius=35, f=1e-4, verbos=false)
         # Now check that the center has moved 
         @test findmax(mom[1])[2] ≠ Int(sys.L/2)
         # Further test that the velocity is not too large
         @test all(mom[2] .< 0.1) 
-        sys = Swalbe.SysConst_1D(L=150, param=Swalbe.Taumucs(Tmax=100, tdump=50, δ=3.0))
+        sys = Swalbe.SysConst_1D(L=150, Tmax=100, tdump=50, δ=3.0)
         h = Swalbe.run_dropletforced(sys, radius=35, f=1e-4)
     end
 end

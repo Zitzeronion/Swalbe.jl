@@ -15,6 +15,15 @@ function sinewave1D!(height, h₀, n::Int, ϵ, dims::Int)
     return nothing
 end
 
+function sinewave1D!(state :: State_1D, h₀, n::Int, ϵ, dims::Int)
+    sinewave1D!(state.height, h₀, n::Int, ϵ, dims::Int)
+    return nothing
+end
+function sinewave1D!(state :: Active_1D, h₀, n::Int, ϵ, dims::Int)
+    sinewave1D!(state.height, h₀, n::Int, ϵ, dims::Int)
+    return nothing
+end
+
 """
     randinterface!(height, h₀, ϵ)
 
@@ -31,7 +40,60 @@ function randinterface!(height, h₀, ϵ)
     height .= h₀ .* (1.0 .+ ϵ .* hdummy)
     return nothing
 end
+function Curandinterface!(state::CuState,sys, h₀, ϵ)
+    # Some helping dummy array
+    hdummy = CUDA.ones(sys.Lx, sys.Ly)
+    # This we get n nice sine waves
+    randn!(hdummy) 
+    # Still need to use the correct undulation ϵ and initial height
+    state.height .= h₀ .* (1.0 .+ ϵ .* hdummy)
+    return nothing
+end
 
+function randinterface!(state::State,  h₀, ϵ)
+    randinterface!(state.height,  h₀, ϵ)
+    return nothing    
+end
+function randinterface!(state::StateActive,  h₀, ϵ)
+    randinterface!(state.height,  h₀, ϵ)
+    return nothing    
+end
+function randinterface!(state::StateActive_1D,  h₀, ϵ)
+    randinterface!(state.height,  h₀, ϵ)
+    return nothing    
+end
+
+
+"""
+    browniannoise(height, h_0, ϵ, q_high)
+
+Creates a random heigth field with average height `h₀` and displacement magnitude `ϵ` but no excited wavemodes above `q_high`
+"""
+
+
+function browniannoise!(height, h_0, ϵ, q_high)
+    L=length(height)[1]
+	x=randn(L)
+	y=rfft(x)
+	st=zeros(Int(L/2+1))
+	for i in 1:Int(floor(q_high))
+		st[i]=1
+	end
+	y.=y.*st
+	z=irfft(y, L)
+	height.=h_0.+(z./maximum(abs.(z))).*ϵ
+    return nothing
+end
+
+
+
+
+function othersinewave!(height::Vector, h₀, n::Int, ϵ)
+    for i in 1:size(height)[1]
+        height[i] = h₀ + ϵ* sin(i*(n*2*pi)/size(height)[1]) 
+    end
+    return nothing
+end
 """
     singledroplet(T, size(θ,1), size(θ,2), radius, θ, center, device=false)
 
@@ -65,7 +127,7 @@ CartesianIndex(50, 50)
 
 See also: 
 """
-function singledroplet(height, radius, θ, center)
+function singledroplet(height, radius, θ, center; precursor=0.05)
     lx, ly = size(height)
     # area = 2π * radius^2 * (1- cospi(θ))
     @inbounds for i in 1:lx
@@ -74,21 +136,30 @@ function singledroplet(height, radius, θ, center)
             if circ <= radius
                 height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
             else
-                height[i,j] = 0.05
+                height[i,j] = precursor
             end
         end
     end
     @inbounds for i in 1:lx
         for j in 1:ly
             if height[i,j] < 0
-                height[i,j] = 0.05
+                height[i,j] = precursor
             end
         end
     end
     return height
 end
+
+function singledroplet!(state::State, radius, θ, center)
+    state.height .= singledroplet(state.height, radius, θ, center)
+    return nothing
+end
+function singledroplet!(state::StateActive, radius, θ, center)
+    state.height .= singledroplet(state.height, radius, θ, center)
+    return nothing
+end
 # For a one dimensional droplet
-function singledroplet(height::Vector, radius, θ, center; hcrit=0.05)
+function singledroplet(height::Vector, radius, θ, center; precursor=0.05)
     L = size(height)[1]
     # area = 2π * radius^2 * (1- cospi(θ))
     @inbounds for i in 1:L
@@ -96,16 +167,39 @@ function singledroplet(height::Vector, radius, θ, center; hcrit=0.05)
         if circ <= radius
             height[i] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
         else
-            height[i] = hcrit
+            height[i] = precursor
         end
     end
     @inbounds for i in 1:L
-        if height[i] <= hcrit
-            height[i] = hcrit
+        if height[i] < 0
+            height[i] = precursor
         end
     end
     return height
 end
+function singledroplet!(state::State_1D, radius, θ, center)
+    state.height .= singledroplet(state.height, radius, θ, center)
+    return nothing
+end
+function singledroplet!(state::Active_1D, radius, θ, center)
+    state.height .= singledroplet(state.height, radius, θ, center)
+    return nothing
+end
+
+
+function droplet_base(height::Vector, s, theta, center; precursor=0.05)
+	L=size(height)[1]
+	dummy=zeros(L)
+	r=s/(2*sinpi(theta))
+	h=r*(1-cospi(theta))
+	height .= precursor
+	for x in Int(center-s/2):Int(center+s/2)
+		dummy[x]=sqrt(r^2-(x-center)^2)-r+h
+	end
+	return dummy.=max.(dummy, precursor)
+end
+
+
 
 """
     two_droplets(sys)
@@ -127,19 +221,20 @@ This is work in progress, therefore so far it is only available for the lower di
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs());
+julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200);
 
 julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
 
 julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) atol=0.01 # Simple geometry
 Test Passed
+
 ```
 
 # References
 
 See also: 
 """
-function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+function two_droplets(sys::SysConst_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
     dum = zeros(sys.L)
     dum2 = zeros(sys.L)
     height = zeros(sys.L)
@@ -180,6 +275,10 @@ function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, 
     return height
 end
 
+function two_droplets!(state::State_1D, sys::SysConst_1D; r₁=200, r₂=200, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+    state.height .= two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₁, θ₂=θ₂, center=center)
+    return nothing
+end
 """
     restart_from_height(data)
 
@@ -335,6 +434,7 @@ Test Passed
 
 julia> @test θ[50,50] == θ₀ + 1/36 # The default increment, is about 5 degrees.
 Test Passed
+
 ```
 
 # References

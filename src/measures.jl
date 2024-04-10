@@ -28,6 +28,26 @@ function fluid_dry!(fluid, dummy, height, t; hthresh = 0.055)
     return nothing
 end
 
+function dewetted!(state:: LBM_state, sys::SysConstActive_1D)
+    hthresh = sys.hmin-sys.hcrit + 0.005
+    state.precursor .= 0
+    state.precursor[state.height .< hthresh] .=1
+end
+
+"""
+	function rupture_time!(rupt, state, t; htresh=0.06)
+
+overwrites `rupt` with `t` if the film is ruptured somewhere
+"""
+function rupture_time!(rupt, state, t, sys)
+    hthresh = sys.hmin-sys.hcrit + 0.005
+	if minimum(state.height)<hthresh && isnan(rupt[1])
+        rupt.=[t,true]
+    end
+    return nothing
+end
+
+
 """
     t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
 
@@ -39,15 +59,29 @@ Computes a characteristic time scale for an spinodally dewetting film.
 - `γ :: Float64`: surface tension value
 - `μ :: Float64`: kinematic viscosity, same as dynamic for ρ=1
 - `θ :: Float64`: highest contact angle given as radiant, e.g. θ=π/9 for 20 degrees
-
+e
 # Mathematics
 
-The charateristic time scale ``t_0`` is set using the surface tension as well as the disjoining pressure ``\\Pi(h)`` as 
 
-`` t_0 = \\frac{3}{\\gamma h_0^3 q_0^4}, \\quad q_0 = \\frac{\\Pi'(h_0)}{2\\gamma}, ``
 
-where ``\\Pi'(h_0) = \\frac{\\partial\\Pi}{\\partial h}\\bigg|_{h_0}`` is the derivative of the disjoining pressure with respect to some characteristic height.
+# Examples
+```jldoctest
+julia> using Swalbe, Statistics, Test
 
+julia> x = ones(50,50); y = ones(50,50); h = ones(50,50);
+
+julia> Swalbe.thermal!(x, y, h, 0.1, 1/6, 1)
+
+julia> @test mean(x) ≈ 0.0 atol=1e-2
+Test Passed
+
+julia> @test mean(y) ≈ 0.0 atol=1e-2
+Test Passed
+
+julia> @test var(x) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
+Test Passed
+
+```
 
 # References
 
@@ -57,7 +91,7 @@ function t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
     qsq = hᵦ * (1 - cospi(θ)) * (2 - 3 * hᵦ) 
     charT = 3 * μ / (γ * qsq^2)
 
-    return charT, qsq
+    return charT
 end
 
 """
@@ -89,8 +123,10 @@ julia> Swalbe.snapshot!(snapshot,h2,20,dumping=10)
 
 julia> @test all(h1 .== reshape(snapshot[1,:],5,5))
 Test Passed
+
 julia> @test all(h2 .== reshape(snapshot[2,:],5,5))
 Test Passed
+
 ```
 # References
 
@@ -168,3 +204,148 @@ function ∇f_simple!(outputx, outputy, f, dgrad)
 
     return nothing
 end
+
+
+"""
+    contact_line(state::LBM_state_1D)
+
+Will find the first three phase contact line coming from the left, returns 1 if none found
+"""
+function contact_line(state::LBM_state_1D)
+    start=1
+	for i in start:length(state.height)
+		if state.height[i]<0.051
+			start=i
+			break
+		end
+	end
+    for x in start:length(state.height)	
+        if state.height[x]>0.052
+            return x
+            break
+        end
+    end
+    return 1
+end
+
+
+"""
+    contact_line_right(state::LBM_state_1D)
+
+Will find the first three phase contact line coming from the right, returns length(state.height) if none found
+"""
+function contact_line_right(state::LBM_state_1D)
+    start=length(state.height)
+	for i in length(state.height):-1:1
+		if state.height[i]<0.051
+			start=i
+			break
+		end
+	end
+    for x in start:-1:1
+        if state.height[x]>0.052
+            return x
+            break
+        end
+    end
+    return length(state.height)
+end
+
+
+"""
+    contact_angle(state::LBM_state_1D; n=1)
+
+Will calculate the apparent contact angle at the first contact line from the left, is just calculating an angle at x=1 if nothing is dewetted 
+
+# Arguments
+
+- `n:: Int`: size of the triangle used to calculate the contact angle
+"""
+function contact_angle(state::LBM_state_1D; n=5)
+    x=Swalbe.contact_line(state)
+    return asin((state.height[x+n]-state.height[x])/n)
+end
+
+
+"""
+    drop_height(state)
+
+Return maximum(state.height)
+"""
+function drop_height(state::LBM_state_1D)
+    return maximum(state.height)
+end
+
+
+"""
+    drop_width(state)
+
+Gives width of a droplet, if there are multiple droplets it will return length of the leftest droplet to the rightest 
+"""
+function drop_width(state::LBM_state_1D)
+    return -Swalbe.contact_line(state)+Swalbe.contact_line_right(state)
+end
+
+"""
+    mymean(m:: Vector)
+
+returns location of the mean of the Input vector interpreted as a probability density
+"""
+function mymean(m:: Vector)
+	μ=0
+	for i in 1:length(m)
+		μ+= m[i]*i
+	end
+	return μ/sum(m)
+end
+
+
+"""
+    mystd(m:: Vector)
+
+returns standard deviation of the Input vector interpreted as a probability density
+"""
+function mystd(m:: Vector)
+	σ=0
+	μ=mymean(m)
+	for i in 1:length(m)
+		σ += m[i]*((i-μ)^2)
+	end
+	return sqrt(σ/length(m))
+end
+
+"""
+    mykurtosis(m:: Vector)
+
+returns kurtosis of the Input vector interpreted as a probability density
+"""
+function mykurtosis(m:: Vector)
+	σ=mystd(m)
+	μ=mymean(m)
+	k=0
+	for i in 1:length(m)
+		k += m[i]*(((i-μ)/σ)^4)
+	end
+	return k/length(m)-3
+end
+
+"""
+	function bridge_height_surf(state::Swalbe.StateActive_1D, sys::Swalbe.SysConstActive_1D;corrector=20,verbose=true)
+
+Measures the bridge height of two coalescing droplets. 
+"""
+function bridge_height(state::Swalbe.StateActive_1D, sys::Swalbe.SysConstActive_1D;corrector=20,verbose=true, threshb=0.001, shift=6)
+    	hip, him = viewneighbors_1D(state.dgrad[:,:,1])
+    	# Straight elements j+1, i+1, i-1, j-1
+	circshift!(hip, state.height, shift)
+	circshift!(him, state.height, -shift)
+	a=findfirst(x->x, (hip .+ threshb .< state.height) .&& (him .+ threshb .< state.height))[1]
+	b=findlast(x->x, (hip .+ threshb .< state.height) .&& (him .+ threshb .< state.height))[1]
+	mm=findmin((state.height)[a:b])
+	nm=mm[2]+a-1==b ? findmax(state.height) : [mm[1],mm[2]+a-1]
+	if verbose
+		println("a=$a,b=$b,bridge_height=$(mm[1]),bridge_position=$(nm[2])")
+	end
+	return a, b, nm
+end
+

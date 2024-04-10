@@ -49,7 +49,7 @@ julia> h = reshape(collect(1.0:25.0),5,5) # A dummy height field
 
 julia> pressure = zeros(5,5); θ = 0.0; # Fully wetting substrate
 
-julia> Swalbe.filmpressure!(pressure, h, zeros(5,5,8), 0.01, 0.0, 3, 2, 0.1, 0.05) # default γ = 0.01
+julia> Swalbe.filmpressure!(pressure, h, θ) # default γ = 0.01
 
 julia> result = [30.0 5.0 5.0 5.0 -20;
                  25.0 0.0 0.0 0.0 -25.0;
@@ -69,6 +69,27 @@ julia> for i in eachindex(result)
 - [Derjaguin and Churaev](https://www.sciencedirect.com/science/article/abs/pii/0021979778900565)
 
 """
+function filmpressure!(output, f, γ, θ, n, m, hmin, hcrit)
+    # Straight elements j+1, i+1, i-1, j-1
+    hip = circshift(f, (1,0))
+    hjp = circshift(f, (0,1))
+    him = circshift(f, (-1,0))
+    hjm = circshift(f, (0,-1))
+    # Diagonal elements  
+    hipjp = circshift(f, (1,1))
+    himjp = circshift(f, (-1,1))
+    himjm = circshift(f, (-1,-1))
+    hipjm = circshift(f, (1,-1))
+    # Disjoining pressure part
+    κ = (1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+
+    output .= -γ .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* f) .+ κ .* (Swalbe.power_broad.(hmin./(f .+ hcrit), n)  
+                                       .- Swalbe.power_broad.(hmin./(f .+ hcrit), m)))
+    return nothing
+end
+
 function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
     hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(dgrad)
     # Straight elements j+1, i+1, i-1, j-1
@@ -86,23 +107,17 @@ function filmpressure!(output, f, dgrad, γ, θ, n, m, hmin, hcrit)
     1. Constant part due to angle, n, m, hmin
     2. Part due to the powerlaw
     =#
-    if n == 9 && m == 3
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                     .* (fast_93.(hmin./(f .+ hcrit))))
-    elseif n==3 && m==2
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                     .* (fast_32.(hmin./(f .+ hcrit))))
-    else 
-        throw(DomainError((n,m), "These exponents have not been used so far please take a look at `pressure.jl` and open an issue if there are questions"))
-    end
+    output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+                 .* (Swalbe.power_broad.(hmin./(f .+ hcrit), n)
+                  .- Swalbe.power_broad.(hmin./(f .+ hcrit), m)) )
+
     output .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
                    .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
                    .- 10/3 .* f)
     return nothing
 end
 # Film pressure with the state struct
-function filmpressure!(state::LBM_state_2D, sys::SysConst; 
-    θ=sys.param.θ, γ=sys.param.γ, n=sys.param.n, m=sys.param.m, hmin=sys.param.hmin, hcrit=sys.param.hcrit)
+function filmpressure!(state::State, sys::SysConst, θ)
     hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height, (1,0))
@@ -115,40 +130,86 @@ function filmpressure!(state::LBM_state_2D, sys::SysConst;
     circshift!(himjm, state.height, (-1,-1))
     circshift!(hipjm, state.height, (1,-1))
     # First the contact angle parameter part
-    state.pressure .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                      .* (power_broad.(hmin ./ (state.height .+ hcrit), n)
-                      .- power_broad.(hmin ./ (state.height .+ hcrit), m)) )
+    state.pressure .= -sys.γ .* ((1 .- cospi.(θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
+                      .* (Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                      .- Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
     # Now the gradient
-    state.pressure .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+    state.pressure .-= sys.γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* state.height)
+    return nothing
+end
+# With sys.θ
+function filmpressure!(state::State, sys::SysConst)
+    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, (1,0))
+    circshift!(hjp, state.height, (0,1))
+    circshift!(him, state.height, (-1,0))
+    circshift!(hjm, state.height, (0,-1))
+    # Diagonal elements  
+    circshift!(hipjp, state.height, (1,1))
+    circshift!(himjp, state.height, (-1,1))
+    circshift!(himjm, state.height, (-1,-1))
+    circshift!(hipjm, state.height, (1,-1))
+    # First the contact angle parameter part
+    state.pressure .= -sys.γ .* ((1 .- cospi(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
+                      .* (Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                      .- Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
+    # Now the gradient
+    state.pressure .-= sys.γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* state.height)
+    return nothing
+end
+function filmpressure!(state::StateActive, sys::SysConstActive)
+    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, (1,0))
+    circshift!(hjp, state.height, (0,1))
+    circshift!(him, state.height, (-1,0))
+    circshift!(hjm, state.height, (0,-1))
+    # Diagonal elements  
+    circshift!(hipjp, state.height, (1,1))
+    circshift!(himjp, state.height, (-1,1))
+    circshift!(himjm, state.height, (-1,-1))
+    circshift!(hipjm, state.height, (1,-1))
+
+    # state.γ .= sys.γ_0 .- sys.Γ .* state.rho
+    # state.k .= sys.k_0 .+ sys.K .* state.rho
+
+    # Stefan had a sign minus here, that isn't obvious to me. Them equation read positive
+    state.pressure .= -sys.γ_0 .* ((1 .- cospi(sys.θ_0)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
+                      .* (Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                      .- Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
+    # Now the Laplace
+    state.pressure .-= sys.γ_0 .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
                    .- 10/3 .* state.height)
     return nothing
 end
 
-function filmpressure!(state::Expanded_2D, sys::SysConst; 
-    θ=sys.param.θ, γ=sys.param.γ, n=sys.param.n, m=sys.param.m, hmin=sys.param.hmin, hcrit=sys.param.hcrit)
-    hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighbors(state.basestate.dgrad)
+# Standard usage parameters
+function filmpressure!(output, f, θ)
     # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.basestate.height, (1,0))
-    circshift!(hjp, state.basestate.height, (0,1))
-    circshift!(him, state.basestate.height, (-1,0))
-    circshift!(hjm, state.basestate.height, (0,-1))
+    hip = circshift(f, (1,0))
+    hjp = circshift(f, (0,1))
+    him = circshift(f, (-1,0))
+    hjm = circshift(f, (0,-1))
     # Diagonal elements  
-    circshift!(hipjp, state.basestate.height, (1,1))
-    circshift!(himjp, state.basestate.height, (-1,1))
-    circshift!(himjm, state.basestate.height, (-1,-1))
-    circshift!(hipjm, state.basestate.height, (1,-1))
-    # First the contact angle parameter part
-    state.basestate.pressure .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                      .* (power_broad.(hmin ./ (state.basestate.height .+ hcrit), n)
-                      .- power_broad.(hmin ./ (state.basestate.height .+ hcrit), m)) )
-    # Now the gradient
-    state.basestate.pressure .-= γ .* (2/3 .* (hjp .+ hip .+ him .+ hjm) 
-                                 .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
-                   .- 10/3 .* state.basestate.height)
+    hipjp = circshift(f, (1,1))
+    himjp = circshift(f, (-1,1))
+    himjm = circshift(f, (-1,-1))
+    hipjm = circshift(f, (1,-1))
+    # Disjoining pressure part
+    κ = (1 .- cospi.(θ)) .* 16/0.6 
+
+    output .= -0.01 .* ((2/3 .* (hjp .+ hip .+ him .+ hjm) 
+                   .+ 1/6 .* (hipjp .+ himjp .+ himjm .+ hipjm) 
+                   .- 10/3 .* f) .+ κ .* (Swalbe.power_broad.(0.1./(f .+ 0.05), 9)  
+                                       .- Swalbe.power_broad.(0.1./(f .+ 0.05), 3)))
     return nothing
 end
-
 # One dim implementation
 function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
     hip, him = viewneighbors_1D(dgrad)
@@ -160,74 +221,116 @@ function filmpressure!(output::Vector, f, dgrad, γ, θ, n, m, hmin, hcrit)
     1. Constant part due to angle, n, m, hmin
     2. Part due to the powerlaw
     =#
-    if n == 9 && m == 3
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                     .* (fast_93.(hmin./(f .+ hcrit))))
-    elseif n==3 && m==2
-        output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-        .* (fast_32.(hmin./(f .+ hcrit))))
-    else
-        throw(DomainError((n,m), "These exponents have not been used so far please take a look at `pressure.jl` and open an issue if there are questions"))
-    end
+    output .= -γ .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
+                 .* (Swalbe.power_broad.(hmin./(f .+ hcrit), n)
+                  .- Swalbe.power_broad.(hmin./(f .+ hcrit), m)) )
+
     output .-= γ .* (hip .- 2 .* f .+ him)
     return nothing
 end
 
-
-function filmpressure!(state::LBM_state_1D, sys::Consts_1D; 
-        θ=sys.param.θ, n=sys.param.n, m=sys.param.m, 
-        hmin=sys.param.hmin, hcrit=sys.param.hcrit, γ=sys.param.γ)
+function filmpressure!(state::State_1D, sys::SysConst_1D, θ)
     hip, him = viewneighbors_1D(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height, 1)
     circshift!(him, state.height, -1)
     
-    @. state.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
-                 * (power_broad(hmin/(state.height + hcrit), n)
-                  - power_broad(hmin/(state.height + hcrit), m)) )
+    state.pressure .= -sys.γ .* ((1 .- cospi.(θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
+                 .* (Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                  .- Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
 
-    @. state.pressure .-= γ * (hip - 2 * state.height + him)
+    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
+    return nothing
+end
+# State struct in 1D with sys contact angle
+function filmpressure!(state::State_1D, sys::SysConst_1D)
+    hip, him = viewneighbors_1D(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, 1)
+    circshift!(him, state.height, -1)
+    
+    state.pressure .= -sys.γ .* ((1 .- cospi.(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) 
+                 .* (Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                  .- Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)) )
+
+    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
     return nothing
 end
 
-function filmpressure!(state::Expanded_1D, sys::Consts_1D; 
-    θ=sys.param.θ, n=sys.param.n, m=sys.param.m, 
-    hmin=sys.param.hmin, hcrit=sys.param.hcrit, γ=sys.param.γ)
-hip, him = viewneighbors_1D(state.basestate.dgrad)
-# Straight elements j+1, i+1, i-1, j-1
-circshift!(hip, state.basestate.height, 1)
-circshift!(him, state.basestate.height, -1)
+function filmpressure_fast!(state::State_1D, sys::SysConst_1D)
+    hip, him = viewneighbors_1D(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, 1)
+    circshift!(him, state.height, -1)
+    
+    # Pi(h)
+    state.pressure .= -sys.γ .* ((1 .- cospi.(sys.θ)) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) ) 
+    if sys.n==9 && sys.m==3 
+        state.pressure .*= ( Swalbe.fast_disj_93.(sys.hmin ./ (state.height .+ sys.hcrit)))
+    elseif sys.n==3 && sys.m==2
+        state.pressure .*= ( Swalbe.fast_disj_32.(sys.hmin ./ (state.height .+ sys.hcrit)))
+    else
+        throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
+    end
 
-@. state.basestate.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
-             * (power_broad(hmin/(state.basestate.height + hcrit), n)
-              - power_broad(hmin/(state.basestate.height + hcrit), m)) )
+    #Laplace pressure
+    state.pressure .-= sys.γ .* (hip .- 2 .* state.height .+ him)
+    return nothing
+end
+# Paolo active matter model 
+function filmpressure!(state::Active_1D, sys::SysConstActive_1D)
+   
+    # All moved to the function surface_tension in active.jl
+    # state.γ .= sys.γ_0 .- sys.Γ .* state.rho
+    # gip, gim = viewneighbors_1D(state.γ)
+    # circshift!(gip, state.height, 1)
+    # circshift!(gim, state.height, -1)
+    # state.γ .= 0.5 .* state.γ .+ 0.25 .* (gip .+ gim)
+    state.k .= ((-state.γ  .+ cospi.(sys.θ_0)*sys.γ_0 ) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin))
+      
 
-@. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
-return nothing
+    #Π(h) 
+    state.pressure .= (state.k
+                    .*(Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.n)
+                  .- Swalbe.power_broad.(sys.hmin./(state.height .+ sys.hcrit), sys.m)))
+
+
+
+    hip, him = viewneighbors_1D(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, 1)
+    circshift!(him, state.height, -1)
+    state.pressure .-= state.γ .* (hip .- 2 .* state.height .+ him)
+    return nothing
 end
 
-function filmpressure!(state::State_gamma_1D, sys::Consts_1D; 
-    θ=sys.param.θ, n=sys.param.n, m=sys.param.m, 
-    hmin=sys.param.hmin, hcrit=sys.param.hcrit, γ=sys.param.γ)
-hip, him = viewneighbors_1D(state.basestate.dgrad)
-# Straight elements j+1, i+1, i-1, j-1
-circshift!(hip, state.basestate.height, 1)
-circshift!(him, state.basestate.height, -1)
 
-@. state.basestate.pressure .= -γ * ((1 - cospi(θ)) * (n - 1) * (m - 1) / ((n - m) * hmin) 
-             * (power_broad(hmin/(state.basestate.height + hcrit), n)
-              - power_broad(hmin/(state.basestate.height + hcrit), m)) )
-# Should be fine as long as τ = 1
-ft0, ft1, ft2 = viewdists_1D(state.basestate.ftemp)
-# Save pressure contributions so one can evalute their overall contribution
-ft1 .= state.basestate.pressure
-ft2 .= -γ .* (hip .- 2 .* state.basestate.height .+ him)
+function filmpressure_fast!(state::Active_1D, sys::SysConstActive_1D)
+    
 
-@. state.basestate.pressure .-= γ * (hip - 2 * state.basestate.height + him)
-return nothing
+    # All moved to the function surface_tension in active.jl
+    # state.γ .= sys.γ_0 .- sys.Γ .* state.rho
+    state.k .= ((-state.γ  .+ cospi.(sys.θ_0)*sys.γ_0 ) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin))
+      
+
+    #Π(h) 
+    if sys.n==9 && sys.m==3 
+        state.pressure .= (state.k .* Swalbe.fast_disj_93.(sys.hmin ./ (state.height .+ sys.hcrit)))
+    elseif sys.n==3 && sys.m==2
+        state.pressure .= (state.k .* Swalbe.fast_disj_32.(sys.hmin ./ (state.height .+ sys.hcrit)))
+    else
+        throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
+    end
+    
+    
+    hip, him = viewneighbors_1D(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, 1)
+    circshift!(him, state.height, -1)
+    state.pressure .-= state.γ .* (hip .- 2 .* state.height .+ him)
+    return nothing
 end
-
-# Paolo active matter model
+#deprecated
 function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit; Gamma=0.0)
     hip, him = viewneighbors_1D(dgrad)
     # Straight elements j+1, i+1, i-1, j-1
@@ -239,93 +342,67 @@ function filmpressure!(output::Vector, f, dgrad, rho, γ, θ, n, m, hmin, hcrit;
     2. Part due to the powerlaw
     =#
     output .= - (γ .+ Gamma .* rho) .* ((1 .- cospi.(θ)) .* (n - 1) .* (m - 1) ./ ((n - m) * hmin) 
-                 .* (power_broad.(hmin./(f .+ hcrit), n)
-                  .- power_broad.(hmin./(f .+ hcrit), m)) )
+                 .* (Swalbe.power_broad.(hmin./(f .+ hcrit), n)
+                  .- Swalbe.power_broad.(hmin./(f .+ hcrit), m)) )
 
     output .-= (γ .+ Gamma .* rho) .* (hip .- 2 .* f .+ him)
     return nothing
 end
 
+
 """
-    power_broad(arg, n)
+	function rho_pressure!(state::Active_1D, sys::SysConstActive_1D)
 
-Computes `arg` to the power `n`.
+We apply an artificial pressure on the catalyst density that fullfils two roles
 
-Actually this is useful because the `^` operator is much slower.
-Same thing I learned about the `pow` function in **C**, * yes it does what you want, but it is slow as fuck *.
+1. Makes sure that ``\\rho>0`` via 
 
-# Examples
-```jldoctest
-julia> using Swalbe, Test
+``p_1=-\\left(\\frac{h^*}{\\rho + h^*}\\right)^n.`
 
-julia> Swalbe.power_broad(3, 3)
-27
+Without ``p_1`` there is advection of more catalyst then actually is present
 
-julia> Swalbe.power_broad.([2.0 5.0 6.0], 2) # Use the broadcasting operator `.`
-1×3 Matrix{Float64}:
- 4.0  25.0  36.0
+2. Makes sure that catalyst does not diffuse into the precurso layer that we consider as dry via 
 
-```
+``p_2=\\left(\\frac{h^*}{h + h^*}\\right)^n.``
 
-See also: [`filmpressure!`](@ref)
+The pressure for ``\\rho`` reads
+
+``p=p_1+p_2``
 """
-function power_broad(arg::Float64, n::Int)
-    temp = 1.0
-    for i = 1:n
-        temp *= arg
-    end
-    return temp
+function rho_pressure!(state::Active_1D, sys::SysConstActive_1D)
+    state.rho_pressure .=  ( 
+				  .- Swalbe.power_broad.(sys.hcrit ./(state.rho .+ sys.hcrit), sys.rho_n)
+				  .+ Swalbe.power_broad.(sys.hcrit ./(state.height .+ sys.hcrit), sys.rho_n)
+			)
 end
 
-function power_broad(arg::Float32, n::Int)
-    temp = 1.0f0
-    for i = 1:n
-        temp *= arg
-    end
-    return temp
+function rho_pressure_fast!(state::Active_1D, sys::SysConstActive_1D)
+    state.rho_pressure .=  ( 
+				  .- Swalbe.power_6.(sys.hcrit ./(state.rho .+ sys.rho_crit))
+				  .+ Swalbe.power_6.(sys.hcrit ./(state.height .+ sys.hcrit2))
+			)
 end
 
-function power_broad(arg::Int, n::Int)
-    temp = 1
-    for i = 1:n
-        temp *= arg
-    end
-    return temp
+function rho_A_pressure!(state::Active_1D, sys::SysConstActive_1D)
+    state.rho_A_pressure .=  ( 
+				  .- Swalbe.power_6.(sys.hcrit ./(state.rho_A .+ sys.b_A))
+				  .+ Swalbe.power_6.(sys.hcrit ./(state.height .+ sys.hcrit2))
+			)
 end
 
-"""
-    power_2(arg)
 
-Power two (arg^2) computation of a Float64 number.
-"""
-function power_2(arg::Float64)
-	return arg * arg 
+
+function rho_B_pressure!(state::Active_1D, sys::SysConstActive_1D)
+    state.rho_B_pressure .=  ( 
+				  .- Swalbe.power_6.(sys.hcrit ./(state.rho_B .+ sys.b_B))
+				  .+ Swalbe.power_6.(sys.hcrit ./(state.height .+ sys.hcrit2))
+			)
 end
 
-"""
-    power_3(arg)
 
-Power three (arg^3) computation of a Float64 number.
-"""
-function power_3(arg::Float64)
-	return arg * arg * arg
-end 
-
-"""
-    fast_93(arg)
-
-Quick computation of a power law potential see [`filmpressure!`](@ref)
-"""
-function fast_93(arg::Float64)
-    temp = power_3(arg)
-    return power_3(temp)-temp
-end
-
-"""
-    fast_32(arg)
-
-Quick computation of a power law potential see [`filmpressure!`](@ref)
-"""
-function fast_32(arg::Float64)
-    return power_3(arg)-power_2(arg)
+function rho_disjoining_pressure!(state::Active_1D, sys::SysConstActive_1D)
+    #the minus comes with the `state.k`
+    state.rho_pressure .= (state.k
+    .*(Swalbe.power_broad.(sys.hmin./(state.rho .+ sys.hcrit), sys.n)
+  .- Swalbe.power_broad.(sys.hmin./(state.rho .+ sys.hcrit), sys.m)))
 end

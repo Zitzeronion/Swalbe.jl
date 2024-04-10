@@ -3,119 +3,154 @@
     fy = zeros(5,5)
     f1 = zeros(30)
     # For structs
-    sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs())
+    sys = Swalbe.SysConst(Lx=5, Ly=5)
+    sys_act = Swalbe.SysConstActive(Lx=5, Ly=5)
     state = Swalbe.Sys(sys, "CPU")
-    state2 = Swalbe.Sys(sys, "CPU", kind="thermal")
+    state_act = Swalbe.Sys(sys_act, "CPU")
+    state.height .= 1.0
+    state_act.height .= 1.0
     # One dim model   
-    sys1D = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs())
-    st1 = Swalbe.Sys(sys1D)
-    st2 = Swalbe.Sys(sys1D, kind="thermal")
+    sys1D = Swalbe.SysConst_1D(L=30)
+    sys1D_act = Swalbe.SysConstActive_1D(L=30)
+    state1D = Swalbe.Sys(sys1D)
+    state1D_act = Swalbe.Sys(sys1D_act)
+    state1D.height .= 1.0
+    state1D_act.height .= 1.0
     @testset "Slippage" begin
         # No velocities
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), zeros(5,5), 1.0, 1/6)
         Swalbe.slippage!(state, sys)
-        Swalbe.slippage!(state2, sys)
-        for i in [(fx, fy), (state.slipx, state.slipy), (state2.basestate.slipx, state2.basestate.slipy)]
-            @test all(i[1] .== 0.0)
-            @test all(i[2] .== 0.0)
-        end
-        
+        Swalbe.slippage!(state_act, sys_act)
+        @test all(fx .== 0.0)
+        @test all(fy .== 0.0)
+        @test all(state.slipx .== 0.0)
+        @test all(state.slipy .== 0.0)
+        @test all(state_act.slipx .== 0.0)
+        @test all(state_act.slipy .== 0.0)
+
         # Velocity in x
-        state.velx .= 0.1
-        state2.basestate.velx .= 0.1
         Swalbe.slippage!(fx, fy, ones(5,5), fill(0.1,5,5), zeros(5,5), 1.0, 1/6)
+        state.velx .= 0.1
+        state_act.velx .= 0.1
         Swalbe.slippage!(state, sys)
-        Swalbe.slippage!(state2, sys)
-        for i in [(fx, fy), (state.slipx, state.slipy), (state2.basestate.slipx, state2.basestate.slipy)]
-            @test all(isapprox.(i[1], 0.1/11; atol=1e-10))
-            @test all(i[2] .== 0.0)
-        end
-        
+        Swalbe.slippage!(state_act, sys_act)
+        @test all(fx .== 0.1/11)
+        @test all(fy .== 0.0)
+        # At some point I have to find out how to use all() with atol
+        #@test state.slipx[1,1] ≈ 0.1/11 # atol=1e-8
+        @test all(isapprox.(state.slipx, 0.1/11; atol=1e-8))
+        @test all(state.slipy .== 0.0)
+        #@test state_act.slipx[1,1] ≈ 0.1/11 # atol=1e-8
+        @test all(isapprox.(state_act.slipx, 0.1/11; atol=1e-8))
+        @test all(state_act.slipy .== 0.0)
         # Velocity in y
-        for i in [state, state2.basestate]
-            i.velx .= 0.0
-            i.vely .= 0.1
-        end
         Swalbe.slippage!(fx, fy, ones(5,5), zeros(5,5), fill(0.1,5,5), 1.0, 1/6)
+        state.velx .= 0.0
+        state.vely .= 0.1
+        state_act.velx .= 0.0
+        state_act.vely .= 0.1
         Swalbe.slippage!(state, sys)
-        Swalbe.slippage!(state2, sys)
-        for i in [(fx, fy), (state.slipx, state.slipy), (state2.basestate.slipx, state2.basestate.slipy)]
-            @test all(isapprox.(i[2], 0.1/11; atol=1e-10))
-            @test all(i[1] .== 0.0)
-        end
-        
+        Swalbe.slippage!(state_act, sys_act)
+        @test all(fx .== 0.0)
+        @test all(fy .== 0.1/11)
+        @test all(state.slipx .== 0.0)
+        #@test state.slipy[1,1] ≈ 0.1/11 # atol=1e-8
+        @test all(isapprox.(state.slipy, 0.1/11; atol=1e-8))
+        @test all(state_act.slipx .== 0.0)
+        #@test state_act.slipy[1,1] ≈ 0.1/11 # atol=1e-8
+        @test all(isapprox.(state_act.slipy, 0.1/11, atol=1e-8))
         # Velocity
-        for i in [state, state2.basestate]
-            i.velx .= -0.1
-            i.vely .= 0.1
-        end
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 1.0, 1/6)
+        state.velx .= -0.1
+        state.vely .= 0.1
+        state_act.velx .= -0.1
+        state_act.vely .= 0.1
         Swalbe.slippage!(state, sys)
-        Swalbe.slippage!(state2, sys)
-        for i in [(fx, fy), (state.slipx, state.slipy), (state2.basestate.slipx, state2.basestate.slipy)]
-            @test all(isapprox.(i[1], -0.1/11; atol=1e-10))
-            @test all(isapprox.(i[2], 0.1/11; atol=1e-10))
-        end
-        
+        Swalbe.slippage!(state_act, sys_act)
+        @test all(fx .== -0.1/11)
+        @test all(fy .== 0.1/11)
+        # @test state.slipx[1,1] ≈ -0.1/11 
+        # @test state.slipy[1,1] ≈ 0.1/11
+        # @test state_act.slipx[1,1] ≈ -0.1/11 
+        # @test state_act.slipy[1,1] ≈ 0.1/11
+        @test all(isapprox.(state.slipx, -0.1/11))
+        @test all(isapprox.(state.slipy, 0.1/11))
+        @test all(isapprox.(state_act.slipx, -0.1/11))
+        @test all(isapprox.(state_act.slipy, 0.1/11))
         # No slip
-        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs(δ=0.0))
         Swalbe.slippage!(fx, fy, ones(5,5), fill(-0.1,5,5), fill(0.1,5,5), 0.0, 1/6)
-        Swalbe.slippage!(state, sys)
-        Swalbe.slippage!(state2, sys)
-        for i in [(fx, fy), (state.slipx, state.slipy), (state2.basestate.slipx, state2.basestate.slipy)]
-            @test all(isapprox.(i[1], -0.1/2; atol=1e-10))
-            @test all(isapprox.(i[2], 0.1/2; atol=1e-10))
-        end
+        state.velx .= -0.1
+        state.vely .= 0.1
+        state_act.velx .= -0.1
+        state_act.vely .= 0.1
+        sys2 = Swalbe.SysConst(Lx=5,Ly=5,δ=0.0)
+        sys2_act = Swalbe.SysConstActive(Lx=5,Ly=5,δ=0.0)
+        Swalbe.slippage!(state, sys2)
+        Swalbe.slippage!(state_act, sys2_act)
+        @test all(fx .== -0.1/2)
+        @test all(fy .== 0.1/2)
+        # @test state.slipx[1,1] ≈ -0.1/2
+        # @test state.slipy[1,1] ≈ 0.1/2
+        # @test state_act.slipx[1,1] ≈ -0.1/2
+        # @test state_act.slipy[1,1] ≈ 0.1/2
+        @test all(isapprox.(state.slipx, -0.1/2))
+        @test all(isapprox.(state.slipy, 0.1/2))
+        @test all(isapprox.(state_act.slipx, -0.1/2))
+        @test all(isapprox.(state_act.slipy, 0.1/2))
     end
+
 
     @testset "Slippage 1D" begin
         # No velocities
         Swalbe.slippage!(f1, ones(30), zeros(30), 1.0, 1/6)
-        Swalbe.slippage!(st1, sys1D)
-        Swalbe.slippage!(st2, sys1D)
-        for i in [f1, st1.slip, st2.basestate.slip]
-            @test all(i .== 0.0)
-        end
+        Swalbe.slippage!(state1D, sys1D)
+        Swalbe.slippage!(state1D_act, sys1D_act)
+        @test all(f1 .== 0.0)
+        @test all(state1D.slip .== 0.0)
+        @test all(state1D_act.slip .== 0.0)
         # Velocity in x
-        for i in [st1, st2.basestate]
-            i.vel .= 0.1
-        end
         Swalbe.slippage!(f1, ones(30), fill(0.1,30), 1.0, 1/6)
-        Swalbe.slippage!(st1, sys1D)
-        Swalbe.slippage!(st2, sys1D)
-        for i in [f1, st1.slip, st2.basestate.slip]
-            @test all(isapprox.(i, 0.1/11; atol=1e-10))
-        end            
-        
+        state1D.vel .= 0.1
+        state1D.slip .= 0.0
+        state1D_act.vel .= 0.1
+        state1D_act.slip .= 0.0
+        Swalbe.slippage!(state1D, sys1D)
+        Swalbe.slippage!(state1D_act, sys1D_act)
+        @test all(f1 .== 0.1/11)
+        # @test state1D.slip[1] ≈ 0.1/11
+        # @test state1D_act.slip[1] ≈ 0.1/11
+        @test all(isapprox.(state1D.slip, 0.1/11))
+        @test all(isapprox.(state1D_act.slip, 0.1/11))
         # No slip
-        sys1D = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs(δ=0.0))
-        for i in [st1, st2.basestate]
-            i.vel .= -0.1
-        end
         Swalbe.slippage!(f1, ones(30), fill(-0.1,30), 0.0, 1/6)
-        Swalbe.slippage!(st1, sys1D)
-        Swalbe.slippage!(st2, sys1D)
-        for i in [f1, st1.slip, st2.basestate.slip]
-            @test all(isapprox.(i, -0.1/2; atol=1e-10))
-        end
-        
+        state1D.vel .= -0.1
+        state1D.slip .= 0.0
+        state1D_act.vel .= -0.1
+        state1D_act.slip .= 0.0
+        sys1D2 = Swalbe.SysConst_1D(L=30, δ=0.0)
+        sys1D2_act = Swalbe.SysConstActive_1D(L=30, δ=0.0)
+        Swalbe.slippage!(state1D, sys1D2)
+        Swalbe.slippage!(state1D_act, sys1D2_act)
+        @test all(f1 .== -0.1/2)
+        # @test state1D.slip[1] ≈ -0.1/2
+        # @test state1D_act.slip[1] ≈ -0.1/2
+        @test all(isapprox.(state1D.slip, -0.1/2))
+        @test all(isapprox.(state1D_act.slip, -0.1/2))
     end
-    
+
     @testset "Pressure gradient" begin
-        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs())
-        sys1 = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs())
+        sys = Swalbe.SysConst(Lx=5, Ly=5)
         state = Swalbe.Sys(sys, "CPU")    
-        state2 = Swalbe.Sys(sys, "CPU", kind="thermal")  
-        st = Swalbe.Sys(sys1)    
-        st2 = Swalbe.Sys(sys1, kind="thermal")     
         state.pressure .= reshape(collect(1.0:25),5,5)
-        state2.basestate.pressure .= reshape(collect(1.0:25),5,5)
-        st.pressure .= collect(1.0:30)
-        st2.basestate.pressure .= collect(1.0:30)
+        state.height .= 1.0
         Swalbe.h∇p!(state)
-        Swalbe.h∇p!(state2)
-        Swalbe.h∇p!(st)
-        Swalbe.h∇p!(st2)
+
+        sys_act = Swalbe.SysConstActive(Lx=5, Ly=5)
+        state_act = Swalbe.Sys(sys_act, "CPU")    
+        state_act.pressure .= reshape(collect(1.0:25),5,5)
+        state_act.height .= 1.0
+        Swalbe.h∇p!(state_act)
+        
         solx = [-1.5 -1.5 -1.5 -1.5 -1.5;
                  1.0 1.0 1.0 1.0 1.0;
                  1.0 1.0 1.0 1.0 1.0;
@@ -126,83 +161,43 @@
                 -7.5 5.0 5.0 5.0 -7.5;
                 -7.5 5.0 5.0 5.0 -7.5;
                 -7.5 5.0 5.0 5.0 -7.5]
-
-        sol = ones(30)
-        sol[1] = sol[end] = -14
-        for i in [(state.h∇px, state.h∇py), (state2.basestate.h∇px, state2.basestate.h∇py)]
-            @test all(i[1] .== solx)
-            @test all(i[2] .== soly)
-        end
-        for i in [st.h∇p, st2.basestate.h∇p]
-            @test all(i .== sol)
-        end
+        
+        @test all(state.h∇px .== solx)
+        @test all(state.h∇py .== soly)
+        @test all(state_act.h∇px .== solx)
+        @test all(state_act.h∇py .== soly)
     end
-    
+
     @testset "Thermal" begin
         f1 = ones(50,50)
         f2 = ones(50,50)
+        vartest = 2*0.01/11
+        Swalbe.thermal!(f1, f2, ones(50,50), 0.01, 1/6, 1.0)
+        @test mean(f1) ≈ 0.0 atol=1e-2
+        @test mean(f2) ≈ 0.0 atol=1e-2
+        @test var(f1) ≈ vartest atol=vartest/10
+        @test var(f2) ≈ vartest atol=vartest/10
+        vartest = 0.2/11
+        Swalbe.thermal!(f1, f2, ones(50,50), 0.1, 1/6, 1.0)
+        @test mean(f1) ≈ 0.0 atol=1e-2
+        @test mean(f2) ≈ 0.0 atol=1e-2
+        @test var(f1) ≈ vartest atol=vartest/10
+        @test var(f2) ≈ vartest atol=vartest/10
+    end
+    @testset "Thermal 1D" begin
         f1D = ones(100000)
-        
-        sys = Swalbe.SysConst(Lx=50, Ly=50, param=Swalbe.Taumucs(kbt=0.01))
-        sys1 = Swalbe.SysConst_1D(L=100000, param=Swalbe.Taumucs(kbt=0.01))
-        state = Swalbe.Sys(sys, "CPU", kind="thermal")    
-        st1 = Swalbe.Sys(sys1, kind="thermal")    
-        
-        for kb in [0.01, 0.1]
-            sys = Swalbe.SysConst(Lx=50, Ly=50, param=Swalbe.Taumucs(kbt=kb))
-            sys1 = Swalbe.SysConst_1D(L=100000, param=Swalbe.Taumucs(kbt=kb))
-            vartest = 2*kb/11
-            Swalbe.thermal!(f1, f2, ones(50,50), kb, 1/6, 1.0)
-            Swalbe.thermal!(f1D, ones(100000), kb, 1/6, 1.0)
-            Swalbe.thermal!(state, sys)
-            Swalbe.thermal!(st1, sys1)
-            for i in enumerate([f1, f2, state.kbtx, state.kbty, st1.kbt])
-                @test mean(i[2]) ≈ 0.0 atol=1e-2
-                @test var(i[2]) ≈ vartest atol=vartest/10
-            end
-        end
+        vartest = 2*0.01/11
+        Swalbe.thermal!(f1D, ones(100000), 0.01, 1/6, 1.0)
+        @test mean(f1D) ≈ 0.0 atol=1e-2
+        @test var(f1D) ≈ vartest atol=vartest/10
+        vartest = 0.2/11
+        Swalbe.thermal!(f1D, ones(100000), 0.1, 1/6, 1.0)
+        @test mean(f1D) ≈ 0.0 atol=1e-2
+        @test var(f1D) ≈ vartest atol=vartest/10
     end
 
-    @testset "inclination" begin
-        sys = Swalbe.SysConst(Lx=5, Ly=5, param=Swalbe.Taumucs())
-        sys1 = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs())
-        state = Swalbe.Sys(sys, "CPU")    
-        st1 = Swalbe.Sys(sys1) 
-        state2 = Swalbe.Sys(sys, "CPU", kind="thermal")    
-        st2 = Swalbe.Sys(sys1, kind="thermal")
-        sols = Dict(0=>0.05, 1=>0.1*(0.5 + 0.5 * tanh(1.0)))
-        for t in [0, 1]
-            Swalbe.inclination!([0.1, 0.1], state, t=t, tstart=0, tsmooth=1)
-            Swalbe.inclination!([0.1, 0.1], state2, t=t, tstart=0, tsmooth=1)
-            Swalbe.inclination!(0.1, st1, t=t, tstart=0, tsmooth=1)
-            Swalbe.inclination!(0.1, st2, t=t, tstart=0, tsmooth=1)
-            for i in [state.Fx, state.Fy, state2.basestate.Fx, state2.basestate.Fy, st1.F, st2.basestate.F]
-                @test all(i .== sols[t])
-                i .= 0.0
-            end
-        end
-    end
-  
-    @testset "Surface tension gradient" begin
-        sys1 = Swalbe.SysConst_1D(L=30, param=Swalbe.Taumucs())
-        state = Swalbe.Sys(sys1, kind="gamma") 
-        state.γ .= collect(1.0:30) 
-        Swalbe.∇γ!(state)
-        sol = fill(3/2, 30)
-        sol[1] = sol[end] = -21.0
-        @test all(state.∇γ .== sol)
-    end
+    
 
-    @testset "rho update" begin
-        @testset "Constant fields" begin
-            rho = ones(25)
-            height = ones(25)
-            output = zeros(25)
-            Swalbe.update_rho!(rho, output, height, zeros(25,2), zeros(25,4))
-            @test all(rho .== 1)
-        end
-    end
-  
     @testset "view four" begin
         dummy = reshape(collect(1:20),5,4)
         d1, d2, d3, d4 = Swalbe.view_four(dummy)

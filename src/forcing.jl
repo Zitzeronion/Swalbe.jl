@@ -40,28 +40,40 @@ and δ being the slip length, or the distance inside the substrate where the flu
 - [Oron, Davis and Bankoff](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.69.931)
 """
 function slippage!(slipx, slipy, height, velx, vely, δ, μ)
-    @. slipx .= (6μ * height * velx) / (2 * height^2 + 6δ * height + 3δ^2 )
-    @. slipy .= (6μ * height * vely) / (2 * height^2 + 6δ * height + 3δ^2 )
+    slipx .= (6μ .* height .* velx) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
+    slipy .= (6μ .* height .* vely) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
     return nothing
 end
-
-slippage!(state::LBM_state_2D, sys::SysConst) = slippage!(state.slipx, state.slipy, state.height, state.velx, state.vely, sys.param.δ, sys.param.μ)
-
-slippage!(state::Expanded_2D, sys::SysConst) = slippage!(state.basestate.slipx, state.basestate.slipy, state.basestate.height, state.basestate.velx, state.basestate.vely, sys.param.δ, sys.param.μ)
+# with state struct
+function slippage!(state::State, sys::SysConst)
+    state.slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height .* state.height .+ 6sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    state.slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height .* state.height .+ 6sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    return nothing
+end
+#for active thin film
+function slippage!(state::StateActive, sys::SysConstActive)
+    state.slipx .= (6*sys.μ .* state.height .* state.velx) ./ (2 .* state.height .* state.height .+ 6sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    state.slipy .= (6*sys.μ .* state.height .* state.vely) ./ (2 .* state.height .* state.height .+ 6sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    return nothing
+end
 
 function slippage!(slip, height, vel, δ, μ)
-    @. slip .= (6μ * height * vel) / (2 * height^2 + 6δ * height + 3δ^2 )
+    slip .= (6μ .* height .* vel) ./ (2 .* height.^2 .+ 6δ .* height .+ 3δ^2 )
     return nothing
 end
-
-slippage!(state::LBM_state_1D, sys::Consts_1D) = slippage!(state.slip, state.height, state.vel, sys.param.δ, sys.param.μ)
-    
-slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(state.basestate.slip, state.basestate.height, state.basestate.vel, sys.param.δ, sys.param.μ)
-
-# Dirty hack for reducing slip length
-function slippage2!(state::LBM_state_2D, sys::SysConst)
-    @. state.slipx .= (6sys.param.μ * (state.height+sys.param.hcrit) * state.velx) / (2 * (state.height+sys.param.hcrit)^2 + 6sys.param.δ * (state.height+sys.param.hcrit) + 3sys.param.δ^2 )
-    @. state.slipy .= (6sys.param.μ * (state.height+sys.param.hcrit) * state.vely) / (2 * (state.height+sys.param.hcrit)^2 + 6sys.param.δ * (state.height+sys.param.hcrit) + 3sys.param.δ^2 )
+# with state struct
+function slippage!(state::State_1D, sys::SysConst_1D)
+    state.slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    return nothing
+end
+#for active thin film
+function slippage!(state::Active_1D, sys::SysConstActive_1D)
+    state.slip .= (6*sys.μ .* state.height .* state.vel) ./ (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    return nothing
+end
+# Seems bullshit
+function slippage_new!(state::State_1D, sys::SysConst_1D)
+    state.slip .= (6*sys.μ)./(2 .* state.height.^3 .+ 6*sys.δ .* state.height .* state.height .+ 3*sys.δ*sys.δ .* state.height)
     return nothing
 end
 
@@ -88,7 +100,7 @@ As such it is the combination of a laplacian term that minimizes the surface are
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10, param=Swalbe.Taumucs()), "CPU");
+julia> state = Swalbe.Sys(Swalbe.SysConst(Lx=10, Ly=10), "CPU");
 
 julia> state.pressure .= reshape(collect(1:100),10,10);
 
@@ -99,6 +111,7 @@ Test Passed
 
 julia> @test all(state.h∇px[2,:] .== 1.0) # inside
 Test Passed
+
 ```
 
 # References
@@ -109,7 +122,7 @@ Test Passed
 
 See also: [`Swalbe.filmpressure!`](@ref)
 """
-function h∇p!(state::LBM_state_2D)
+function h∇p!(state::State)
     fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(fip, state.pressure, (1,0))
@@ -122,50 +135,82 @@ function h∇p!(state::LBM_state_2D)
     circshift!(fimjm, state.pressure, (-1,-1))
     circshift!(fipjm, state.pressure, (1,-1))
     # In the end it is just a weighted sum...
-    @. state.h∇px .= state.height * (-1/3 * (fip - fim) - 1/12 * (fipjp - fimjp - fimjm + fipjm))
-    @. state.h∇py .= state.height * (-1/3 * (fjp - fjm) - 1/12 * (fipjp + fimjp - fimjm - fipjm))
+    state.h∇px .= state.height .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
+    state.h∇py .= state.height .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
+
+    return nothing
+end
+#Active thin film version
+function h∇p!(state::StateActive)
+    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(fip, state.pressure, (1,0))
+    circshift!(fjp, state.pressure, (0,1))
+    circshift!(fim, state.pressure, (-1,0))
+    circshift!(fjm, state.pressure, (0,-1))
+    # Diagonal elements  
+    circshift!(fipjp, state.pressure, (1,1))
+    circshift!(fimjp, state.pressure, (-1,1))
+    circshift!(fimjm, state.pressure, (-1,-1))
+    circshift!(fipjm, state.pressure, (1,-1))
+    # In the end it is just a weighted sum...
+    state.h∇px .= state.height .* (-1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm))
+    state.h∇py .= state.height .* (-1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm))
 
     return nothing
 end
 
-function h∇p!(state::LBM_state_1D)
+# One dimensional implementation
+function h∇p!(state::State_1D)
     fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
     circshift!(fip, state.pressure, 1)
     circshift!(fim, state.pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.h∇p .= state.height .* -0.5 .* (fip .- fim)
+
+    return nothing
+end
+function h∇p_new!(state::State_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.h∇p .= -0.5 .* (fip .- fim)
+
+    return nothing
+end
+#active thin film version
+function h∇p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    
     # In the end it is just a weighted sum...
     state.h∇p .= state.height .* -0.5 .* (fip .- fim)
 
     return nothing
 end
 
-function h∇p!(state::Expanded_2D)
-    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(state.basestate.dgrad)
-    # Straight elements j+1, i+1, i-1, j-1
-    circshift!(fip, state.basestate.pressure, (1,0))
-    circshift!(fjp, state.basestate.pressure, (0,1))
-    circshift!(fim, state.basestate.pressure, (-1,0))
-    circshift!(fjm, state.basestate.pressure, (0,-1))
-    # Diagonal elements  
-    circshift!(fipjp, state.basestate.pressure, (1,1))
-    circshift!(fimjp, state.basestate.pressure, (-1,1))
-    circshift!(fimjm, state.basestate.pressure, (-1,-1))
-    circshift!(fipjm, state.basestate.pressure, (1,-1))
-    # In the end it is just a weighted sum...
-    @. state.basestate.h∇px .= state.basestate.height * (-1/3 * (fip - fim) - 1/12 * (fipjp - fimjp - fimjm + fipjm))
-    @. state.basestate.h∇py .= state.basestate.height * (-1/3 * (fjp - fjm) - 1/12 * (fipjp + fimjp - fimjm - fipjm))
+"""
+	function rho_grad_p!(state::Active_1D)
 
-    return nothing
-end
-# One dimensional implementation
-function h∇p!(state::Expanded_1D)
-    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+Calculates ``\\rho\\nabla p`` where p is the pressure for ``\\rho``
+
+See also: [`Swalbe.rho_grad_p!`](@ref)
+"""
+function rho_grad_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
-    circshift!(fip, state.basestate.pressure, 1)
-    circshift!(fim, state.basestate.pressure, -1)
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    
     # In the end it is just a weighted sum...
-    state.basestate.h∇p .= state.basestate.height .* -0.5 .* (fip .- fim)
-
+    state.rho∇p .= state.rho .* -0.5 .* (fip .- fim)
     return nothing
 end
 
@@ -205,10 +250,8 @@ Similar to the pressure gradient the addition of this term is introduced as forc
 with ``\\alpha_{\\delta}(h)`` being the force generated due to substrate slip. 
 
 # Examples
-```jldoctest; output = false
-julia> using Swalbe, Statistics, Test, Random
-
-julia> Random.seed!(1234); # Set a seed
+```jldoctest
+julia> using Swalbe, Statistics, Test
 
 julia> x = ones(50,50); y = ones(50,50); h = ones(50,50);
 
@@ -222,6 +265,7 @@ Test Passed
 
 julia> @test var(x) ≈ 2*0.1/11 atol=(2*0.1/11)/10 # var = 2kbt*6*μ/slip
 Test Passed
+
 ```
 
 # References
@@ -236,29 +280,25 @@ function thermal!(fluc_x, fluc_y, height, kᵦT, μ, δ)
     randn!(fluc_x)
     randn!(fluc_y)
     fluc_x .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                    (2 .* height .* height .+
+                    (2 .* height.^2 .+
                      6 .* height .* δ .+
-                     3 .* δ .* δ))
+                     3 .* δ^2))
     fluc_y .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                    (2 .* height .* height .+
+                    (2 .* height.^2 .+
                      6 .* height .* δ .+
-                     3 .* δ .* δ))
+                     3 .* δ^2))
     return nothing
 end
-
-thermal!(state::State_thermal, sys::SysConst) = thermal!(state.kbtx, state.kbty, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
 
 function thermal!(fluc, height, kᵦT, μ, δ)
     randn!(fluc)
     fluc .*= sqrt.(2 .* kᵦT .* μ .* 6 .* height ./
-                  (2 .* height .* height .+
+                  (2 .* height.^2 .+
                    6 .* height .* δ .+
-                   3 .* δ .* δ))
+                   3 .* δ^2))
     
     return nothing
 end
-
-thermal!(state::State_thermal_1D, sys::Consts_1D) = thermal!(state.kbt, state.basestate.height, sys.param.kbt, sys.param.μ, sys.param.δ)
 
 """
    inclination!(α, state)
@@ -285,93 +325,392 @@ Thus the force becomes
 
 with ``t_0`` being the time lag at which the `tanh` changes sign and ``t_s`` is width of interval between -1 and 1.
 
-See also: [`Swalbe.run_dropletforced`](@ref)
+See also: [Swalbe.run_dropletforced](@ref)
 """
-function inclination!(α::Vector, state::LBM_state_2D; t=1000, tstart=0, tsmooth=1)
-    @. state.Fx .+= state.height * α[1] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
-    @. state.Fy .+= state.height * α[2] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
+function inclination!(α::Vector, state::State; t=1000, tstart=0, tsmooth=1)
+    state.Fx .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
+    state.Fy .+= state.height .* α[2] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
     return nothing
 end
 
-function inclination!(α::Vector, state::Expanded_2D; t=1000, tstart=0, tsmooth=1)
-    @. state.basestate.Fx .+= state.basestate.height * α[1] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
-    @. state.basestate.Fy .+= state.basestate.height * α[2] * (0.5 + 0.5 * tanh((t - tstart)/tsmooth))
+function inclination!(α::Vector, state::State_1D; t=1000, tstart=0, tsmooth=1)
+    state.F .+= state.height .* α[1] .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
     return nothing
 end
 
-function inclination!(α::Float64, state::State_1D; t=1000, tstart=0, tsmooth=1)
-    state.F .+= state.height .* α .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
 
-    return nothing
-end
-
-function inclination!(α::Float64, state::Expanded_1D; t=1000, tstart=0, tsmooth=1)
-    state.basestate.F .+= state.basestate.height .* α .* (0.5 .+ 0.5 .* tanh((t - tstart)/tsmooth))
-
-    return nothing
-end
-
-"""
-    update_rho()
-
-Time evolution of the `active` field rho.
-
-TODO: @Tilman!
-"""
-function update_rho!(rho, rho_int, height, dgrad, differentials; D=1.0, M=0.0)
-    lap_rho, grad_rho, lap_h, grad_h = view_four(differentials)
-    ∇²f!(lap_rho, rho, dgrad)
-    ∇f!(grad_rho, rho, dgrad)
-    ∇²f!(lap_h, height, dgrad)
-    ∇f!(grad_h, height, dgrad)
-    rho_int .= (D .* lap_rho .- 
-               M .* (grad_rho.^2 .+ rho .* lap_rho) .- 
-               D .* (grad_rho .* grad_h ./ height + rho .* (lap_h ./ height .- (grad_h ./ height).^2 )))
-
-    rho .+= rho_int
-
-    return nothing
-end
 
 """
     surface_tension_gradient!(state)
 
-Computes the gradient of a spatially resolved surface tension field.
+Computes the gradient of a spatially resolved surface tension field via central differneces and then concludes the surface stress as 
+
+`` \\frac{h^2 + 2 \\delta h }{2M(h)}``
+
+with 
+
+``M(h)= \\frac{2h^2 + 6 \\delta h + 3\\delta^2 }{ 6}``
+
+and implicitly ``\\rho_h=1``. 
 """
-function ∇γ!(state::T) where {T <: Expanded_1D}
-    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+function ∇γ!(state::Active_1D, sys::SysConstActive_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
     circshift!(fip, state.γ, 1)
     circshift!(fim, state.γ, -1)
     
     # In the end it is just a weighted sum...
-    state.∇γ .= -3/2 .* ((fip .- fim) ./ 2.0)
+    # state.∇γ .= -3/2 .* ((fip .- fim) ./ 2.0)
+    state.∇γ .=((fip .- fim) .* -0.5)
+    state.stress .= state.∇γ .* (state.height .* state.height .* 0.5 .+ sys.δ .* state.height) .* 6 ./ (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ )
     return nothing
 end
 
-function ∇γ!(state::T, sys::SysConst_1D) where {T <: Expanded_1D}
-    fip, fim = viewneighbors_1D(state.basestate.dgrad)
+
+
+
+
+"""
+    rho_forcing!(state,sys)
+Calculates the neccessary forces for `` \\rho `` according to 
+
+`` \\F = - \\frac{D \\nabla \\rho + M\\Gamma \\rho \\nabla \\rho - D \\rho \\nabla \\ln h}{\\rho + \\rho^*}``
+
+where ``\\rho^*`` ensure we don't devide by ``0``.
+
+All unused. Maybe delete them.
+"""
+
+function rho_forcing!(state::CuStateActive_1D,sys)
+     # calculate derivatives as finite differences
+     ∇f_Cu_1D!(state.grad_rho, state.rho, state.dgrad)
+     ∇f_Cu_1D!(state.grad_h, state.height, state.dgrad)
+     # calculate force
+     state.rho_F .= ( (-sys.D .* state.grad_rho .- sys.M .* sys.Γ .* state.rho .* state.grad_rho .+ sys.D .* state.rho .* (state.grad_h ./ (state.height .+ 2*sys.hcrit))) ./ (state.rho .+ 2*sys.hcrit))
+    return nothing
+end
+
+function rho_forcing!(state::StateActive_1D,sys)
+    # calculate derivatives as finite differences
+    ∇f!(state.grad_rho, state.rho, state.dgrad)
+    ∇f!(state.grad_h, state.height, state.dgrad)
+    # calculate force
+    state.rho_F .= - sys.D .* state.grad_rho .+state.vel .* state.rho .+ sys.D .* state.rho .* state.grad_h ./ state.height .- state.rho.*state.rho_vel
+   return nothing
+end
+
+function rho_diffusion!(state::StateActive_1D,sys)
+    # calculate derivatives as finite differences
+    ∇f!(state.grad_rho, state.rho, state.dgrad)
+    ∇f!(state.grad_h, state.height, state.dgrad)
+    # calculate force
+    state.diffusion_rho .=  sys.D .* state.grad_rho .- sys.D .* state.rho .* state.grad_h ./ state.height
+   return nothing
+end
+
+
+"""
+    rho_forcing!(state,sys)
+Calculates the neccessary forces for `` \\rho `` according to 
+
+`` F = \\rho \\nabla p(\\rho) ``
+
+where ``p(\\rho)=(0.05/(0.05+\\rho))^n`` .
+"""
+function rho_forcing_quadratic!(state::StateActive_1D,sys)
+    # add a force coming from a disjoining pressure p(rho)=0.05^15/(rho+0.05)^15 as F= rho nabla p(rho)
+    # carfull there is another call of this line line rho_moments_quadratic!
+    ∇f!(state.grad_rho, state.rho, state.dgrad)
+    state.rho_F .= sys.rho_n .* Swalbe.power_broad.(sys.hcrit./(state.rho .+ sys.hcrit), sys.rho_n) ./ (state.rho .+ sys.hcrit) .* state.grad_rho
+   return nothing
+end
+
+"""
+    function rho_grad_disj_p!(state::Active_1D)
+
+A central differences scheme to calculate ``\\rho \\nabla p_{\\rho}``.
+"""
+function rho_grad_disj_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
-    circshift!(fip, state.γ, 1)
-    circshift!(fim, state.γ, -1)
+    circshift!(fip, state.rho_pressure, 1)
+    circshift!(fim, state.rho_pressure, -1)
     
-    # Here I try to get rid of the slippage term in the gradient
-    state.∇γ .=  (2 .* state.basestate.height.^2 .+ 6 .* sys.param.δ .* state.basestate.height .+ 3*sys.param.δ^2 ) ./ (6 .* state.basestate.height) .* state.basestate.height ./ 2 .* ((fip .- fim) ./ 2.0)
+    # In the end it is just a weighted sum...
+    state.rho∇p .= state.rho .* 0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+
+"""
+    function rho_A_grad_disj_p!(state::Active_1D)
+
+A central differences scheme to calculate ``\\rho_A \\nabla p_{\\rho}``.
+"""
+function rho_A_grad_disj_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_A_pressure, 1)
+    circshift!(fim, state.rho_A_pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.rho_A∇p .= state.rho_A .* 0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+
+
+"""
+    function rho_B_grad_disj_p!(state::Active_1D)
+
+A central differences scheme to calculate ``\\rho_B \\nabla p_{\\rho}``.
+"""
+function rho_B_grad_disj_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_B_pressure, 1)
+    circshift!(fim, state.rho_B_pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.rho_B∇p .= state.rho_B .* 0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+
+
+function grad_rho_u!(state::Active_1D, sys::SysConstActive_1D)
+    state.z.=max.(state.height .- sys.B, 0)
+    state.rho_adv_vel .= state.rho .* ( state.h∇p ./ (state.height.*sys.μ)  .* ( state.z.^2 ./ 2 .- state.height .* state.z .- sys.δ .* state.height .- sys.δ ./2) .+ state.∇γ ./ sys.μ .* (state.z .+ sys.δ))
+    # state.rho_adv_vel .= state.rho .* state.vel
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_adv_vel, 1)
+    circshift!(fim, state.rho_adv_vel, -1)
+    
+    # In the end it is just a weighted sum...
+    state.∇rho_u .= 0.5 .* (fip .- fim)
+    # state.∇rho_u .= 0
+
+    return nothing
+end
+
+
+
+
+function rho_grad_v!(state::Active_1D, sys::SysConstActive_1D)
+    state.rho_adv_vel .= state.vel .- sys.D .* state.grad_rho ./ state.rho .+ sys.D .* state.grad_h ./ (state.height)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_adv_vel, 1)
+    circshift!(fim, state.rho_adv_vel, -1)
+    state.diffusion_rho.= state.rho.*(fip .- fim)
+    return nothing
+end
+
+
+
+function rho_forcing_new_old_approach!(state::Active_1D, sys::SysConstActive_1D)
+	∇f!(state.grad_rho, state.rho, state.dgrad)
+	∇f!(state.grad_h, state.height, state.dgrad)
+	∇f!(state.grad_p, state.pressure, state.dgrad)
+	state.rho_F .= (
+		.- state.rho .* state.grad_p 
+		.+ ( .+ sys.Γ .* state.rho .* state.grad_rho .- sys.D .* state.grad_rho .* sys.μ .+ sys.D .* state.rho .* state.grad_h ./ state.height .* sys.μ) .* (
+				(sys.δ .+ state.height ./ 2) ./ (1/6 .* (3 * sys.δ*sys.δ .+ 6 .* sys.δ .* state.height .+ 2 .* state.height .* state.height))
+		) 
+		.- state.rho .* state.rho_vel .* sys.μ ./  (1/6 .* (3 * sys.δ*sys.δ .+ 6 .* sys.δ .* state.height .+ 2 .* state.height .* state.height))
+	)
+    return nothing
+end
+
+
+
+function rho_forcing_new_approach!(state::Active_1D, sys::SysConstActive_1D)
+        ∇f!(state.grad_rho, state.rho, state.dgrad)
+        ∇f!(state.grad_h, state.height, state.dgrad)
+        ∇f!(state.grad_p, state.pressure, state.dgrad)
+        state.rho_F .= (
+                - state.rho .* state.grad_p
+                .+ ( - sys.Γ .* state.rho .* state.grad_rho  .- sys.D .* state.grad_rho .* sys.μ  .- sys.D .* state.rho .* state.grad_h .* state.nabla_F .* sys.μ ) .* ( state.V_gamma ./ state.V_p)
+                .- state.rho .* state.rho_vel .* sys.μ ./  ( state.V_p )
+	)
+    return nothing
+end
+
+
+
+function rho_forcing_new_approach_bounce_back!(state::Active_1D, sys::SysConstActive_1D)
+        ∇f!(state.grad_rho, state.rho, state.dgrad)
+        ∇f!(state.grad_h, state.height, state.dgrad)
+        ∇f!(state.grad_p, state.pressure, state.dgrad)
+        state.rho_F .= (
+                - state.rho .* state.grad_p
+                .+ ( - sys.Γ .* state.rho .* state.grad_rho  .- sys.D .* state.grad_rho .* sys.μ  .- sys.D .* state.rho .* state.grad_h .* state.nabla_F .* sys.μ ) .* ( state.V_gamma ./ state.V_p)
+                .- state.rho .* state.rho_vel .* sys.μ ./  ( state.V_p )
+		.+ state.rho∇p
+        )
+        state.rho_F .*= (1 .- state.rightrocks) .* (1 .- state.leftrocks)
     return nothing
 end
 
 """
-    view_four()
+    function V_gamma!(state::Active_1D, sys::SysConstActive_1D)
 
-Splits a chuck of memory in four equivalent chucks
+Calculates the term ``V_\\gamma`` that enters as a part of the diffusive velocity of the solvent ``\\rho`` as ``V_\\gamma \\nabla \\gamma``. We have 
+
+``V_\\gamma = \\begin{cases}
+\\delta & \\alpha = \\infty\\\\
+\\frac{1}{1-e^{-\\alpha h}}\\left( -\\delta e^{-\\alpha h}+ \\frac{1-e^{-\\alpha h }( \\alpha h +1 )}{\\alpha}+\\delta\\right) & \\alpha \\geq 0 \\\\
+\\delta + \\frac{h}{2} & \\alpha =0\\\\
+\\frac{1}{e^{\\alpha h}-1}\\left( \\delta (e^{\\alpha h}-1)+ \\frac{e^{\\alpha h}-1}{\\alpha }-h \\right) & \\alpha \\leq 0\\\\
+\\delta + h & \\alpha =-\\infty
+\\end{cases}``
 """
-function view_four(f)
-    f1 = view(f, :, 1)
-    f2 = view(f, :, 2)
-    f3 = view(f, :, 3)
-    f4 = view(f, :, 4)
-    
-    return f1, f2, f3, f4
+function V_gamma!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.V_gamma .= sys.δ .+ state.height
+    elseif sys.alpha<0
+        state.V_gamma .= (sys.δ .* (exp.(sys.alpha .* state.height) .- 1) .+ (exp.(sys.alpha .* state.height) .- 1) ./ sys.alpha .- state.height ) ./ (exp.(sys.alpha .* state.height) .- 1)
+    elseif sys.alpha==0
+        state.V_gamma .= (2 .* sys.δ .+ state.height ) ./ 2
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.V_gamma .=  ( -sys.δ .* exp.(-sys.alpha .* state.height) .+ (1 .- exp.(-sys.alpha .* state.height) .* (sys.alpha .* state.height .+ 1)) ./ sys.alpha .+ sys.δ) ./ (1 .- exp.(-sys.alpha .* state.height))
+    else
+        state.V_gamma .=  sys.δ
+    end
+    return nothing
+end
+
+function V_gamma_A!(state::Active_1D, sys::SysConstActive_1D)
+        state.V_gamma_A .= (2 .* sys.δ .+ state.height ) ./ 2
+    return nothing
+end
+
+
+
+
+"""
+    function V_p!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates ``V_p`` that determines the pressure driven part of the solvent advection that has a velocity ``\\frac{\\nalbla p }{\\mu }V_p`` as
+
+``V_p= \\begin{cases}
+\\frac{\\delta^2}{2}+ \\delta h & \\alpha =\\infty\\\\
+- \\frac{2 - 2 \\alpha h - \\alpha^2 \\delta (\\delta  + 2 h) + e^{-\\alpha h} ( \\alpha^2 (\\delta  + h)^2-2)}{2 \\alpha^2(1-e^{-\\alpha h})} & \\alpha \\geq 0 \\\\
+\\frac{1}{6} (3 \\delta^2 + 6 \\delta h + 2 h^2) & \\alpha =0 \\\\
+-  \\frac{-2 + \\alpha^2 (\\delta + h)^2 - e^{\\alpha h}\\left(-2 + 2 \\alpha h + \\alpha^2 \\delta (\\delta + 2 h)\\right)}{2 a^2(e^{\\alpha h}-1)} & \\alpha \\leq 0\\
+\\frac{1}{2}(\\delta^2 + 2\\delta + h^2) & \\alpha =-\\infty
+\\end{cases}``
+"""
+function V_p!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.V_p .= (sys.δ*sys.δ .+ 2 * sys.δ .* state.height .+ state.height .* state.height) .* 0.5
+    elseif sys.alpha<0
+        state.V_p .= .-(-2 .+ sys.alpha*sys.alpha .* (sys.δ .+ state.height) .* (sys.δ .+ state.height).- exp.(sys.alpha .* state.height) .* (-2 .+ 2*sys.alpha .* state.height .+ sys.alpha*sys.alpha * sys.δ .*(sys.δ .+ 2 .* state.height))) ./ (2*sys.alpha*sys.alpha .* (exp.(sys.alpha .* state.height) .- 1))
+    elseif sys.alpha==0
+        state.V_p .= (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ ) ./ (6)
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.V_p .= .-(2 .-2 * sys.alpha .* state.height .- sys.alpha*sys.alpha * sys.δ .* (sys.δ .+ 2 .* state.height ) .+ exp.(-sys.alpha .* state.height) .* (sys.alpha*sys.alpha .*(sys.δ .+ state.height) .* (sys.δ .+ state.height).-2)) ./ (2*sys.alpha*sys.alpha .* (1 .- exp.(-sys.alpha .* state.height)))
+    else
+        state.V_p .= sys.δ*sys.δ/2  .+ sys.δ .* state.height
+    end
+    return nothing
+end
+
+function V_p_A!(state::Active_1D, sys::SysConstActive_1D)
+        state.V_p_A .= (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ ) ./ (6)
+    return nothing
+end
+
+
+
+"""
+    function nabla_F!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the Fick Jackobs term that corrects the diffusion according to a exponential distribution of solute. 
+
+``\\beta \\frac{1}{\\nabla h} \\nabla \\mathcal{F}= \\begin{cases}
+0 & \\alpha = \\pm \\infty\\\\
+- \\frac{1}{h} & \\alpha =0\\\\
+\\frac{\\alpha}{e^{\\alpha h}-1} & \\alpha \\geq 0\\\\
+\\frac{\\alpha e^{\\alpha h}}{e^{\\alpha h}-1} & \\alpha \\leq 0  
+\\end{cases}``
+"""
+function nabla_F!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.nabla_F .= 0
+    elseif sys.alpha<0
+        state.nabla_F .=  .- sys.alpha .* exp.(sys.alpha .* state.height) ./ (exp.(sys.alpha .* state.height) .- 1)
+    elseif sys.alpha==0
+        state.nabla_F .= .-1 ./ state.height
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.nabla_F .=  .- sys.alpha ./ (exp.(sys.alpha .* state.height) .- 1)
+    else
+        state.nabla_F .= 0
+    end
+    return nothing
+end
+
+
+
+function nabla_F_precursor!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.nabla_F .= 0
+    elseif sys.alpha<0
+        state.nabla_F .=  .- sys.alpha .* exp.(sys.alpha .* state.height) ./ (exp.(sys.alpha .* state.height) .- 1)
+    elseif sys.alpha==0
+        state.nabla_F .= .-1 ./ state.height
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.nabla_F .=  .- sys.alpha ./ (exp.(sys.alpha .* state.height) .- 1)
+    else
+        state.nabla_F .= 0
+    end
+    @. state.precursor = ifelse(state.height <= sys.hmin - sys.hcrit + 0.01, 0,1)
+    state.nabla_F .-= (1 .- state.precursor) .* sys.prescursor_nabla_F
+    return nothing
+end
+
+"""
+    function nabla_F_0!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the Fick Jackobs term that corrects the diffusion according to a exponential distribution of solute. 
+
+``\\beta \\frac{1}{\\nabla h} \\nabla \\mathcal{F}= - \\frac{1}{h} ``
+"""
+function nabla_F_0!(state::Active_1D)
+    state.nabla_F_0 .= .-1 ./ state.height
+    return nothing
+end
+
+
+
+"""
+    function V_p_0!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates ``V_p`` that determines the pressure driven part of the solvent advection that has a velocity ``\\frac{\\nalbla p }{\\mu }V_p`` as
+
+``V_p= \\frac{1}{6} (3 \\delta^2 + 6 \\delta h + 2 h^2)``
+"""
+function V_p_0!(state::Active_1D, sys::SysConstActive_1D)
+    state.V_p_0 .= (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ ) ./ (6)
+    return nothing
+end
+
+
+
+"""
+    function V_gamma_0!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the term ``V_\\gamma`` that enters as a part of the diffusive velocity of the solvent ``\\rho_A`` as ``V_\\gamma \\nabla \\gamma``. We have 
+
+``V_\\gamma =\\delta + \\frac{h}{2} & \\alpha =0\\\\``
+"""
+function V_gamma_0!(state::Active_1D, sys::SysConstActive_1D)
+    state.V_gamma .= (2 .* sys.δ .+ state.height ) ./ 2
+    return nothing
 end

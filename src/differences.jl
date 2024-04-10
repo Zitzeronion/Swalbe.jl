@@ -72,13 +72,32 @@ function ∇²f!(output, f, γ)
     return nothing
 end
 
-function ∇²f!(output, f::Vector, dgrad)
-    hip, him = viewneighbors_1D(dgrad)
+function ∇²f!(output, f, dgrad, γ)
+    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighbors(dgrad)
     # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, f, 1)
-    circshift!(him, f, -1)
+    fip = circshift(f, (1,0))
+    fjp = circshift(f, (0,1))
+    fim = circshift(f, (-1,0))
+    fjm = circshift(f, (0,-1))
+    # Diagonal elements  
+    fipjp = circshift(f, (1,1))
+    fimjp = circshift(f, (-1,1))
+    fimjm = circshift(f, (-1,-1))
+    fipjm = circshift(f, (1,-1))
     # In the end it is just a weighted sum...
-    output .= hip .- 2 .* f .+ him
+    output .= γ .* (2/3 .* (fjp .+ fip .+ fim .+ fjm) 
+                 .+ 1/6 .* (fipjp .+ fimjp .+ fimjm .+ fipjm) 
+                 .- 10/3 .* f)
+    return nothing
+end
+
+function ∇²f!(output, f::Vector, dgrad)
+    fip, fim = viewneighbors_1D(dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(fip, f, 1)
+    circshift!(fim, f, -1)
+    # In the end it is just a weighted sum...
+    output .= fip .- 2 .* f .+ fim
     return nothing
 end
 
@@ -227,6 +246,19 @@ function ∇f!(output, f::Vector, dgrad)
     return nothing
 end
 
+
+function ∇f_Cu_1D!(output, f::CUDA.CuArray, dgrad)
+    fip, fim = viewneighbors_1D(dgrad)
+    # One dim case, central differences
+    circshift!(fip, f, 1)
+    circshift!(fim, f, -1)
+    
+    # In the end it is just a weighted sum...
+    output .= -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
 """
     viewneighbors(f)
 
@@ -242,6 +274,7 @@ julia> f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewneighbors(ftest);
 
 julia> @test all(f3 .== ftest[:,:,3])
 Test Passed
+
 ```
 
 See also: [`Swalbe.∇f!`](@ref), [`Swalbe.filmpressure!`](@ref)
@@ -274,6 +307,7 @@ julia> f1, f2 = Swalbe.viewneighbors_1D(ftest);
 
 julia> @test all(f2 .== ftest[:,2])
 Test Passed
+
 ```
 
 See also: [`Swalbe.∇f!`](@ref), [`Swalbe.filmpressure!`](@ref)

@@ -1,6 +1,7 @@
 module Swalbe
 # Coding
-using Revise, CUDA, Statistics, Random, Base, LazySets 
+using Revise, Statistics, Random, Base, LazySets, ThreadsX, LinearAlgebra, FFTW
+using CUDA
 # Datatypes and output
 using FileIO, JLD2, BSON, DataFrames
 
@@ -14,6 +15,7 @@ include("forcing.jl")
 include("moments.jl")
 include("simulate.jl")
 include("measures.jl")
-include("obstacle.jl")
+include("logic.jl")
+include("active.jl")
 
 end
