@@ -1,7 +1,7 @@
 # Swalbe.jl
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://zitzeronion.github.io/Swalbe.jl/dev/)
-[![CI](https://github.com/Zitzeronion/Swalbe.jl/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/Zitzeronion/Swalbe.jl/actions)
+[![CI](https://github.com/Zitzeronion/Swalbe.jl/actions/workflows/ci.yml/badge.svg?branch=master&event=push)](https://github.com/Zitzeronion/Swalbe.jl/actions)
 [![codecov](https://codecov.io/gh/Zitzeronion/Swalbe.jl/branch/master/graph/badge.svg?token=J1AMK7YW69)](https://codecov.io/gh/Zitzeronion/Swalbe.jl)
 [![status](https://joss.theoj.org/papers/414a5b53a41e05a250a352360a7da337/status.svg)](https://joss.theoj.org/papers/414a5b53a41e05a250a352360a7da337)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7030890.svg)](https://doi.org/10.5281/zenodo.7030890)
