@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · Swalbe</title><meta name="title" content="Home · Swalbe"/><meta property="og:title" content="Home · Swalbe"/><meta property="twitter:title" content="Home · Swalbe"/><meta name="description" content="Documentation for Swalbe."/><meta property="og:description" content="Documentation for Swalbe."/><meta property="twitter:description" content="Documentation for Swalbe."/><meta property="og:url" content="https://Ziteronion.github.io/Swalbe.jl/"/><meta property="twitter:url" content="https://Ziteronion.github.io/Swalbe.jl/"/><link rel="canonical" href="https://Ziteronion.github.io/Swalbe.jl/"/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>Swalbe</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#Thin-film-simulations-using-lattice-Boltzmann"><span>Thin film simulations using lattice Boltzmann</span></a></li><li><a class="tocitem" href="#How-to-**get**"><span>How to <strong>get</strong></span></a></li><li><a class="tocitem" href="#How-to-**use**"><span>How to <strong>use</strong></span></a></li><li><a class="tocitem" href="#How-to-**perform-research**"><span>How to <strong>perform research</strong></span></a></li><li><a class="tocitem" href="#How-to-**support-and-contribute**"><span>How to <strong>support and contribute</strong></span></a></li></ul></li><li><a class="tocitem" href="tutorials/">Tutorials</a></li><li><a class="tocitem" href="functions/">Functions</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/Zitzeronion/Swalbe.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Swalbe.jl"><a class="docs-heading-anchor" href="#Swalbe.jl">Swalbe.jl</a><a id="Swalbe.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Swalbe.jl" title="Permalink"></a></h1><p>A lattice Boltzmann framework to solve thin liquid film problems.</p><h2 id="Thin-film-simulations-using-lattice-Boltzmann"><a class="docs-heading-anchor" href="#Thin-film-simulations-using-lattice-Boltzmann">Thin film simulations using lattice Boltzmann</a><a id="Thin-film-simulations-using-lattice-Boltzmann-1"></a><a class="docs-heading-anchor-permalink" href="#Thin-film-simulations-using-lattice-Boltzmann" title="Permalink"></a></h2><p>Why is a thin film solver called <strong>Swalbe.jl</strong> you may ask?</p><p>The idea is to use the <a href="https://en.wikipedia.org/wiki/Lattice_Boltzmann_methods"><em>lattice Boltzmann method (LBM)</em></a> and all its benefits (easy to code, vast amount of literature and scalability) to simulate thin liquid film flows. Instead of reinventing the wheel we make use of a class of lattice Boltzmann models that were build to simulate shallow water problems, see <a href="http://pordlabs.ucsd.edu/rsalmon/salmon.1999a.pdf">Salmon</a> (not the fish :fish:), <a href="https://people.maths.ox.ac.uk/dellar/papers/LBshallow.pdf">Dellar</a> and <a href="https://hal.archives-ouvertes.fr/hal-01625073/document">van Thang et al.</a> (<em>all free to read</em>). Thus the name of the package <strong>S</strong>hallow <strong>WA</strong>ter <strong>L</strong>attice <strong>B</strong>oltzmann slov<strong>E</strong>r or <strong>Swalbe</strong>.</p><p>Of course using a plain shallow water model will not work to simulate thin film dynamics, that is the reason we build our own model :neckbeard:. Now the main difference is that we throw away most of the shallow water parts by assuming they are small as compared to thin film relevant things, e.g. the substrate fluid interaction. The full explanation of the model with some benchmarks can be found in our paper <a href="http://pub.hi-ern.de/publications/2019/ZSMDH19/2019-ThinFilm-PRE.pdf">Zitz et al.</a> (the C/C++ OpenACC codebase has not been further developed since the project moved to <em>Julia</em>)</p><h2 id="How-to-**get**"><a class="docs-heading-anchor" href="#How-to-**get**">How to <strong>get</strong></a><a id="How-to-**get**-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-**get**" title="Permalink"></a></h2><p>First of all you need a <em>Julia</em> installation.  <em>Julia</em> is a high level open source programming language and it is as easy to use as python :snake: (my opinion).</p><p><em>Julia</em> can be downloaded at the projects homepage <a href="https://julialang.org/">julialang.org</a>, or clones from the github <a href="https://github.com/JuliaLang/julia">repo</a>. If you download <em>Julia</em> from the homepage make sure that you use the correct installation for your operating system. <strong>Important</strong> for <strong>CUDA</strong> we require <em>Julia</em> version 1.6 or higher, usually the most recent version is also the one you should aim for.  </p><p><strong>Swalbe.jl</strong> is a registered package of the <em>Julia</em> package manager. The only thing you have to do is to add the package to your <em>Julia</em> environment with: </p><pre><code class="language-julia hljs">julia&gt; ] add Swalbe</code></pre><p>Of course you can as well clone or fork the repo and activate the package inside der <strong>REPL</strong>. First you need to go the Swalbe directory and open a <strong>REPL</strong></p><pre><code class="language-bash hljs">cd \Swalbe_folder
+julia</code></pre><p>now you can activate the package with</p><pre><code class="language-julia hljs">julia&gt; ] activate .
+  Activating environment at `local_Swalbe_folder`
+(Swalbe)&gt; </code></pre><p>To see that the package works you can run the test suit with</p><pre><code class="language-julia hljs">julia&gt; ] test Swalbe</code></pre><p>All tests can be found in <a href="https://github.com/Zitzeronion/Swalbe.jl/tree/master/test">test folder</a>, but do not expect too many comments. Still especially the <a href="https://github.com/Zitzeronion/Swalbe.jl/blob/master/test/simulate.jl">simulate.jl</a> file is worth a look.</p><h2 id="How-to-**use**"><a class="docs-heading-anchor" href="#How-to-**use**">How to <strong>use</strong></a><a id="How-to-**use**-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-**use**" title="Permalink"></a></h2><p>The idea of <strong>Swalbe.jl</strong> is to script your thin film simulation, based on a lattice Boltzmann iteration. That is why most core functions can easily be extended, or used out of the box. So how does it work, fist we have to load <strong>Swalbe.jl</strong> into the REPL or put the following line on top of our script</p><pre><code class="language-julia hljs">julia&gt; ] add Swalbe         # If not yet added
+julia&gt; using Swalbe</code></pre><p>which can take a minute or so, don&#39;t be alarmed if it takes more than ten seconds. Alternatively one can use <a href="https://github.com/JuliaDynamics/DrWatson.jl">DrWatson</a> (super cool package to manage scientific computing with <em>Julia</em>) and use the <code>@quickactivate :Swalbe</code> macro.</p><p>As a picture says more than a thousand words here is a shiny use case of <strong>Swalbe.jl</strong> </p><pre><code class="language-julia hljs">using Images, Colors, Swalbe
+
+&quot;&quot;&quot;
+  dewet_logo(logo_source, kwargs...)
+
+Dewetting of a patterned substrate with pattern according to a image file at `logo_source`.
+&quot;&quot;&quot;
+function dewet_logo(logo_source;         # png file location
+                    ϵ=1e-3,              # initial perturbation
+                    h₀=1.0,              # initial film thickness
+                    device=&quot;CPU&quot;,        # simulation on the CPU
+                    slip=3.0,            # slip length, see three phase contact line
+                    Tmax=10000,          # number of lattice Boltzmann iterations
+                    dump=100,            # saving interval   
+                    T=Float64,           # numeric accuracy
+                    verbose=true)        # let&#39;s talk         
+	println(&quot;Starting logo dewetting&quot;)
+	# Load the image file
+    logo = load(logo_source)
+    # Set up of the simulation constants
+    sys = Swalbe.SysConst(Lx=size(logo)[1], Ly=size(logo)[2], Tmax=Tmax, tdump=dump, δ=slip)
+    # Memory allocation
+    fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+    # Output
+    fluid = zeros(Tmax÷dump, sys.Lx*sys.Ly) 
+    theta = zeros(sys.Lx, sys.Ly)
+    println(&quot;Reading logo: $(logo_source)\nand pattern substrate according to it&quot;)
+    # Lower contact angle inside the letters, here the red channel of the image is used
+    theta = T.(2/9 .- 1/18 .* red.(reverse(rot180(logo), dims=2)))
+    if device == &quot;CPU&quot;
+        for i in 1:sys.Lx, j in 1:sys.Ly
+            # Initial height configuration
+            height[i,j] = h₀ + ϵ * randn()
+        end
+        th = zeros(size(height))
+        th .= theta 
+    elseif device == &quot;GPU&quot;
+        h = zeros(size(height))
+        for i in 1:sys.Lx, j in 1:sys.Ly
+            h[i,j] = h₀ + ϵ * randn()
+        end
+        # Lower contact angle inside the letters
+		# Forward it to the GPU
+		th = CUDA.adapt(CuArray, theta)
+        height = CUDA.adapt(CuArray, h)
+    end
+    # Computation of the initial equilibrium
+    Swalbe.equilibrium!(fout, height, velx, vely, vsq)
+    ftemp .= fout
+    # Lattice Boltzmann time loop
+    for t in 1:sys.Tmax
+        if t % sys.tdump == 0
+            mass = 0.0
+            mass = sum(height)
+            deltaH = maximum(height) - minimum(height)
+            # Simulation talks with you
+            if verbose
+                println(&quot;Time step $t mass is $(round(mass, digits=3)) and δh is $(round(deltaH, digits=3))&quot;)
+            end
+        end
+        # Calculation of the pressure and the pressure gradient
+        Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, th, sys.n, sys.m, sys.hmin, sys.hcrit)
+        Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
+        # Forces are the pressure gradient and the slippage due to substrate liquid boundary conditions
+        Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+        Fx .= h∇px .+ slipx
+        Fy .= h∇py .+ slipy
+        # New equilibria
+        Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+        # Single relaxation and streaming
+        Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
+        # New moments
+        Swalbe.moments!(height, velx, vely, fout)
+        # Measurements, in this case only snapshots of simulation&#39;s arrays
+        Swalbe.snapshot!(fluid, height, t, dumping = dump)
+    end
+    return fluid
+    # Free the GPU
+    if device == &quot;GPU&quot;
+        CUDA.reclaim()
+    end
+end
+# Run the simulation
+dewet_logo(&quot;path-to-logo&quot;, slip=3.0, Tmax=10000, dump=100, verbose=true)</code></pre><p>Here the <a href="https://github.com/JuliaImages/Images.jl">Images</a> and <a href="https://github.com/JuliaGraphics/Colors.jl">Colors</a> package allow convenient reading of png or jpg files. To give you an understanding of what happens here we take a look at the different parts. First of we define our simulation as <code>function</code> in this case <code>dewet_logo()</code>. There is one input needed, namely the location of the png or jpg file you want to dewet, in my case I used our institutes <a href="https://gist.github.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/b83988608cd5cdbdb9240e8182050383f442700f/logo_red.png">logo</a>. Other arguments are keywords that have a default value.</p><p>Next step is to define the system we want to simulate, so mostly allocations and initial conditions as well as substrate patterning</p><pre><code class="language-julia hljs"># Load the image file
+logo = load(logo_source)
+# Set up of the simulation constants
+sys = Swalbe.SysConst(Lx=size(logo)[1], Ly=size(logo)[2], Tmax=Tmax, tdump=dump, δ=slip)
+# Memory allocation
+fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py = Swalbe.Sys(sys, device, false, T)
+# Output
+fluid = zeros(Tmax÷dump, sys.Lx*sys.Ly) 
+theta = zeros(sys.Lx, sys.Ly)
+println(&quot;Reading logo: $(logo_source)\nand pattern substrate according to it&quot;)
+# Lower contact angle inside the letters, here the red channel of the image is used
+theta = T.(2/9 .- 1/18 .* red.(reverse(rot180(logo), dims=2)))
+if device == &quot;CPU&quot;
+    for i in 1:sys.Lx, j in 1:sys.Ly
+        # Initial height configuration
+        height[i,j] = h₀ + ϵ * randn()
+    end
+    th = zeros(size(height))
+    th .= theta 
+elseif device == &quot;GPU&quot;
+    h = zeros(size(height))
+    for i in 1:sys.Lx, j in 1:sys.Ly
+        h[i,j] = h₀ + ϵ * randn()
+    end
+    # Lower contact angle inside the letters
+	# Forward it to the GPU
+	th = CUDA.adapt(CuArray, theta)
+    height = CUDA.adapt(CuArray, h)
+end</code></pre><p>After the simulation box (or square to be more precise) is set we compute the first lattice Boltzmann equilibrium <code>Swalbe.equilibrium!(fout, height, velx, vely, vsq)</code>. Knowing the initial equilibrium we can enter the lattice Boltzmann time loop. Inside the loop we compute for every time step the forces that are present, here the film pressure (laplacian of the surface and wettability), slippage to regularize the contact line and the pressure gradient</p><pre><code class="language-julia hljs">Swalbe.filmpressure!(pressure, height, dgrad, sys.γ, th, sys.n, sys.m, sys.hmin, sys.hcrit)
+Swalbe.∇f!(h∇px, h∇py, pressure, dgrad, height)
+Swalbe.slippage!(slipx, slipy, height, velx, vely, sys.δ, sys.μ)
+# Forces are the pressure gradient and the slippage due to substrate liquid boundary conditions
+Fx .= h∇px .+ slipx
+Fy .= h∇py .+ slipy</code></pre><p>Now that we know the forces we just have to update our distribution functions <code>fout</code> and <code>ftemp</code> (the hot sauce of the lattice Boltzmann method), in this case with a simple single relaxation time collision operator (<a href="https://journals.aps.org/pr/abstract/10.1103/PhysRev.94.511">BGK</a>) and periodic boundary conditions. Last part of the lattice Boltzmann time step is the update of what is called macroscopic quantities (thickness &amp; velocity), or simply the moment calculation (because these are the moments of the distribution mathematically speaking)</p><pre><code class="language-julia hljs"># Update the equilibrium
+Swalbe.equilibrium!(feq, height, velx, vely, vsq)
+# Collide and stream
+Swalbe.BGKandStream!(fout, feq, ftemp, -Fx, -Fy)
+# New moments
+Swalbe.moments!(height, velx, vely, fout)</code></pre><p>and that&#39;s it. Of course to generate data we make snapshots of the film using <code>Swalbe.snapshot!()</code> and return this collection of <em>thicknesses</em> at the end of the simulation.</p><p>What we get is something like this</p><p><img src="https://user-images.githubusercontent.com/26249811/124448339-9cbc3880-dd82-11eb-9ccf-af44934b3f93.png" alt="Hiern_logo_dewetting"/></p><p>All of the time steps that were generated during the simulation can be merged together and can be compressed into a movie, see below</p><p><img src="https://gist.githubusercontent.com/Zitzeronion/807b9a7b2226e65643288df9a8cc1f46/raw/3a561e2a2b09eb42bf688f1d304f658b93fba8ed/logo_animation.gif" alt="Dewetting_logo"/></p><p>This example will be further discussed in the Tutorials section.</p><h2 id="How-to-**perform-research**"><a class="docs-heading-anchor" href="#How-to-**perform-research**">How to <strong>perform research</strong></a><a id="How-to-**perform-research**-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-**perform-research**" title="Permalink"></a></h2><p>The numerical approach is quite robust for a lot of thin film simulations. This means in the limit of small Reynolds and Mach number simulations are usually stable, keeping in mind that for droplet like simulation the contact angle should be on smaller side (θ &lt; π/2). Things I have looked into so far are</p><ul><li><a href="https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313">Sliding droplets</a></li><li><a href="https://arxiv.org/abs/2208.09307">Surface tension gradients and droplet coalescence</a></li><li>Equilibrium shapes of droplets on patterned substrates, depending on surface tension.</li><li><a href="https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313">Rayleigh-Taylor instability</a></li><li>Dewetting thin films</li><li><a href="https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801">Dewetting of fluctuating thin films</a></li><li><a href="https://arxiv.org/abs/2112.09770">Dewetting on switchable substrates</a></li></ul><p>Things I have not yet looked into</p><ul><li>Non-Newtonian fluids</li><li>Surfactants</li><li>Particles</li><li><em>Active</em> films</li><li>Multicomponent/Multiphase</li></ul><h2 id="How-to-**support-and-contribute**"><a class="docs-heading-anchor" href="#How-to-**support-and-contribute**">How to <strong>support and contribute</strong></a><a id="How-to-**support-and-contribute**-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-**support-and-contribute**" title="Permalink"></a></h2><p>First of all leave a star if you like the idea of the project and/or the content of the package. Second you can support the project by actively using it and raising <a href="https://github.com/Zitzeronion/Swalbe.jl/issues">issues</a>. Help is always very welcome, if you want to contribute open a <a href="https://github.com/Zitzeronion/Swalbe.jl/pulls"><strong>PR</strong></a> or raise an <a href="https://github.com/Zitzeronion/Swalbe.jl/issues">issue</a> with a feature request (and if possible with a way how to include it). Feel free to DM me on <a href="https://twitter.com/Zitzero">Twitter</a> if you have questions, I try to answer them all timely.</p></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="tutorials/">Tutorials »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Wednesday 12 June 2024 11:36">Wednesday 12 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
