@@ -121,22 +121,32 @@ Help is always very welcome, if you want to contribute open a
 [PR](https://github.com/Zitzeronion/Swalbe.jl/pulls) or raise an
 [issue](https://github.com/Zitzeronion/Swalbe.jl/issues) with a feature request
 (and if possible with a way how to include it).  Feel free to DM me on
-[Twitter](https://twitter.com/Zitzero) if you have questions, I will try to
+[Mastodon](https://julialang.social/@Zitzero) if you have questions, I will try to
 answer them all timely.
 
-## **Status** of the Package
+## Publications
 
-![Lifecycle](https://img.shields.io/badge/lifecycle-stable-green.svg)
+Peer reviewed:
+- [Lattice Boltzmann method for thin-liquid-film hydrodynamics](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 
-<!-- ![Lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
-![Lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
-![Lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)
-![Lifecycle](https://img.shields.io/badge/lifecycle-archived-red.svg)
-![Lifecycle](https://img.shields.io/badge/lifecycle-dormant-blue.svg) -->
+In this Phys. Rev. E publication we introduce the core concepts of **Swalbe**. We therefore discuss the [lattice Boltzmann method](https://en.wikipedia.org/wiki/Lattice_Boltzmann_methods) for shallow water flows and derive a matching condition with the [thin film equation](https://en.wikipedia.org/wiki/Thin-film_equation). Based on the derived model we present benchmark simulations and show that numerical results agree well with theoretical predictions, e.g., Cox-Voinov law.     
 
-The package has reached a stable release with version 0.1.
-All tools needed for running a numerical experiment are tested and usable.
-I am currently writing a paper for which all experiments were done with this package :blush:.
+- [Lattice Boltzmann simulations of stochastic thin film dewetting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801)
+
+In the second Phys. Rev. E publication we discusses the addition of a stochastic force term as an effective model for the stochastic thin film equation, see [Grün et al.](https://link.springer.com/article/10.1007/s10955-006-9028-8).
+This approach works surprisingly well and was validated against theory. Beyond the validation we showed how a film reacts to both a chemical pattern and thermal fluctuations. Again we were able to justify multiple findings with simple theoretical derivations.
+
+- [Swalbe.jl: A lattice Boltzmann solver for thin film hydrodynamics](https://joss.theoj.org/papers/10.21105/joss.04312)
+
+After the first two publications we cleaned up the repository and added [documentations](docs) as well as [test cases](test). During this process we became aware about the [Journal of Open Source Software](https://joss.theoj.org/) which we wholeheartly support. Scientific software is of value, however, it is often seen as byproduct and meeting the actual rigor requirement for a publication only discussing software is far from trivial. A JOSS publication was therefore a good place to show that **Swalbe.jl** is an open source tool and that it has a well definded scientific goal, namely thin liquid film solutions or the approximation of the thin film equation.   
+
+- [Controlling the dewetting morphologies of thin liquid films by switchable substrates](https://journals.aps.org/prfluids/abstract/10.1103/PhysRevFluids.8.L122001)
+
+For this letter in Phys. Rev. Fluids we investigate a dewetting thin film on a "switchable" substrate. The idea is that based on external stimuli, such as light, local surface chemistry can be altered. We build a toy model that effects the local wettability both in time and space. We found non-dimensional number that explained the morphology changes that we observe and were able to motivate further results with theoretical considerations. We also fed numerical data into blender to render simulations. 
+
+Preprints:
+- [To coalesce or not to coalesce: Droplets and surface tension gradients](https://arxiv.org/abs/2208.09307)
+- [Chemically reactive thin films: dynamics and stability](https://arxiv.org/abs/2402.14635)
 
 ## **Credit**
 
