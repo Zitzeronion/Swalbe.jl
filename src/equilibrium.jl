@@ -62,42 +62,70 @@ Test Passed
 """
 function equilibrium!(feq, height, velocityx, velocityy, vsquare, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(feq) 
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdists(feq)
     # Some constants, gravity and weights
     g0 = 1.5 * gravity
-    w1 = 1/9
-    w5 = 1/36
+    w1 = 1 / 9
+    w5 = 1 / 36
 
-    vsquare .= velocityx .* velocityx .+ velocityy .* velocityy 
+    vsquare .= velocityx .* velocityx .+ velocityy .* velocityy
 
     # Zeroth dist
-    f0 .= height .* (1 .- 5/6 .* gravity .* height .- 2/3 .* vsquare)
+    f0 .= height .* (1 .- 5 / 6 .* gravity .* height .- 2 / 3 .* vsquare)
     # First
-    f1 .= w1 .* height .* (g0 .* height .+ 3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
+    f1 .=
+        w1 .* height .*
+        (g0 .* height .+ 3 .* velocityx .+ 4.5 .* velocityx .^ 2 .- 1.5 .* vsquare)
     # Second
-    f2 .= w1 .* height .* (g0 .* height .+ 3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
+    f2 .=
+        w1 .* height .*
+        (g0 .* height .+ 3 .* velocityy .+ 4.5 .* velocityy .^ 2 .- 1.5 .* vsquare)
     # Third
-    f3 .= w1 .* height .* (g0 .* height .- 3 .* velocityx .+ 4.5 .* velocityx.^2 .- 1.5 .* vsquare)
+    f3 .=
+        w1 .* height .*
+        (g0 .* height .- 3 .* velocityx .+ 4.5 .* velocityx .^ 2 .- 1.5 .* vsquare)
     # Forth
-    f4 .= w1 .* height .* (g0 .* height .- 3 .* velocityy .+ 4.5 .* velocityy.^2 .- 1.5 .* vsquare)
+    f4 .=
+        w1 .* height .*
+        (g0 .* height .- 3 .* velocityy .+ 4.5 .* velocityy .^ 2 .- 1.5 .* vsquare)
     # Fifth
-    f5 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityx .+ velocityy) .+ 
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
+    f5 .=
+        w5 .* height .* (
+            g0 .* height .+ 3 .* (velocityx .+ velocityy) .+
+            4.5 .* (velocityx .+ velocityy) .^ 2 .- 1.5 .* vsquare
+        )
     # Sixth
-    f6 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityy .- velocityx) .+ 
-                         4.5 .* (velocityy .- velocityx).^2 .- 1.5 .* vsquare)
+    f6 .=
+        w5 .* height .* (
+            g0 .* height .+ 3 .* (velocityy .- velocityx) .+
+            4.5 .* (velocityy .- velocityx) .^ 2 .- 1.5 .* vsquare
+        )
     # Seventh
-    f7 .= w5 .* height .* (g0 .* height .- 3 .* (velocityx .+ velocityy) .+
-                         4.5 .* (velocityx .+ velocityy).^2 .- 1.5 .* vsquare)
+    f7 .=
+        w5 .* height .* (
+            g0 .* height .- 3 .* (velocityx .+ velocityy) .+
+            4.5 .* (velocityx .+ velocityy) .^ 2 .- 1.5 .* vsquare
+        )
     # Eigth
-    f8 .= w5 .* height .* (g0 .* height .+ 3 .* (velocityx .- velocityy) .+ 
-                         4.5 .* (velocityx .- velocityy).^2 .- 1.5 .* vsquare)
+    f8 .=
+        w5 .* height .* (
+            g0 .* height .+ 3 .* (velocityx .- velocityy) .+
+            4.5 .* (velocityx .- velocityy) .^ 2 .- 1.5 .* vsquare
+        )
     return nothing
 end
 
-equilibrium!(state::LBM_state_2D, sys::SysConst) = equilibrium!(state.feq, state.height, state.velx, state.vely, state.vsq, sys.param.g)
+equilibrium!(state::LBM_state_2D, sys::SysConst) =
+    equilibrium!(state.feq, state.height, state.velx, state.vely, state.vsq, sys.param.g)
 
-equilibrium!(state::Expanded_2D, sys::SysConst) = equilibrium!(state.basestate.feq, state.basestate.height, state.basestate.velx, state.basestate.vely, state.basestate.vsq, sys.param.g)
+equilibrium!(state::Expanded_2D, sys::SysConst) = equilibrium!(
+    state.basestate.feq,
+    state.basestate.height,
+    state.basestate.velx,
+    state.basestate.vely,
+    state.basestate.vsq,
+    sys.param.g,
+)
 
 
 """
@@ -140,18 +168,24 @@ Test Passed
 """
 function equilibrium!(feq, height, velocity, gravity)
     # Views help to circumvent having a loop, which sucks on the GPU
-    f0, f1, f2 = viewdists_1D(feq) 
-    
+    f0, f1, f2 = viewdists_1D(feq)
+
     # Zeroth dist
-    f0 .= height .* (1 .- 0.5 .* gravity .* height .- velocity.^2)
+    f0 .= height .* (1 .- 0.5 .* gravity .* height .- velocity .^ 2)
     # First
-    f1 .= height .* (0.25 .* gravity .* height .+ 0.5 .* velocity .+ 0.5 .* velocity.^2)
+    f1 .= height .* (0.25 .* gravity .* height .+ 0.5 .* velocity .+ 0.5 .* velocity .^ 2)
     # Second
-    f2 .= height .* (0.25 .* gravity .* height .- 0.5 .* velocity .+ 0.5 .* velocity.^2)
-    
+    f2 .= height .* (0.25 .* gravity .* height .- 0.5 .* velocity .+ 0.5 .* velocity .^ 2)
+
     return nothing
 end
 
-equilibrium!(state::State_1D, sys::Consts_1D; g=sys.param.g) = equilibrium!(state.feq, state.height, state.vel, sys.param.g)
+equilibrium!(state::State_1D, sys::Consts_1D; g = sys.param.g) =
+    equilibrium!(state.feq, state.height, state.vel, sys.param.g)
 
-equilibrium!(state::Expanded_1D, sys::Consts_1D) = equilibrium!(state.basestate.feq, state.basestate.height, state.basestate.vel, sys.param.g)
+equilibrium!(state::Expanded_1D, sys::Consts_1D) = equilibrium!(
+    state.basestate.feq,
+    state.basestate.height,
+    state.basestate.vel,
+    sys.param.g,
+)

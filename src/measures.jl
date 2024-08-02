@@ -22,9 +22,9 @@ Tracks the location of the thin film as a boolean field.
 """
 function fluid_dry!(fluid, dummy, height, t; hthresh = 0.055)
     dummy .= false
-    dummy[height .> hthresh] .= true
+    dummy[height.>hthresh] .= true
     fluid[t, :] .= vec(dummy)
-    
+
     return nothing
 end
 
@@ -53,8 +53,8 @@ where ``\\Pi'(h_0) = \\frac{\\partial\\Pi}{\\partial h}\\bigg|_{h_0}`` is the de
 
 - [Mecke, Rauscher](https://iopscience.iop.org/article/10.1088/0953-8984/17/45/042/meta)
 """
-function t0(;hᵦ=0.07, γ=0.01, μ=1/6, θ=1/6)
-    qsq = hᵦ * (1 - cospi(θ)) * (2 - 3 * hᵦ) 
+function t0(; hᵦ = 0.07, γ = 0.01, μ = 1 / 6, θ = 1 / 6)
+    qsq = hᵦ * (1 - cospi(θ)) * (2 - 3 * hᵦ)
     charT = 3 * μ / (γ * qsq^2)
 
     return charT, qsq
@@ -100,7 +100,7 @@ function snapshot!(snap, field, t; dumping = 1000)
     if t % dumping == 0
         snap[t÷dumping, :] .= vec(Array(field))
     end
-    
+
     return nothing
 end
 
@@ -123,24 +123,46 @@ Measures the surface area of the liquid vapor interface and the reduced surface 
 - `hthresh :: Float64`: height threshold below which the substrate is considered *dry*
 
 """
-function surfacearea!(area_lv, red_energy, height, θ::Float64, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
+function surfacearea!(
+    area_lv,
+    red_energy,
+    height,
+    θ::Float64,
+    ∇hx,
+    ∇hy,
+    dgrad,
+    surface,
+    t;
+    htresh = 0.055,
+)
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
     surf = 0.0
-    surface .= sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
-    surf = sum(surface[height .> htresh])
+    surface .= sqrt.(∇hx .^ 2 .+ ∇hy .^ 2 .+ 1)
+    surf = sum(surface[height.>htresh])
     area_lv[t] = surf
-    red_energy[t] = surf - length(height[height .> htresh]) * cospi(θ) 
+    red_energy[t] = surf - length(height[height.>htresh]) * cospi(θ)
 
     return nothing
 end
 
-function surfacearea!(area_lv, red_energy, height, θ::Matrix, ∇hx, ∇hy, dgrad, surface, t; htresh = 0.055)
+function surfacearea!(
+    area_lv,
+    red_energy,
+    height,
+    θ::Matrix,
+    ∇hx,
+    ∇hy,
+    dgrad,
+    surface,
+    t;
+    htresh = 0.055,
+)
     ∇f_simple!(∇hx, ∇hy, height, dgrad)
     surf = 0.0
-    surface .= sqrt.(∇hx.^2 .+ ∇hy.^2 .+ 1)
-    surf = sum(surface[height .> htresh])
+    surface .= sqrt.(∇hx .^ 2 .+ ∇hy .^ 2 .+ 1)
+    surf = sum(surface[height.>htresh])
     area_lv[t] = surf
-    red_energy[t] = surf - sum(cospi.(θ[height .> htresh]))
+    red_energy[t] = surf - sum(cospi.(θ[height.>htresh]))
 
     return nothing
 end
@@ -153,18 +175,18 @@ Simple gradient calculation for the differential surface area.
 function ∇f_simple!(outputx, outputy, f, dgrad)
     fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = Swalbe.viewneighbors(dgrad)
     # Straight elements  j+1, i+1, i-1, j-1
-    circshift!(fip, f, (1,0))
-    circshift!(fjp, f, (0,1))
-    circshift!(fim, f, (-1,0))
-    circshift!(fjm, f, (0,-1))
+    circshift!(fip, f, (1, 0))
+    circshift!(fjp, f, (0, 1))
+    circshift!(fim, f, (-1, 0))
+    circshift!(fjm, f, (0, -1))
     # Diagonal elements  
-    circshift!(fipjp, f, (1,1))
-    circshift!(fimjp, f, (-1,1))
-    circshift!(fimjm, f, (-1,-1))
-    circshift!(fipjm, f, (1,-1))
+    circshift!(fipjp, f, (1, 1))
+    circshift!(fimjp, f, (-1, 1))
+    circshift!(fimjm, f, (-1, -1))
+    circshift!(fipjm, f, (1, -1))
     # In the end it is just a weighted sum...
-    outputx .= -1/3 .* (fip .- fim) .- 1/12 .* (fipjp .- fimjp .- fimjm .+ fipjm)
-    outputy .= -1/3 .* (fjp .- fjm) .- 1/12 .* (fipjp .+ fimjp .- fimjm .- fipjm)
+    outputx .= -1 / 3 .* (fip .- fim) .- 1 / 12 .* (fipjp .- fimjp .- fimjm .+ fipjm)
+    outputy .= -1 / 3 .* (fjp .- fjm) .- 1 / 12 .* (fipjp .+ fimjp .- fimjm .- fipjm)
 
     return nothing
 end

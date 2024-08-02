@@ -73,20 +73,20 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     ft0, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8 = viewdists(ftemp)
     fo0, fo1, fo2, fo3, fo4, fo5, fo6, fo7, fo8 = viewdists(fout)
 
-    omeg = 1-1/τ
+    omeg = 1 - 1 / τ
     # Collision for the nine populations
     # Zeroth, no forcing!
-    fo0 .= omeg .* ft0 .+ 1/τ .* fe0
+    fo0 .= omeg .* ft0 .+ 1 / τ .* fe0
     # Straight ones, force correction is 1/3, 3*1/9
-    fo1 .= omeg .* ft1 .+ 1/τ .* fe1 .+ 1/3 .* Fx
-    fo2 .= omeg .* ft2 .+ 1/τ .* fe2 .+ 1/3 .* Fy
-    fo3 .= omeg .* ft3 .+ 1/τ .* fe3 .- 1/3 .* Fx
-    fo4 .= omeg .* ft4 .+ 1/τ .* fe4 .- 1/3 .* Fy
+    fo1 .= omeg .* ft1 .+ 1 / τ .* fe1 .+ 1 / 3 .* Fx
+    fo2 .= omeg .* ft2 .+ 1 / τ .* fe2 .+ 1 / 3 .* Fy
+    fo3 .= omeg .* ft3 .+ 1 / τ .* fe3 .- 1 / 3 .* Fx
+    fo4 .= omeg .* ft4 .+ 1 / τ .* fe4 .- 1 / 3 .* Fy
     # Diagonal ones, force correction 1/24 -> 3/2*1/36
-    fo5 .= omeg .* ft5 .+ 1/τ .* fe5 .+ 1/24 .* (Fx .+ Fy)
-    fo6 .= omeg .* ft6 .+ 1/τ .* fe6 .+ 1/24 .* (Fy .- Fx)
-    fo7 .= omeg .* ft7 .+ 1/τ .* fe7 .- 1/24 .* (Fx .+ Fy)
-    fo8 .= omeg .* ft8 .+ 1/τ .* fe8 .+ 1/24 .* (Fx .- Fy)
+    fo5 .= omeg .* ft5 .+ 1 / τ .* fe5 .+ 1 / 24 .* (Fx .+ Fy)
+    fo6 .= omeg .* ft6 .+ 1 / τ .* fe6 .+ 1 / 24 .* (Fy .- Fx)
+    fo7 .= omeg .* ft7 .+ 1 / τ .* fe7 .- 1 / 24 .* (Fx .+ Fy)
+    fo8 .= omeg .* ft8 .+ 1 / τ .* fe8 .+ 1 / 24 .* (Fx .- Fy)
 
     # This is the streaming step with implicite periodic boundarys
     circshift!(ft0, fo0, (0, 0))
@@ -98,7 +98,7 @@ function BGKandStream!(fout, feq, ftemp, Fx, Fy, τ)
     circshift!(ft6, fo6, (-1, 1))
     circshift!(ft7, fo7, (-1, -1))
     circshift!(ft8, fo8, (1, -1))
-    
+
     # Overwrite fout with ftemp
     fout .= ftemp
     return nothing
@@ -148,9 +148,17 @@ julia> state.fout[:,:,6] # The value 2 should have moved one down and one to the
 
 See also: [`Swalbe.equilibrium!`](@ref)
 """
-BGKandStream!(state::LBM_state_2D, sys::SysConst) = BGKandStream!(state.fout, state.feq, state.ftemp, state.Fx, state.Fy, sys.param.τ)
+BGKandStream!(state::LBM_state_2D, sys::SysConst) =
+    BGKandStream!(state.fout, state.feq, state.ftemp, state.Fx, state.Fy, sys.param.τ)
 
-BGKandStream!(state::Expanded_2D, sys::SysConst) = BGKandStream!(state.basestate.fout, state.basestate.feq, state.basestate.ftemp, state.basestate.Fx, state.basestate.Fy, sys.param.τ)
+BGKandStream!(state::Expanded_2D, sys::SysConst) = BGKandStream!(
+    state.basestate.fout,
+    state.basestate.feq,
+    state.basestate.ftemp,
+    state.basestate.Fx,
+    state.basestate.Fy,
+    sys.param.τ,
+)
 
 
 """
@@ -174,27 +182,34 @@ function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     ft0, ft1, ft2 = viewdists_1D(ftemp)
     fo0, fo1, fo2 = viewdists_1D(fout)
 
-    omeg = 1-1/τ
+    omeg = 1 - 1 / τ
     # Collision for the nine populations
     # Zeroth, no forcing!
-    fo0 .= omeg .* ft0 .+ 1/τ .* fe0
+    fo0 .= omeg .* ft0 .+ 1 / τ .* fe0
     # Straight ones, force correction is 1/3, 3*1/9
-    fo1 .= omeg .* ft1 .+ 1/τ .* fe1 .+ 1/2 .* F
-    fo2 .= omeg .* ft2 .+ 1/τ .* fe2 .- 1/2 .* F
-    
+    fo1 .= omeg .* ft1 .+ 1 / τ .* fe1 .+ 1 / 2 .* F
+    fo2 .= omeg .* ft2 .+ 1 / τ .* fe2 .- 1 / 2 .* F
+
     # This is the streaming step with implicite periodic boundarys
     circshift!(ft0, fo0, 0)
     circshift!(ft1, fo1, 1)
     circshift!(ft2, fo2, -1)
-    
+
     # Overwrite fout with ftemp
     fout .= ftemp
     return nothing
 end
 
-BGKandStream!(state::State_1D, sys::SysConst_1D) = BGKandStream!(state.fout, state.feq, state.ftemp, state.F, sys.param.τ)
-    
-BGKandStream!(state::Expanded_1D, sys::SysConst_1D) = BGKandStream!(state.basestate.fout, state.basestate.feq, state.basestate.ftemp, state.basestate.F, sys.param.τ)
+BGKandStream!(state::State_1D, sys::SysConst_1D) =
+    BGKandStream!(state.fout, state.feq, state.ftemp, state.F, sys.param.τ)
+
+BGKandStream!(state::Expanded_1D, sys::SysConst_1D) = BGKandStream!(
+    state.basestate.fout,
+    state.basestate.feq,
+    state.basestate.ftemp,
+    state.basestate.F,
+    sys.param.τ,
+)
 
 function BGKandStream!(state::StateWithBound_1D, sys::SysConstWithBound_1D)
     # All distribution functions
@@ -203,13 +218,13 @@ function BGKandStream!(state::StateWithBound_1D, sys::SysConstWithBound_1D)
     fo0, fo1, fo2 = Swalbe.viewdists_1D(state.basestate.fout)
     fb0, fb1, fb2 = Swalbe.viewdists_1D(state.fbound)
 
-    omeg = 1-1/sys.param.τ
+    omeg = 1 - 1 / sys.param.τ
     # Collision for the nine populations
     # Zeroth, no forcing!
-    fo0 .= omeg .* ft0 .+ 1/sys.param.τ .* fe0
+    fo0 .= omeg .* ft0 .+ 1 / sys.param.τ .* fe0
     # Straight ones, force correction is 1/3, 3*1/9
-    fo1 .= omeg .* ft1 .+ 1/sys.param.τ .* fe1 .+ 1/2 .* state.basestate.F
-    fo2 .= omeg .* ft2 .+ 1/sys.param.τ .* fe2 .- 1/2 .* state.basestate.F
+    fo1 .= omeg .* ft1 .+ 1 / sys.param.τ .* fe1 .+ 1 / 2 .* state.basestate.F
+    fo2 .= omeg .* ft2 .+ 1 / sys.param.τ .* fe2 .- 1 / 2 .* state.basestate.F
 
 
     fb1 .= fo1 .* sys.border[1]
@@ -225,8 +240,8 @@ function BGKandStream!(state::StateWithBound_1D, sys::SysConstWithBound_1D)
 
 
     #add the stored boundary terms
-    ft1 .+=  fb2
-    ft2 .+=  fb1 
+    ft1 .+= fb2
+    ft2 .+= fb1
 
     # Overwrite fout with ftemp
     state.basestate.fout .= state.basestate.ftemp
@@ -262,7 +277,7 @@ function viewdists(f)
     f6 = view(f, :, :, 7)
     f7 = view(f, :, :, 8)
     f8 = view(f, :, :, 9)
-    
+
     return f0, f1, f2, f3, f4, f5, f6, f7, f8
 end
 
@@ -289,6 +304,6 @@ function viewdists_1D(f)
     f0 = view(f, :, 1)
     f1 = view(f, :, 2)
     f2 = view(f, :, 3)
-    
+
     return f0, f1, f2
 end

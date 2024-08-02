@@ -41,22 +41,22 @@ See also: [`SysConst{T}`](@ref), [`SysConst_1D{T}`](@ref)
 
 """
 Base.@kwdef struct Taumucs{T} <: Consts
-    Tmax :: Int = 1000
-    tdump :: Int = Tmax÷10
+    Tmax::Int = 1000
+    tdump::Int = Tmax ÷ 10
     # Collision related
-    τ :: T = 1.0
-    cₛ :: T = 1/sqrt(3.0)
-    μ :: T =  cₛ^2 *( τ - 0.5)
+    τ::T = 1.0
+    cₛ::T = 1 / sqrt(3.0)
+    μ::T = cₛ^2 * (τ - 0.5)
     # Force related
-    δ :: T = 1.0
-    kbt :: T = 0.0
-    γ :: T = 0.01
-    n :: Int = 9
-    m :: Int = 3
-    hmin :: T = 0.1
-    hcrit :: T = 0.05
-    θ :: T = 1/9
-    g :: T = 0.0
+    δ::T = 1.0
+    kbt::T = 0.0
+    γ::T = 0.01
+    n::Int = 9
+    m::Int = 3
+    hmin::T = 0.1
+    hcrit::T = 0.05
+    θ::T = 1 / 9
+    g::T = 0.0
 end
 
 """
@@ -75,9 +75,9 @@ See also: [`SysConst_1D{T}`](@ref), [`Taumucs{T}`](@ref)
 """
 Base.@kwdef struct SysConst{T} <: Consts_1D
     # Lattice
-    Lx :: Int = 256
-    Ly :: Int = 256
-    param :: Taumucs{T}
+    Lx::Int = 256
+    Ly::Int = 256
+    param::Taumucs{T}
 end
 
 """
@@ -95,8 +95,8 @@ See also: [`SysConst{T}`](@ref), [`Taumucs{T}`](@ref)
 """
 Base.@kwdef struct SysConst_1D{T} <: Consts_1D
     # Lattice
-    L :: Int = 256
-    param :: Taumucs{T}
+    L::Int = 256
+    param::Taumucs{T}
 end
 
 
@@ -111,12 +111,12 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 """
 Base.@kwdef struct SysConstWithBound_1D{T} <: Consts_1D
     # Lattice
-    L :: Int = 256
-    param :: Taumucs{T}
+    L::Int = 256
+    param::Taumucs{T}
     obs::Array{T} = zeros(L)
     # interior, obsleft, obsright, obsup, obsdown, corneroutlu, corneroutld, corneroutru, corneroutrd, cornerru, cornerrd, cornerlu, cornerld
     interior::Vector{T} = zeros(L)
-    border = [zeros(L),zeros(L)]
+    border = [zeros(L), zeros(L)]
 end
 
 
@@ -146,25 +146,25 @@ Data structure for both macroscopic variables and distribution functions.
 See also: [`State_thermal{T, N}`](@ref), [`CuState`](@ref), [`State_1D{T, N}`](@ref)
 
 """
-Base.@kwdef struct State{T, N} <: LBM_state_2D
+Base.@kwdef struct State{T,N} <: LBM_state_2D
     # Distribution functions
-    fout :: Array{T, N}
-    ftemp :: Array{T, N}
-    feq :: Array{T, N} 
+    fout::Array{T,N}
+    ftemp::Array{T,N}
+    feq::Array{T,N}
     # Macroscopic variables and moments 
-    height :: Matrix{T} 
-    velx :: Matrix{T} 
-    vely :: Matrix{T}  
-    vsq :: Matrix{T} 
-    pressure :: Matrix{T} 
+    height::Matrix{T}
+    velx::Matrix{T}
+    vely::Matrix{T}
+    vsq::Matrix{T}
+    pressure::Matrix{T}
     # Forces and a dummy for the gradient
-    Fx :: Matrix{T} 
-    Fy :: Matrix{T} 
-    slipx :: Matrix{T} 
-    slipy :: Matrix{T} 
-    h∇px :: Matrix{T} 
-    h∇py :: Matrix{T} 
-    dgrad :: Array{T,N} 
+    Fx::Matrix{T}
+    Fy::Matrix{T}
+    slipx::Matrix{T}
+    slipy::Matrix{T}
+    h∇px::Matrix{T}
+    h∇py::Matrix{T}
+    dgrad::Array{T,N}
 end
 
 """
@@ -179,10 +179,10 @@ Data structure that contains a `State` and fields for thermal fluctuations.
 - `kbty :: Matrix{T}`: Force due to thermal fluctuations, y-component
 
 """
-Base.@kwdef struct State_thermal{T, N} <: Expanded_2D
-    basestate :: State{T, N}
-    kbtx :: Matrix{T} 
-    kbty :: Matrix{T}  
+Base.@kwdef struct State_thermal{T,N} <: Expanded_2D
+    basestate::State{T,N}
+    kbtx::Matrix{T}
+    kbty::Matrix{T}
 end
 
 """
@@ -213,46 +213,46 @@ Similar to `CuState_thermal` without the thermal fields.
 """
 struct CuState <: LBM_state_2D
     # Distribution functions
-    fout :: CuArray
-    ftemp :: CuArray
-    feq :: CuArray 
+    fout::CuArray
+    ftemp::CuArray
+    feq::CuArray
     # Macroscopic variables and moments 
-    height :: CuArray
-    velx :: CuArray
-    vely :: CuArray
-    vsq :: CuArray
-    pressure :: CuArray
+    height::CuArray
+    velx::CuArray
+    vely::CuArray
+    vsq::CuArray
+    pressure::CuArray
     # Forces and a dummy for the gradient
-    Fx :: CuArray 
-    Fy :: CuArray 
-    slipx :: CuArray
-    slipy :: CuArray 
-    h∇px :: CuArray 
-    h∇py :: CuArray 
-    dgrad :: CuArray
+    Fx::CuArray
+    Fy::CuArray
+    slipx::CuArray
+    slipy::CuArray
+    h∇px::CuArray
+    h∇py::CuArray
+    dgrad::CuArray
 end
 
 struct CuState_thermal <: LBM_state_2D
     # Distribution functions
-    fout :: CuArray
-    ftemp :: CuArray
-    feq :: CuArray 
+    fout::CuArray
+    ftemp::CuArray
+    feq::CuArray
     # Macroscopic variables and moments 
-    height :: CuArray
-    velx :: CuArray
-    vely :: CuArray
-    vsq :: CuArray
-    pressure :: CuArray
+    height::CuArray
+    velx::CuArray
+    vely::CuArray
+    vsq::CuArray
+    pressure::CuArray
     # Forces and a dummy for the gradient
-    Fx :: CuArray 
-    Fy :: CuArray 
-    slipx :: CuArray
-    slipy :: CuArray 
-    h∇px :: CuArray 
-    h∇py :: CuArray 
-    kbtx :: CuArray 
-    kbty :: CuArray
-    dgrad :: CuArray
+    Fx::CuArray
+    Fy::CuArray
+    slipx::CuArray
+    slipy::CuArray
+    h∇px::CuArray
+    h∇py::CuArray
+    kbtx::CuArray
+    kbty::CuArray
+    dgrad::CuArray
 end
 
 """
@@ -275,18 +275,18 @@ Data structure that for a one dimensional simulation.
 """
 Base.@kwdef struct State_1D{T} <: LBM_state_1D
     # Distribution functions
-    fout :: Matrix{T}
-    ftemp :: Matrix{T}
-    feq :: Matrix{T} 
+    fout::Matrix{T}
+    ftemp::Matrix{T}
+    feq::Matrix{T}
     # Macroscopic variables and moments 
-    height :: Vector{T} 
-    vel :: Vector{T} 
-    pressure :: Vector{T} 
+    height::Vector{T}
+    vel::Vector{T}
+    pressure::Vector{T}
     # Forces and a dummy for the gradient
-    F :: Vector{T} 
-    slip :: Vector{T}
-    h∇p :: Vector{T}
-    dgrad :: Matrix{T} 
+    F::Vector{T}
+    slip::Vector{T}
+    h∇p::Vector{T}
+    dgrad::Matrix{T}
 end
 
 
@@ -302,9 +302,9 @@ end
 - `∇γ :: Vector{T}`: Surface tension gardient
 """
 Base.@kwdef struct State_gamma_1D{T} <: Expanded_1D
-    basestate :: State_1D{T}
-    γ :: Vector{T}
-    ∇γ :: Vector{T}
+    basestate::State_1D{T}
+    γ::Vector{T}
+    ∇γ::Vector{T}
 end
 
 
@@ -315,12 +315,12 @@ Data structure that stores all arrays for a given simulation.
 
 """
 Base.@kwdef struct StateWithBound_1D{T} <: Boundary_1D
-    basestate :: State_1D{T}
+    basestate::State_1D{T}
     # surface tension gradient
-    γ :: Vector{T}
-    ∇γ :: Vector{T}
+    γ::Vector{T}
+    ∇γ::Vector{T}
     # Distribution functions 
-    fbound :: Matrix{T} 
+    fbound::Matrix{T}
 end
 
 
@@ -336,8 +336,8 @@ end
 
 """
 Base.@kwdef struct State_thermal_1D{T} <: Expanded_1D
-    basestate :: State_1D{T}
-    kbt :: Vector{T}
+    basestate::State_1D{T}
+    kbt::Vector{T}
 end
 
 """
@@ -361,7 +361,7 @@ function Sys(sysc::SysConst, device::String, exotic::Bool, T)
         fout = zeros(sysc.Lx, sysc.Ly, 9)
         ftemp = zeros(sysc.Lx, sysc.Ly, 9)
         feq = zeros(sysc.Lx, sysc.Ly, 9)
-        
+
         # Macro
         height = ones(sysc.Lx, sysc.Ly)
         velx = zeros(sysc.Lx, sysc.Ly)
@@ -381,15 +381,45 @@ function Sys(sysc::SysConst, device::String, exotic::Bool, T)
             # Probably many more forces here in the future
             fthermalx = zeros(sysc.Lx, sysc.Ly)
             fthermaly = zeros(sysc.Lx, sysc.Ly)
-            return fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
+            return fout,
+            ftemp,
+            feq,
+            height,
+            velx,
+            vely,
+            vsq,
+            pressure,
+            dgrad,
+            Fx,
+            Fy,
+            slipx,
+            slipy,
+            h∇px,
+            h∇py,
+            fthermalx,
+            fthermaly
         end
-        return fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py
+        return fout,
+        ftemp,
+        feq,
+        height,
+        velx,
+        vely,
+        vsq,
+        pressure,
+        dgrad,
+        Fx,
+        Fy,
+        slipx,
+        slipy,
+        h∇px,
+        h∇py
     elseif device == "GPU"
         # Meso
         fout = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9)
         ftemp = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9)
         feq = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9)
-        
+
         # Macro
         height = CUDA.ones(T, sysc.Lx, sysc.Ly)
         velx = CUDA.zeros(T, sysc.Lx, sysc.Ly)
@@ -408,9 +438,39 @@ function Sys(sysc::SysConst, device::String, exotic::Bool, T)
         if exotic
             fthermalx = CUDA.zeros(T, sysc.Lx, sysc.Ly)
             fthermaly = CUDA.zeros(T, sysc.Lx, sysc.Ly)
-            return fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py, fthermalx, fthermaly
+            return fout,
+            ftemp,
+            feq,
+            height,
+            velx,
+            vely,
+            vsq,
+            pressure,
+            dgrad,
+            Fx,
+            Fy,
+            slipx,
+            slipy,
+            h∇px,
+            h∇py,
+            fthermalx,
+            fthermaly
         end
-        return fout, ftemp, feq, height, velx, vely, vsq, pressure, dgrad, Fx, Fy, slipx, slipy, h∇px, h∇py
+        return fout,
+        ftemp,
+        feq,
+        height,
+        velx,
+        vely,
+        vsq,
+        pressure,
+        dgrad,
+        Fx,
+        Fy,
+        slipx,
+        slipy,
+        h∇px,
+        h∇py
     end
 end
 
@@ -428,23 +488,23 @@ Returns a `State` data structure based on `sysc`, either one dimensional or two 
 - `T <: Number`: Numerical type, it is strongly suggested to use `Float64`
 - `kind :: String`: Indicator for different `State`'s, default value is "simple" which creates a `State` data structure, valid options are ["simple", "thermal"] 
 """
-function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
-    s = State{T, 3}(
-            fout = zeros(sysc.Lx, sysc.Ly, 9),
-            ftemp = zeros(sysc.Lx, sysc.Ly, 9),
-            feq = zeros(sysc.Lx, sysc.Ly, 9),
-            height = ones(sysc.Lx, sysc.Ly),
-            velx = zeros(sysc.Lx, sysc.Ly),
-            vely = zeros(sysc.Lx, sysc.Ly),
-            vsq = zeros(sysc.Lx, sysc.Ly),
-            pressure = zeros(sysc.Lx, sysc.Ly),
-            dgrad = zeros(sysc.Lx, sysc.Ly, 8),
-            Fx = zeros(sysc.Lx, sysc.Ly),
-            Fy = zeros(sysc.Lx, sysc.Ly),
-            slipx = zeros(sysc.Lx, sysc.Ly),
-            slipy = zeros(sysc.Lx, sysc.Ly),
-            h∇px = zeros(sysc.Lx, sysc.Ly),
-            h∇py = zeros(sysc.Lx, sysc.Ly)
+function Sys(sysc::SysConst, device::String; T = Float64, kind = "simple")
+    s = State{T,3}(
+        fout = zeros(sysc.Lx, sysc.Ly, 9),
+        ftemp = zeros(sysc.Lx, sysc.Ly, 9),
+        feq = zeros(sysc.Lx, sysc.Ly, 9),
+        height = ones(sysc.Lx, sysc.Ly),
+        velx = zeros(sysc.Lx, sysc.Ly),
+        vely = zeros(sysc.Lx, sysc.Ly),
+        vsq = zeros(sysc.Lx, sysc.Ly),
+        pressure = zeros(sysc.Lx, sysc.Ly),
+        dgrad = zeros(sysc.Lx, sysc.Ly, 8),
+        Fx = zeros(sysc.Lx, sysc.Ly),
+        Fy = zeros(sysc.Lx, sysc.Ly),
+        slipx = zeros(sysc.Lx, sysc.Ly),
+        slipy = zeros(sysc.Lx, sysc.Ly),
+        h∇px = zeros(sysc.Lx, sysc.Ly),
+        h∇py = zeros(sysc.Lx, sysc.Ly),
     )
     if kind == "simple"
         if device == "CPU"
@@ -470,16 +530,16 @@ function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 # For gradients
-                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8)
+                CUDA.zeros(T, sysc.Lx, sysc.Ly, 8),
             )
             return dyn
         end
     elseif kind == "thermal"
         if device == "CPU"
-            dyn = State_thermal{T, 3}(
+            dyn = State_thermal{T,3}(
                 basestate = s,
                 kbtx = zeros(sysc.Lx, sysc.Ly),
-                kbty = zeros(sysc.Lx, sysc.Ly)
+                kbty = zeros(sysc.Lx, sysc.Ly),
             )
             return dyn
         elseif device == "GPU"
@@ -504,7 +564,7 @@ function Sys(sysc::SysConst, device::String; T=Float64, kind="simple")
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
                 CUDA.zeros(T, sysc.Lx, sysc.Ly),
-                CUDA.zeros(T, sysc.Lx, sysc.Ly)
+                CUDA.zeros(T, sysc.Lx, sysc.Ly),
             )
             return dyn
         end
@@ -524,40 +584,33 @@ Returns a `State` data structure based on `kind` the struct can be "simple", "th
 - `T <: Number`: Optional numerical type, default is set to `Float64`
 - `kind :: String`: Optional, default is set to `simple`
 """
-function Sys(sysc::Consts_1D; T=Float64, kind="simple")
+function Sys(sysc::Consts_1D; T = Float64, kind = "simple")
     s = State_1D{T}(
-            fout = zeros(sysc.L, 3),
-            ftemp = zeros(sysc.L, 3),
-            feq = zeros(sysc.L, 3),
-            height = ones(sysc.L),
-            vel = zeros(sysc.L),
-            pressure = zeros(sysc.L),
-            dgrad = zeros(sysc.L, 2),
-            F = zeros(sysc.L),
-            slip = zeros(sysc.L),
-            h∇p = zeros(sysc.L),
+        fout = zeros(sysc.L, 3),
+        ftemp = zeros(sysc.L, 3),
+        feq = zeros(sysc.L, 3),
+        height = ones(sysc.L),
+        vel = zeros(sysc.L),
+        pressure = zeros(sysc.L),
+        dgrad = zeros(sysc.L, 2),
+        F = zeros(sysc.L),
+        slip = zeros(sysc.L),
+        h∇p = zeros(sysc.L),
     )
     if kind == "simple"
         dyn = s
     elseif kind == "thermal"
-        dyn = State_thermal_1D{T}(
-            basestate = s,
-            kbt = zeros(sysc.L),
-        )
+        dyn = State_thermal_1D{T}(basestate = s, kbt = zeros(sysc.L))
     elseif kind == "gamma"
-        dyn = State_gamma_1D{T}(
-            basestate = s,
-            γ = zeros(sysc.L),
-            ∇γ = zeros(sysc.L)
-        )
-    elseif  kind == "gamma_bound"
+        dyn = State_gamma_1D{T}(basestate = s, γ = zeros(sysc.L), ∇γ = zeros(sysc.L))
+    elseif kind == "gamma_bound"
         dyn = StateWithBound_1D{T}(
             basestate = s,
             γ = zeros(sysc.L),
             ∇γ = zeros(sysc.L),
-            fbound = zeros(sysc.L, 3)
+            fbound = zeros(sysc.L, 3),
         )
     end
     return dyn
-    
+
 end

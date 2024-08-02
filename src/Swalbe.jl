@@ -1,6 +1,6 @@
 module Swalbe
 # Coding
-using Revise, CUDA, Statistics, Random, Base, LazySets 
+using Revise, CUDA, Statistics, Random, Base, LazySets
 # Datatypes and output
 using FileIO, JLD2, BSON, DataFrames
 

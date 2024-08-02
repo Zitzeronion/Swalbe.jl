@@ -42,7 +42,7 @@ Test Passed
 """
 function moments!(height, velx, vely, fout)
     # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout) 
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdists(fout)
     # Compute the height
     sum!(height, fout)
     # and the velocities (as simple as possible)
@@ -52,19 +52,25 @@ function moments!(height, velx, vely, fout)
 end
 
 function moments!(height::Vector, vel, fout)
-  # Get views of the populations
-  f0, f1, f2 = Swalbe.viewdists_1D(fout) 
-  # Compute the height
-  sum!(height, fout)
-  # and the velocities (as simple as possible)
-  vel .= (f1 .- f2) ./ height
-  return nothing
+    # Get views of the populations
+    f0, f1, f2 = Swalbe.viewdists_1D(fout)
+    # Compute the height
+    sum!(height, fout)
+    # and the velocities (as simple as possible)
+    vel .= (f1 .- f2) ./ height
+    return nothing
 end
 
 moments!(state::LBM_state_2D) = moments!(state.height, state.velx, state.vely, state.fout)
 moments!(state::CuState) = moments!(state.height, state.velx, state.vely, state.fout)
 moments!(state::LBM_state_1D) = moments!(state.height, state.vel, state.fout)
 
-moments!(state::Expanded_2D) = moments!(state.basestate.height, state.basestate.velx, state.basestate.vely, state.basestate.fout)
+moments!(state::Expanded_2D) = moments!(
+    state.basestate.height,
+    state.basestate.velx,
+    state.basestate.vely,
+    state.basestate.fout,
+)
 
-moments!(state::Expanded_1D) = moments!(state.basestate.height, state.basestate.vel, state.basestate.fout)
+moments!(state::Expanded_1D) =
+    moments!(state.basestate.height, state.basestate.vel, state.basestate.fout)

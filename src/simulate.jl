@@ -3,8 +3,8 @@
 
 Time stepping procedure for the lattice Boltzmann state `state` given parameters `sys`
 """
-function time_loop(sys::SysConst, state::LBM_state_2D; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst, state::LBM_state_2D; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -23,8 +23,8 @@ function time_loop(sys::SysConst, state::LBM_state_2D; verbose=false)
     end
     return state
 end
-function time_loop(sys::SysConst, state::LBM_state_2D, θ; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst, state::LBM_state_2D, θ; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -32,7 +32,7 @@ function time_loop(sys::SysConst, state::LBM_state_2D, θ; verbose=false)
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        Swalbe.filmpressure!(state, sys, θ=θ)
+        Swalbe.filmpressure!(state, sys, θ = θ)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.Fx .= -state.h∇px .- state.slipx
@@ -44,8 +44,8 @@ function time_loop(sys::SysConst, state::LBM_state_2D, θ; verbose=false)
     return state
 end
 
-function time_loop(sys::SysConst, state::LBM_state_2D, Δh::Vector; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst, state::LBM_state_2D, Δh::Vector; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -66,8 +66,14 @@ function time_loop(sys::SysConst, state::LBM_state_2D, Δh::Vector; verbose=fals
     return state
 end
 
-function time_loop(sys::SysConst, state::LBM_state_2D, f::Function, measure::Vector; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(
+    sys::SysConst,
+    state::LBM_state_2D,
+    f::Function,
+    measure::Vector;
+    verbose = false,
+)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -84,13 +90,13 @@ function time_loop(sys::SysConst, state::LBM_state_2D, f::Function, measure::Vec
         Swalbe.equilibrium!(state, sys)
         Swalbe.BGKandStream!(state, sys)
         Swalbe.moments!(state)
-    
+
     end
     return state, measure
 end
 
-function time_loop(sys::SysConst_1D, state::State_1D; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst_1D, state::State_1D; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -109,8 +115,8 @@ function time_loop(sys::SysConst_1D, state::State_1D; verbose=false)
     return state
 end
 
-function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -118,7 +124,7 @@ function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose=false)
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
         end
-        Swalbe.filmpressure!(state, sys, θ=θ)
+        Swalbe.filmpressure!(state, sys, θ = θ)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.F .= -state.h∇p .- state.slip
@@ -129,8 +135,8 @@ function time_loop(sys::SysConst_1D, state::State_1D, θ; verbose=false)
     return state
 end
 
-function time_loop(sys::SysConst_1D, state::State_1D, Δh::Vector; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst_1D, state::State_1D, Δh::Vector; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -150,8 +156,8 @@ function time_loop(sys::SysConst_1D, state::State_1D, Δh::Vector; verbose=false
     return state
 end
 
-function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure; verbose=false)
-    for t in 1:sys.param.Tmax
+function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure; verbose = false)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.height)
@@ -167,21 +173,26 @@ function time_loop(sys::SysConst_1D, state::State_1D, f::Function, measure; verb
         Swalbe.equilibrium!(state, sys)
         Swalbe.BGKandStream!(state, sys)
         Swalbe.moments!(state)
-    
+
     end
     return state, measure
 end
 
-function time_loop(sys::SysConstWithBound_1D, state::StateWithBound_1D; verbose=false, diff = 0.05)
-    for t in 1:sys.param.Tmax
+function time_loop(
+    sys::SysConstWithBound_1D,
+    state::StateWithBound_1D;
+    verbose = false,
+    diff = 0.05,
+)
+    for t = 1:sys.param.Tmax
         if t % sys.param.tdump == 0
             mass = 0.0
             mass = sum(state.basestate.height .- sys.interior .* state.basestate.height)
             if verbose
                 println("Time step $t mass is $(round(mass, digits=3))")
             end
-        end 
-        
+        end
+
         Swalbe.filmpressure!(state, sys)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
@@ -222,20 +233,24 @@ julia> @test all(h.height .== 1.0) # Check if all height values are identical to
 Test passed
 ``` 
 """
-function run_flat(sys::SysConst, device::String; verbos=true)
-    println("Simulating a flat interface without driving forces (nothing should happen) in two dimensions")
+function run_flat(sys::SysConst, device::String; verbos = true)
+    println(
+        "Simulating a flat interface without driving forces (nothing should happen) in two dimensions",
+    )
     state = Swalbe.Sys(sys, device)
     state.height .= 1.0
-    time_loop(sys, state, verbose=verbos)
+    time_loop(sys, state, verbose = verbos)
 
     return state.height
 end
 
-function run_flat(sys::SysConst_1D; verbos=true, T=Float64)
-    println("Simulating a flat interface without driving forces (nothing should happen) in one dimension")
+function run_flat(sys::SysConst_1D; verbos = true, T = Float64)
+    println(
+        "Simulating a flat interface without driving forces (nothing should happen) in one dimension",
+    )
     state = Swalbe.Sys(sys)
     state.height .= 1.0
-    time_loop(sys, state, verbose=verbos)
+    time_loop(sys, state, verbose = verbos)
 
     return state.height
 end
@@ -268,22 +283,22 @@ julia> Swalbe.randinterface!(height, h₀, ϵ)
 julia> h = Swalbe.run_random(sys, "CPU", h₀=10, ϵ=0.1, verbos=false);
 ```
 """
-function run_random(sys::SysConst, device::String; h₀=1.0, ϵ=0.01, verbos=true)
+function run_random(sys::SysConst, device::String; h₀ = 1.0, ϵ = 0.01, verbos = true)
     println("Simulating a random undulated interface in two dimensions")
     state = Swalbe.Sys(sys, device)
     Swalbe.randinterface!(state.height, h₀, ϵ)
     Swalbe.equilibrium!(state, sys)
-    time_loop(sys, state, 1/9, verbose=verbos)
-    
+    time_loop(sys, state, 1 / 9, verbose = verbos)
+
     return state.height
 end
 # 1D case
-function run_random(sys::SysConst_1D; h₀=1.0, ϵ=0.01, verbos=true)
+function run_random(sys::SysConst_1D; h₀ = 1.0, ϵ = 0.01, verbos = true)
     println("Simulating a random undulated interface in one dimension")
     state = Swalbe.Sys(sys)
     Swalbe.randinterface!(state.height, h₀, ϵ)
     Swalbe.equilibrium!(state, sys)
-    time_loop(sys, state, 1/9, verbose=verbos)
+    time_loop(sys, state, 1 / 9, verbose = verbos)
     return state.height
 end
 
@@ -320,27 +335,44 @@ julia> Swalbe.randinterface!(height, h₀, ϵ)
 julia> h = Swalbe.run_random(sys, "CPU", h₀=10, ϵ=0.1, verbos=false);
 ```
 """
-function run_rayleightaylor(sys::SysConst, device::String; kx=15, ky=18, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
+function run_rayleightaylor(
+    sys::SysConst,
+    device::String;
+    kx = 15,
+    ky = 18,
+    h₀ = 1.0,
+    ϵ = 0.001,
+    verbos = true,
+    T = Float64,
+)
     println("Simulating the Rayleigh Taylor instability in two dimensions")
     state = Swalbe.Sys(sys, device)
-    for i in 1:sys.Lx, j in 1:sys.Ly
-        state.height[i,j] = h₀ * (1 + ϵ * sin(2π*kx*i/(sys.Lx-1)) * sin(2π*ky*j/(sys.Ly-1)))
+    for i = 1:sys.Lx, j = 1:sys.Ly
+        state.height[i, j] =
+            h₀ * (1 + ϵ * sin(2π * kx * i / (sys.Lx - 1)) * sin(2π * ky * j / (sys.Ly - 1)))
     end
     diff = []
     Swalbe.equilibrium!(state, sys)
-    Swalbe.time_loop(sys, state, diff, verbose=verbos)
+    Swalbe.time_loop(sys, state, diff, verbose = verbos)
     return state.height, diff
 end
 # 1D case
-function run_rayleightaylor(sys::SysConst_1D; k=15, h₀=1.0, ϵ=0.001, verbos=true, T=Float64)
+function run_rayleightaylor(
+    sys::SysConst_1D;
+    k = 15,
+    h₀ = 1.0,
+    ϵ = 0.001,
+    verbos = true,
+    T = Float64,
+)
     println("Simulating the Rayleigh Taylor instability in one dimension")
     state = Swalbe.Sys(sys)
-    for i in 1:sys.L
-        state.height[i] = h₀ * (1 + ϵ * sin(2π*k*i/(sys.L-1)))
+    for i = 1:sys.L
+        state.height[i] = h₀ * (1 + ϵ * sin(2π * k * i / (sys.L - 1)))
     end
     diff = []
     Swalbe.equilibrium!(state, sys)
-    Swalbe.time_loop(sys, state, diff, verbose=verbos)
+    Swalbe.time_loop(sys, state, diff, verbose = verbos)
     return state.height, diff
 end
 
@@ -349,23 +381,36 @@ end
 
 Simulates an out of equilibrium droplet
 """
-function run_dropletrelax(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), verbos=true)
+function run_dropletrelax(
+    sys::SysConst,
+    device::String;
+    radius = 20,
+    θ₀ = 1 / 6,
+    center = (sys.Lx ÷ 2, sys.Ly ÷ 2),
+    verbos = true,
+)
     println("Simulating an out of equilibrium droplet in two dimensions")
     state = Swalbe.Sys(sys, device)
     Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state, sys)
     area = []
-    time_loop(sys, state, Swalbe.wetted!, area, verbose=verbos)
+    time_loop(sys, state, Swalbe.wetted!, area, verbose = verbos)
     return state.height, area
 end
 # 1D case
-function run_dropletrelax(sys::SysConst_1D; radius=20, θ₀=1/6, center=(sys.L÷2), verbos=true )
+function run_dropletrelax(
+    sys::SysConst_1D;
+    radius = 20,
+    θ₀ = 1 / 6,
+    center = (sys.L ÷ 2),
+    verbos = true,
+)
     println("Simulating an out of equilibrium droplet in one dimensions")
     area = []
     state = Swalbe.Sys(sys)
-    Swalbe.singledroplet(state.height, radius, θ₀, center) 
+    Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state, sys)
-    time_loop(sys, state, Swalbe.wetted!, area, verbose=verbos)
+    time_loop(sys, state, Swalbe.wetted!, area, verbose = verbos)
     return state.height, area
 end
 
@@ -374,23 +419,38 @@ end
 
 Simulates an droplet on a patterned substrate
 """
-function run_dropletpatterned(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), θₛ=fill(1/9, sys.Lx, sys.Ly), verbos=true)
+function run_dropletpatterned(
+    sys::SysConst,
+    device::String;
+    radius = 20,
+    θ₀ = 1 / 6,
+    center = (sys.Lx ÷ 2, sys.Ly ÷ 2),
+    θₛ = fill(1 / 9, sys.Lx, sys.Ly),
+    verbos = true,
+)
     println("Simulating a droplet on a patterned substrate in two dimensions")
     state = Swalbe.Sys(sys, device)
     Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state, sys)
-    time_loop(sys, state, θₛ, verbose=verbos)
-    
+    time_loop(sys, state, θₛ, verbose = verbos)
+
     return state.height
 
 end
 # 1D case
-function run_dropletpatterned(sys::SysConst_1D; radius=20, θ₀=1/6, center=sys.L÷2, θₛ=fill(1/2, sys.L), verbos=true)
+function run_dropletpatterned(
+    sys::SysConst_1D;
+    radius = 20,
+    θ₀ = 1 / 6,
+    center = sys.L ÷ 2,
+    θₛ = fill(1 / 2, sys.L),
+    verbos = true,
+)
     println("Simulating a droplet on a patterned substrate in one dimension")
     state = Swalbe.Sys(sys)
     Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state, sys)
-    time_loop(sys, state, θₛ, verbose=verbos)
+    time_loop(sys, state, θₛ, verbose = verbos)
     return state.height
 end
 
@@ -399,7 +459,16 @@ end
 
 Simulates a sliding droplet
 """
-function run_dropletforced(sys::SysConst, device::String; radius=20, θ₀=1/6, center=(sys.Lx÷2, sys.Ly÷2), fx=0.0, fy=0.0, verbos=true)
+function run_dropletforced(
+    sys::SysConst,
+    device::String;
+    radius = 20,
+    θ₀ = 1 / 6,
+    center = (sys.Lx ÷ 2, sys.Ly ÷ 2),
+    fx = 0.0,
+    fy = 0.0,
+    verbos = true,
+)
     bodyforce = zeros(2)
     bodyforce[1] = fx
     bodyforce[2] = fy
@@ -408,19 +477,27 @@ function run_dropletforced(sys::SysConst, device::String; radius=20, θ₀=1/6, 
     Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state, sys)
     println("Starting the lattice Boltzmann time loop")
-    time_loop(sys, state, Swalbe.inclination!, bodyforce, verbose=verbos)
+    time_loop(sys, state, Swalbe.inclination!, bodyforce, verbose = verbos)
 
     return state.height, state.velx, state.vely
-    
+
 end
 # 1D case
-function run_dropletforced(sys::SysConst_1D; radius=20, θ₀=1/6, center=(sys.L÷2), θₛ=fill(1/9, sys.L), f=0.0, verbos=true)
+function run_dropletforced(
+    sys::SysConst_1D;
+    radius = 20,
+    θ₀ = 1 / 6,
+    center = (sys.L ÷ 2),
+    θₛ = fill(1 / 9, sys.L),
+    f = 0.0,
+    verbos = true,
+)
     println("Simulating a sliding droplet in one dimension")
     state = Swalbe.Sys(sys)
     Swalbe.singledroplet(state.height, radius, θ₀, center)
     Swalbe.equilibrium!(state, sys)
     println("Starting the lattice Boltzmann time loop")
-    time_loop(sys, state, Swalbe.inclination!, f, verbose=verbos)
+    time_loop(sys, state, Swalbe.inclination!, f, verbose = verbos)
     return state.height, state.vel
 
 end
@@ -441,40 +518,43 @@ Lattice Boltzmann simulation of coalescing droplets.
 function run_gamma(
     sys::Swalbe.SysConst_1D,
     gamma::Vector;
-    r₁=115,
-    r₂=115, 
-    θ₀=1/9,  
-    verbos=true, 
-    dump = 100, 
-    fluid=zeros(sys.param.Tmax÷dump, sys.L)
+    r₁ = 115,
+    r₂ = 115,
+    θ₀ = 1 / 9,
+    verbos = true,
+    dump = 100,
+    fluid = zeros(sys.param.Tmax ÷ dump, sys.L),
 )
     println("Simulating droplet coalecense with surface tension gardient")
-    state = Swalbe.Sys(sys, kind="gamma")
-    drop_cent = (sys.L/3, 2*sys.L/3)
-    state.basestate.height .= Swalbe.two_droplets(sys, r₁=r₁, r₂=r₂, θ₁=θ₀, θ₂=θ₀, center=drop_cent)
+    state = Swalbe.Sys(sys, kind = "gamma")
+    drop_cent = (sys.L / 3, 2 * sys.L / 3)
+    state.basestate.height .=
+        Swalbe.two_droplets(sys, r₁ = r₁, r₂ = r₂, θ₁ = θ₀, θ₂ = θ₀, center = drop_cent)
     Swalbe.equilibrium!(state, sys)
     state.γ .= gamma
-	Swalbe.∇γ!(state)
+    Swalbe.∇γ!(state)
     println("Starting the lattice Boltzmann time loop")
-    for t in 1:sys.param.Tmax
+    for t = 1:sys.param.Tmax
         if verbos
             if t % sys.param.tdump == 0
                 mass = 0.0
                 mass = sum(state.basestate.height)
-                println("Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-20:sys.L÷2+20]), digits=3))")
+                println(
+                    "Time step $t bridge height is $(round(minimum(state.basestate.height[sys.L÷2-20:sys.L÷2+20]), digits=3))",
+                )
             end
         end
-        Swalbe.filmpressure!(state, sys, γ=gamma)
+        Swalbe.filmpressure!(state, sys, γ = gamma)
         Swalbe.h∇p!(state)
         Swalbe.slippage!(state, sys)
         state.basestate.F .= -state.basestate.h∇p .- state.basestate.slip .- state.∇γ
         Swalbe.equilibrium!(state, sys)
         Swalbe.BGKandStream!(state, sys)
         Swalbe.moments!(state)
-        
+
         Swalbe.snapshot!(fluid, state.basestate.height, t, dumping = dump)
     end
-	# println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
+    # println("Max γ: $(maximum(state.γ)),\nMin γ: $(minimum(state.γ))")
     return fluid
-    
+
 end

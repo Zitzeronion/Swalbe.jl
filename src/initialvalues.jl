@@ -9,9 +9,9 @@ function sinewave1D!(height, h₀, n::Int, ϵ, dims::Int)
     # Used to perform the accumulate operation
     height .= 1.0
     # This we get n nice sine waves
-    hdummy .= 2π .* n .* accumulate(+, height, dims=dims) ./ (size(height,dims)-1)
+    hdummy .= 2π .* n .* accumulate(+, height, dims = dims) ./ (size(height, dims) - 1)
     # Still need to use the correct undulation ϵ and initial height
-    height .= h₀ .* (1.0 .+ ϵ .* (map(sin, hdummy) .- 1/size(height,dims)))
+    height .= h₀ .* (1.0 .+ ϵ .* (map(sin, hdummy) .- 1 / size(height, dims)))
     return nothing
 end
 
@@ -26,7 +26,7 @@ function randinterface!(height, h₀, ϵ)
     # Used to perform the accumulate operation
     height .= 1.0
     # This we get n nice sine waves
-    randn!(hdummy) 
+    randn!(hdummy)
     # Still need to use the correct undulation ϵ and initial height
     height .= h₀ .* (1.0 .+ ϵ .* hdummy)
     return nothing
@@ -68,38 +68,38 @@ See also:
 function singledroplet(height, radius, θ, center)
     lx, ly = size(height)
     # area = 2π * radius^2 * (1- cospi(θ))
-    @inbounds for i in 1:lx
-        for j in 1:ly
-            circ = sqrt((i-center[1])^2 + (j-center[2])^2)
+    @inbounds for i = 1:lx
+        for j = 1:ly
+            circ = sqrt((i - center[1])^2 + (j - center[2])^2)
             if circ <= radius
-                height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+                height[i, j] = (cos(asin(circ / radius)) - cospi(θ)) * radius
             else
-                height[i,j] = 0.05
+                height[i, j] = 0.05
             end
         end
     end
-    @inbounds for i in 1:lx
-        for j in 1:ly
-            if height[i,j] < 0
-                height[i,j] = 0.05
+    @inbounds for i = 1:lx
+        for j = 1:ly
+            if height[i, j] < 0
+                height[i, j] = 0.05
             end
         end
     end
     return height
 end
 # For a one dimensional droplet
-function singledroplet(height::Vector, radius, θ, center; hcrit=0.05)
+function singledroplet(height::Vector, radius, θ, center; hcrit = 0.05)
     L = size(height)[1]
     # area = 2π * radius^2 * (1- cospi(θ))
-    @inbounds for i in 1:L
-        circ = sqrt((i-center)^2)
+    @inbounds for i = 1:L
+        circ = sqrt((i - center)^2)
         if circ <= radius
-            height[i] = (cos(asin(circ/radius)) - cospi(θ)) * radius 
+            height[i] = (cos(asin(circ / radius)) - cospi(θ)) * radius
         else
             height[i] = hcrit
         end
     end
-    @inbounds for i in 1:L
+    @inbounds for i = 1:L
         if height[i] <= hcrit
             height[i] = hcrit
         end
@@ -139,30 +139,37 @@ Test Passed
 
 See also: 
 """
-function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, center=(sys.L/3,2*sys.L/3))
+function two_droplets(
+    sys::Consts_1D;
+    r₁ = 230,
+    r₂ = 230,
+    θ₁ = 1 / 9,
+    θ₂ = 1 / 9,
+    center = (sys.L / 3, 2 * sys.L / 3),
+)
     dum = zeros(sys.L)
     dum2 = zeros(sys.L)
     height = zeros(sys.L)
     # area = 2π * radius^2 * (1- cospi(θ))
-    @inbounds for i in 1:sys.L
-        circ = sqrt((i-center[1])^2)
+    @inbounds for i = 1:sys.L
+        circ = sqrt((i - center[1])^2)
         if circ <= r₁
-            dum[i] = (cos(asin(circ/r₁)) - cospi(θ₁)) * r₁
-        else    
+            dum[i] = (cos(asin(circ / r₁)) - cospi(θ₁)) * r₁
+        else
             dum[i] = 0.05
         end
     end
-    
-    @inbounds for i in 1:sys.L
-        circ2 = sqrt((i-center[2])^2)
+
+    @inbounds for i = 1:sys.L
+        circ2 = sqrt((i - center[2])^2)
         if circ2 <= r₂
-            dum2[i] = (cos(asin(circ2/r₂)) - cospi(θ₂)) * r₂
-        else    
+            dum2[i] = (cos(asin(circ2 / r₂)) - cospi(θ₂)) * r₂
+        else
             dum2[i] = 0.05
         end
     end
 
-    @inbounds for i in 1:sys.L
+    @inbounds for i = 1:sys.L
         if dum[i] < 0
             dum[i] = 0.05
         end
@@ -172,7 +179,7 @@ function two_droplets(sys::Consts_1D; r₁=230, r₂=230, θ₁=1/9, θ₂=1/9, 
     end
 
     height .= dum .+ dum2 .- 0.05
-    @inbounds for i in 1:sys.L
+    @inbounds for i = 1:sys.L
         if height[i] < 0
             height[i] = 0.05
         end
@@ -213,15 +220,15 @@ julia> rm("file.jld2")
 
 ```
 """
-function restart_from_height(data; kind="jld2", timestep=0, size=(512,512))
+function restart_from_height(data; kind = "jld2", timestep = 0, size = (512, 512))
     # Allocate the height
     height = zeros(size)
     # Use the correct file format
     if kind == "jld2"
         # Pipe the data to a dataframe
-        df = load(data) |> DataFrame 
+        df = load(data) |> DataFrame
         if timestep == 0
-            height .= reshape(df[:,end], size[1], size[2])
+            height .= reshape(df[:, end], size[1], size[2])
         else
             height .= reshape(df[!, Symbol("h_$(timestep)")], size[1], size[2])
         end
@@ -229,14 +236,14 @@ function restart_from_height(data; kind="jld2", timestep=0, size=(512,512))
         df = DataFrame(BSON.load(data))
         # Now choose only the timestep that is needed
         if timestep == 0
-            height .= reshape(df[:,end], size[1], size[2])
+            height .= reshape(df[:, end], size[1], size[2])
         else
             height .= reshape(df[!, Symbol("h_$(timestep)")], size[1], size[2])
         end
     end
 
     return height
-    
+
 end
 
 
@@ -278,15 +285,23 @@ false
 Really not much to say here, check out [LazySets.jl](https://github.com/JuliaReach/LazySets.jl).
 
 """
-function boxpattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36, side=20)
+function boxpattern(
+    θ,
+    θ₀;
+    center = (size(θ, 1) ÷ 2, size(θ, 2) ÷ 2),
+    δₐ = 1 / 36,
+    side = 20,
+)
     # Vertex vectors
-    xcoords = [center[1]-side/2 center[1]-side/2 center[1]+side/2 center[1]+side/2]
-    ycoords = [center[2]-side/2 center[2]+side/2 center[2]-side/2 center[2]+side/2]
+    xcoords =
+        [center[1] - side / 2 center[1] - side / 2 center[1] + side / 2 center[1] + side / 2]
+    ycoords =
+        [center[2] - side / 2 center[2] + side / 2 center[2] - side / 2 center[2] + side / 2]
     # Check if the vertices are on the grid
-    for i in 1:length(xcoords)
-        if xcoords[i] < 1 || xcoords[i] > size(θ,1)
+    for i = 1:length(xcoords)
+        if xcoords[i] < 1 || xcoords[i] > size(θ, 1)
             xcoords[i] = 1 # If not push them to the origin
-        elseif ycoords[i] < 1 || ycoords[i] > size(θ,2)
+        elseif ycoords[i] < 1 || ycoords[i] > size(θ, 2)
             ycoords[i] = 1
         end
     end
@@ -297,11 +312,11 @@ function boxpattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36
     vertex₄ = [xcoords[4], ycoords[4]]
     # Build a posize(θ,2)gon
     P = VPolygon([vertex₁, vertex₂, vertex₃, vertex₄])
-    for i in 1:size(θ,1), j in 1:size(θ,2)
+    for i = 1:size(θ, 1), j = 1:size(θ, 2)
         if [Float64(i), Float64(j)] ∈ P
-            θ[j,i] = θ₀ + δₐ
+            θ[j, i] = θ₀ + δₐ
         else
-            θ[j,i] = θ₀
+            θ[j, i] = θ₀
         end
     end
     return θ, P
@@ -341,7 +356,14 @@ Test Passed
 Nothing interesting here.
 
 """
-function ellipsepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36, a=10, b=5)
+function ellipsepattern(
+    θ,
+    θ₀;
+    center = (size(θ, 1) ÷ 2, size(θ, 2) ÷ 2),
+    δₐ = 1 / 36,
+    a = 10,
+    b = 5,
+)
     # Don't know why LazySets needs this, can not just parse center as argument of Ellipsoid constructor
     mid = ones(2)
     mid[1] = center[1]
@@ -350,11 +372,11 @@ function ellipsepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=
     shape₁ = a^(2)
     shape₂ = b^(2)
     P = Ellipsoid(mid, [shape₁ 0.0; 0.0 shape₂])
-    for i=1:size(θ,1), j=1:size(θ,2)
+    for i = 1:size(θ, 1), j = 1:size(θ, 2)
         if [Float64(i), Float64(j)] ∈ P
-            θ[j,i] = θ₀ + δₐ
+            θ[j, i] = θ₀ + δₐ
         else
-            θ[j,i] = θ₀
+            θ[j, i] = θ₀
         end
     end
     return θ, P
@@ -390,16 +412,22 @@ julia> θ[25,25]
 
 See also:
 """
-function trianglepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ=1/36, side=60)
-    height = sqrt(3)/2*side
+function trianglepattern(
+    θ,
+    θ₀;
+    center = (size(θ, 1) ÷ 2, size(θ, 2) ÷ 2),
+    δₐ = 1 / 36,
+    side = 60,
+)
+    height = sqrt(3) / 2 * side
     # Vertices vectors
-    xcoords = [center[1]-side/2 center[1]+side/2 center[1]]
-    ycoords = [center[2]-height/3 center[2]-height/3 center[2]+2*height/3]
+    xcoords = [center[1] - side / 2 center[1] + side / 2 center[1]]
+    ycoords = [center[2] - height / 3 center[2] - height / 3 center[2] + 2 * height / 3]
     # Check if the vertices are on the grid
-    for i in 1:length(xcoords)
-        if xcoords[i] < 1 || xcoords[i] > size(θ,1)
+    for i = 1:length(xcoords)
+        if xcoords[i] < 1 || xcoords[i] > size(θ, 1)
             xcoords[i] = 1 # If not push them to the origin
-        elseif ycoords[i] < 1 || ycoords[i] > size(θ,2)
+        elseif ycoords[i] < 1 || ycoords[i] > size(θ, 2)
             ycoords[i] = 1
         end
     end
@@ -407,11 +435,11 @@ function trianglepattern(θ, θ₀; center=(size(θ,1)÷2, size(θ,2)÷2), δₐ
     vertex₂ = [xcoords[2], ycoords[2]]
     vertex₃ = [xcoords[3], ycoords[3]]
     P = VPolygon([vertex₁, vertex₂, vertex₃])
-    for i in 1:size(θ,1), j in 1:size(θ,2)
+    for i = 1:size(θ, 1), j = 1:size(θ, 2)
         if [Float64(i), Float64(j)] ∈ P
-            θ[j,i] = θ₀ + δₐ
+            θ[j, i] = θ₀ + δₐ
         else
-            θ[j,i] = θ₀
+            θ[j, i] = θ₀
         end
     end
     return θ, P
