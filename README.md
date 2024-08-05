@@ -5,6 +5,7 @@
 [![codecov](https://codecov.io/gh/Zitzeronion/Swalbe.jl/branch/master/graph/badge.svg?token=J1AMK7YW69)](https://codecov.io/gh/Zitzeronion/Swalbe.jl)
 [![status](https://joss.theoj.org/papers/414a5b53a41e05a250a352360a7da337/status.svg)](https://joss.theoj.org/papers/414a5b53a41e05a250a352360a7da337)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7030890.svg)](https://doi.org/10.5281/zenodo.7030890)
+[![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Ftotal_downloads%2FSwalbe&query=total_requests&label=Total)](http://juliapkgstats.com/pkg/Swalbe) 
 <!--[![Swalbe.jl Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/Swalbe)](https://pkgs.genieframework.com?packages=Swalbe) --->
 
 
