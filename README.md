@@ -148,6 +148,7 @@ For this letter in Phys. Rev. Fluids we investigate a dewetting thin film on a "
 Preprints:
 - [To coalesce or not to coalesce: Droplets and surface tension gradients](https://arxiv.org/abs/2208.09307)
 - [Chemically reactive thin films: dynamics and stability](https://arxiv.org/abs/2402.14635)
+- [Modeling of thin liquid films with arbitrary many layers](https://arxiv.org/abs/2409.16659)
 
 ## **Credit**
 
