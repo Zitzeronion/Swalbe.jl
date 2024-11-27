@@ -15,5 +15,9 @@ include("moments.jl")
 include("simulate.jl")
 include("measures.jl")
 include("obstacle.jl")
+include("logic.jl")
+include("active.jl")
+
+
 
 end

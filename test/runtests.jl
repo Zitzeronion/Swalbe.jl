@@ -21,4 +21,6 @@ using Swalbe, Test, Statistics, Parameters, Random, LazySets, BSON, FileIO, Data
     include("measures.jl")
     println("Testing with relevant simulations")
     include("simulate.jl")
+    println("Testing models beyond flat films")
+    include("fancy_models.jl")
 end
