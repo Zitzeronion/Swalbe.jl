@@ -248,6 +248,295 @@ function BGKandStream!(state::StateWithBound_1D, sys::SysConstWithBound_1D)
     return nothing
 end
 
+
+
+"""
+    BGKandStream!(state::MultiLayer_2D)
+
+Performs a BGK collision operation with a WFM forcecorrection and a subsequent streaming of the resulting populations, the same way as does the equivalent for single film models, but every field as an extra dimension corresponding to the number of layers in the multilayer film.
+
+# Arguments
+
+- `state` Multilayer state containing all fields
+
+
+# References
+
+- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
+- [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
+- [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
+- [Richter et al.](https://arxiv.org/abs/2409.16659)
+
+See also: [`Swalbe.equilibrium`](@ref)
+"""
+
+function BGKandStream!(state::MultiLayer_2D)
+    # All distribution functions
+    fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdistsMultiLayer(state.feq)
+    ft0, ft1, ft2, ft3, ft4, ft5, ft6, ft7, ft8 = viewdistsMultiLayer(state.ftemp)
+    fo0, fo1, fo2, fo3, fo4, fo5, fo6, fo7, fo8 = viewdistsMultiLayer(state.fout)
+
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    fo0 .= fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= fe1 .+ 1/3 .* state.Fx
+    fo2 .= fe2 .+ 1/3 .* state.Fy
+    fo3 .= fe3 .- 1/3 .* state.Fx
+    fo4 .= fe4 .- 1/3 .* state.Fy
+    # Diagonal ones, force correction 1/24 -> 3/2*1/36
+    fo5 .= fe5 .+ 1/24 .* (state.Fx .+ state.Fy)
+    fo6 .= fe6 .+ 1/24 .* (state.Fy .- state.Fx)
+    fo7 .= fe7 .- 1/24 .* (state.Fx .+ state.Fy)
+    fo8 .= fe8 .+ 1/24 .* (state.Fx .- state.Fy)
+
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, (0, 0))
+    circshift!(ft1, fo1, (1, 0))
+    circshift!(ft2, fo2, (0, 1))
+    circshift!(ft3, fo3, (-1, 0))
+    circshift!(ft4, fo4, (0, -1))
+    circshift!(ft5, fo5, (1, 1))
+    circshift!(ft6, fo6, (-1, 1))
+    circshift!(ft7, fo7, (-1, -1))
+    circshift!(ft8, fo8, (1, -1))
+
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
+    return nothing
+end
+
+
+#active thin film version
+function BGKandStream!(state::Active_1D, sys::SysConstActive_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = viewdists_1D(state.feq)
+    ft0, ft1, ft2 = viewdists_1D(state.ftemp)
+    fo0, fo1, fo2 = viewdists_1D(state.fout)
+
+    omeg = 1-1/sys.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    fo0 .= omeg .* ft0 .+ 1/sys.τ .* fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= omeg .* ft1 .+ 1/sys.τ .* fe1 .+ 1/2 .* state.F
+    fo2 .= omeg .* ft2 .+ 1/sys.τ .* fe2 .- 1/2 .* state.F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+    
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
+    return nothing
+end
+
+
+""""
+BGKandStream!(state::StateMultiLayer_1D)
+
+Performs a BGK collision operation with a WFM force correction and a subsequent streaming of the resulting populations, analogous to its 2D counterpart. 
+This function operates in a 1D multilayer thin-film model, where fields include an additional layer dimension.
+
+# Arguments
+
+- `state` Multilayer 1D state containing all fields:
+# References
+
+- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
+- [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
+- [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
+- [Richter et al.](https://arxiv.org/abs/2409.16659)
+
+See also: [`Swalbe.equilibrium`](@ref)
+"""
+function BGKandStream!(state::StateMultiLayer_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = viewdistsMultiLayer_1D(state.feq)
+    ft0, ft1, ft2 = viewdistsMultiLayer_1D(state.ftemp)
+    fo0, fo1, fo2 = viewdistsMultiLayer_1D(state.fout)
+
+    # Collision for the three populations
+    # Zeroth, no forcing!
+    fo0 .= fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= fe1 .+ 1/2 .* state.F
+    fo2 .= fe2 .- 1/2 .* state.F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+    
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
+    return nothing
+end
+
+"""
+BGKandStream!(state::StateMultiLayer_1D)
+
+Performs a BGK collision operation with a WFM force correction and a subsequent streaming of the resulting populations, analogous to its 2D counterpart. 
+This function operates in a 1D multilayer thin-film model, where fields include an additional layer dimension.
+
+# Arguments
+
+- `state` Multilayer 1D state containing all fields:
+# References
+
+- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
+- [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
+- [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
+- [Richter et al.](https://arxiv.org/abs/2409.16659)
+
+See also: [`Swalbe.equilibrium`](@ref)
+"""
+function BGKandStream!(state::StateMultiLayer_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = viewdistsMultiLayer_1D(state.feq)
+    ft0, ft1, ft2 = viewdistsMultiLayer_1D(state.ftemp)
+    fo0, fo1, fo2 = viewdistsMultiLayer_1D(state.fout)
+
+    # Collision for the three populations
+    # Zeroth, no forcing!
+    fo0 .= fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= fe1 .+ 1/2 .* state.F
+    fo2 .= fe2 .- 1/2 .* state.F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+    
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
+    return nothing
+end
+
+
+"""
+	function BGKandStream!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
+
+Compare with [`BGKandStream!`](@ref). Difference is we are streaming two liquid components. 
+"""
+function BGKandStream!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
+    # All distribution functions
+    fe0, fe1, fe2 = viewdistsMiscible_1D(state.feq)
+    ft0, ft1, ft2 = viewdistsMiscible_1D(state.ftemp)
+    fo0, fo1, fo2 = viewdistsMiscible_1D(state.fout)
+
+    # Collision for the three populations
+    # Zeroth, no forcing!
+    fo0 .= fe0
+    # Straight ones, force correction is 1/3, 3*1/9
+    fo1 .= sys.omeg .* ft1 .+ sys.umtau .* fe1 .+ 1/2 .* state.F
+    fo2 .= sys.omeg .* ft2 .+ sys.umtau .* fe2 .- 1/2 .* state.F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(ft0, fo0, 0)
+    circshift!(ft1, fo1, 1)
+    circshift!(ft2, fo2, -1)
+    
+    # Overwrite fout with ftemp
+    state.fout .= state.ftemp
+    return nothing
+end
+
+
+# TODO: This is boilerplate code, please improve!
+"""
+    function rho_BGKandStream!(state,sys)
+
+colide ``\\rho``
+"""
+function rho_BGKandStream!(state::Active_1D, sys::SysConstActive_1D)
+    # All distribution functions
+    ge0, ge1, ge2 = viewdists_1D(state.geq)
+    gt0, gt1, gt2 = viewdists_1D(state.gtemp)
+    go0, go1, go2 = viewdists_1D(state.gout)
+
+    omeg = 1-1/sys.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    go0 .= omeg .* gt0 .+ 1/sys.τ .* ge0
+    # Straight ones, force correction is 1/3, 3*1/9
+    go1 .= omeg .* gt1 .+ 1/sys.τ .* ge1 .+ 1/2 .* state.rho_F
+    go2 .= omeg .* gt2 .+ 1/sys.τ .* ge2 .- 1/2 .* state.rho_F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(gt0, go0, 0)
+    circshift!(gt1, go1, 1)
+    circshift!(gt2, go2, -1)
+    
+    # Overwrite fout with ftemp
+    state.gout .= state.gtemp
+    return nothing
+end
+
+
+"""
+    function rho_A_BGKandStream!(state,sys)
+
+colide ``\\rho_A``
+"""
+function rho_A_BGKandStream!(state::Active_1D, sys::SysConstActive_1D)
+    # All distribution functions
+    ge0, ge1, ge2 = viewdists_1D(state.heq)
+    gt0, gt1, gt2 = viewdists_1D(state.htemp)
+    go0, go1, go2 = viewdists_1D(state.hout)
+
+    omeg = 1-1/sys.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    go0 .= omeg .* gt0 .+ 1/sys.τ .* ge0
+    # Straight ones, force correction is 1/3, 3*1/9
+    go1 .= omeg .* gt1 .+ 1/sys.τ .* ge1 .+ 1/2 .* state.rho_A_F
+    go2 .= omeg .* gt2 .+ 1/sys.τ .* ge2 .- 1/2 .* state.rho_A_F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(gt0, go0, 0)
+    circshift!(gt1, go1, 1)
+    circshift!(gt2, go2, -1)
+    
+    # Overwrite fout with ftemp
+    state.hout .= state.htemp
+    return nothing
+end
+
+
+"""
+    function rho_B_BGKandStream!(state,sys)
+
+colide ``\\rho_B``
+"""
+function rho_B_BGKandStream!(state::Active_1D, sys::SysConstActive_1D)
+    # All distribution functions
+    ge0, ge1, ge2 = viewdists_1D(state.beq)
+    gt0, gt1, gt2 = viewdists_1D(state.btemp)
+    go0, go1, go2 = viewdists_1D(state.bout)
+
+    omeg = 1-1/sys.τ
+    # Collision for the nine populations
+    # Zeroth, no forcing!
+    go0 .= omeg .* gt0 .+ 1/sys.τ .* ge0
+    # Straight ones, force correction is 1/3, 3*1/9
+    go1 .= omeg .* gt1 .+ 1/sys.τ .* ge1 .+ 1/2 .* state.rho_B_F
+    go2 .= omeg .* gt2 .+ 1/sys.τ .* ge2 .- 1/2 .* state.rho_B_F
+    
+    # This is the streaming step with implicite periodic boundarys
+    circshift!(gt0, go0, 0)
+    circshift!(gt1, go1, 1)
+    circshift!(gt2, go2, -1)
+    
+    # Overwrite fout with ftemp
+    state.bout .= state.btemp
+    return nothing
+end
+
+
+
 """
     viewdists(f)
 
@@ -306,4 +595,69 @@ function viewdists_1D(f)
     f2 = view(f, :, 3)
 
     return f0, f1, f2
+end
+
+
+"""
+    viewdistsMisible_1D(f)
+
+Generates a view for all three populations times the number of chemical compounds of a **D1Q3** distribution function.
+
+# Examples
+```jldoctest
+julia> using Swalbe, Test
+
+julia> ftest = reshape(collect(1.0:30.0),10,3);
+
+julia> f0, f1, f2 = Swalbe.viewdists_1D(ftest);
+
+julia> @test all(f1 .== ftest[:,2])
+Test Passed
+
+```
+
+See also: [`Swalbe.BGKandStream`](@ref)
+"""
+function viewdistsMiscible_1D(f)
+    f0 = view(f, :, 1, :)
+    f1 = view(f, :, 2, :)
+    f2 = view(f, :, 3, :)
+    
+    return f0, f1, f2
+end
+
+"""
+    viewdistsMultiLayer_1D(f)
+
+Generates a view for all three populations of a **D1Q3** distribution function, accounting for the extra layer dimension of the fields. 
+"""
+function viewdistsMultiLayer_1D(f)
+    f0 = view(f, :, 1, :)
+    f1 = view(f, :, 2, :)
+    f2 = view(f, :, 3, :)
+    
+    return f0, f1, f2
+end
+
+
+"""
+    viewdists(f)
+
+Generates a view for all nine populations of a **D2Q9** distribution function, accounting for the extra layer dimension of the fields. 
+```
+
+See also: [`Swalbe.BGKandStream`](@ref)
+"""
+function viewdistsMultiLayer(f)
+    f0 = view(f, :, :, 1, :)
+    f1 = view(f, :, :, 2, :)
+    f2 = view(f, :, :, 3, :)
+    f3 = view(f, :, :, 4, :)
+    f4 = view(f, :, :, 5, :)
+    f5 = view(f, :, :, 6, :)
+    f6 = view(f, :, :, 7, :)
+    f7 = view(f, :, :, 8, :)
+    f8 = view(f, :, :, 9, :)
+    
+    return f0, f1, f2, f3, f4, f5, f6, f7, f8
 end
