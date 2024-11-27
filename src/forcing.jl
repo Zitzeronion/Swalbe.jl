@@ -70,8 +70,7 @@ function slippage!(slip, height, vel, δ, μ)
     return nothing
 end
 
-slippage!(state::LBM_state_1D, sys::Consts_1D) =
-    slippage!(state.slip, state.height, state.vel, sys.param.δ, sys.param.μ)
+slippage!(state::LBM_state_1D, sys::Consts_1D) = slippage!(state.slip, state.height, state.vel, sys.param.δ, sys.param.μ)
 
 slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(
     state.basestate.slip,
@@ -80,6 +79,9 @@ slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(
     sys.param.δ,
     sys.param.μ,
 )
+
+slippage!(state::Active_1D, sys::SysConstsActive_1D) = slippage!(state.slip, state.height, state.vel, sys.δ, sys.μ)
+slippage!(state::LBM_state_1D, sys::SysConstsMiscible_1D) = slippage!(state.slip, state.height, state.vel, sys.delta, sys.μ)
 
 # Dirty hack for reducing slip length
 function slippage2!(state::LBM_state_2D, sys::SysConst)
@@ -97,6 +99,811 @@ function slippage2!(state::LBM_state_2D, sys::SysConst)
         )
     return nothing
 end
+
+
+
+"""
+	function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
+
+Calculates the friction force for a two layer thin film according to [Richter et al](https://arxiv.org/abs/2409.16659). There is a maple script generating the used code under `SI/multilayer_symbolics.mv`
+
+Right now no implementation of 3 layers or higher in 3D exists, in 2D we have a three layer implementation. 
+"""
+function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
+    # if sys.layers==2
+    #save some combinations we will need multiple times
+    state.hi[:,:,1] .= state.height[:,:,1] .+ state.height[:,:,2]
+    z_1z_2, z_iz_i = viewneighborsMultiLayer(state.dgrad)
+    z_1z_2[:,:,1] .= state.height[:,:,1] .* state.hi[:,:,1] 
+    z_iz_i[:,:,1] .= state.height[:,:,1] .* state.height[:,:,1]
+    z_iz_i[:,:,2] .= state.hi[:,:,1] .* state.hi[:,:,1]
+
+
+        state.slipx[:,:, :] .=   (
+         1 ./(
+               9*sys.delta[1]*sys.delta[1]*sys.delta[2]*sys.delta[2]*sys.mu[1]
+               .+ state.height[:,:,1] .* (
+                    18*sys.delta[1]*sys.delta[2]*sys.mu[1]*(-sys.delta[1]+sys.delta[2])
+               )
+               .+ state.hi[:,:,1] .* ( 18*sys.delta[1]*sys.delta[1]*sys.delta[2]*sys.mu[1])
+               .+ z_iz_i[:,:,1] .* (
+                    6*sys.delta[1]*sys.delta[1]*sys.mu[1]-9*sys.delta[1]*sys.delta[1]*sys.mu[2]-36*sys.delta[1]*sys.delta[2]*sys.mu[1]+6*sys.delta[2]*sys.delta[2]*sys.mu[1]
+               )
+               .+ z_1z_2[:,:,1] .* (
+                    -12*sys.delta[1]*sys.delta[1]*sys.mu[1]+9*sys.delta[1]*sys.delta[1]*sys.mu[2]+36*sys.delta[1]*sys.delta[2]*sys.mu[1]
+               )
+               .+ z_iz_i[:,:,2] .* (
+                    6*sys.delta[1]*sys.delta[1]*sys.mu[1]
+               )
+               .+ z_iz_i[:,:,1] .* state.height[:,:,1] .* (
+                12*(sys.delta[1]*sys.mu[1]-sys.delta[1]*sys.mu[2]-sys.delta[2]*sys.mu[1])
+               )
+               .+ z_iz_i[:,:,1] .* state.hi[:,:,1] .* (
+                    -24*sys.delta[1]*sys.mu[1]+12*sys.delta[1]*sys.mu[2]+12*sys.delta[2]*sys.mu[1]
+               )
+               .+ z_1z_2[:,:,1] .* state.hi[:,:,1] .* (
+                    12*sys.delta[1]*sys.mu[1]
+               )
+               .+ z_iz_i[:,:,1] .* z_iz_i[:,:,1] .* (
+                    4*sys.mu[1]-3*sys.mu[2]
+               )
+               .+ z_iz_i[:,:,1] .* z_1z_2[:,:,1] .* (
+                -8*sys.mu[1]+3*sys.mu[2]
+               )
+               .+ 4*sys.mu[1] .* z_iz_i[:,:,1] .* z_iz_i[:,:,2]
+           )
+        )
+
+        state.slipy[:,:, :].= state.slipx[:,:,:]
+ 
+       
+        state.slipx[:,:,1] .*=  6*sys.mu[1] .* state.height[:,:,1].* (
+              state.velx[:,:,1] .* (
+                -3*sys.delta[2]*sys.delta[2]*sys.mu[1]
+                .- state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]+6*sys.delta[2]*sys.mu[1]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -2*sys.mu[1]+6*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    4*sys.mu[1]-6*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,2] .* (
+                    -2*sys.mu[1]
+                )
+              )
+              .+ state.velx[:,:,2] .* (
+                state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -3*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    3*sys.mu[2]
+                )
+              )
+           ) 
+     state.slipx[:,:,2] .*=  6*sys.mu[2]*sys.mu[1] .* state.height[:,:,2] .* (
+        state.velx[:,:,1]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 3 .* z_iz_i[:,:,1]  
+            ) 
+        .- state.velx[:,:,2]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 2 .* z_iz_i[:,:,1]
+            ) 
+     )
+
+
+        state.slipy[:,:,1] .*=  6*sys.mu[1] .* state.height[:,:,1].* (
+              state.vely[:,:,1] .* (
+                -3*sys.delta[2]*sys.delta[2]*sys.mu[1]
+                .- state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]+6*sys.delta[2]*sys.mu[1]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -2*sys.mu[1]+6*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    4*sys.mu[1]-6*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,2] .* (
+                    -2*sys.mu[1]
+                )
+              )
+              .+ state.vely[:,:,2] .* (
+                state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -3*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    3*sys.mu[2]
+                )
+              )
+           ) 
+     state.slipy[:,:,2] .*=  6*sys.mu[2]*sys.mu[1] .* state.height[:,:,2] .* (
+        state.vely[:,:,1]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 3 .* z_iz_i[:,:,1]  
+            ) 
+        .- state.vely[:,:,2]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 2 .* z_iz_i[:,:,1]
+            ) 
+     )
+    # end
+    return nothing
+end
+
+
+"""
+	function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
+
+Calculates the friction force for a two layer thin film according to [Richter et al](https://arxiv.org/abs/2409.16659). There is a maple script generating the used code under `SI/multilayer_symbolics.mv`
+
+Right now no implementation of 3 layers or higher in 3D exists, in 2D we have a three layer implementation. 
+"""
+function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
+    # if sys.layers==2
+    #save some combinations we will need multiple times
+    state.hi[:,:,1] .= state.height[:,:,1] .+ state.height[:,:,2]
+    z_1z_2, z_iz_i = viewneighborsMultiLayer(state.dgrad)
+    z_1z_2[:,:,1] .= state.height[:,:,1] .* state.hi[:,:,1] 
+    z_iz_i[:,:,1] .= state.height[:,:,1] .* state.height[:,:,1]
+    z_iz_i[:,:,2] .= state.hi[:,:,1] .* state.hi[:,:,1]
+
+
+        state.slipx[:,:, :] .=   (
+         1 ./(
+               9*sys.delta[1]*sys.delta[1]*sys.delta[2]*sys.delta[2]*sys.mu[1]
+               .+ state.height[:,:,1] .* (
+                    18*sys.delta[1]*sys.delta[2]*sys.mu[1]*(-sys.delta[1]+sys.delta[2])
+               )
+               .+ state.hi[:,:,1] .* ( 18*sys.delta[1]*sys.delta[1]*sys.delta[2]*sys.mu[1])
+               .+ z_iz_i[:,:,1] .* (
+                    6*sys.delta[1]*sys.delta[1]*sys.mu[1]-9*sys.delta[1]*sys.delta[1]*sys.mu[2]-36*sys.delta[1]*sys.delta[2]*sys.mu[1]+6*sys.delta[2]*sys.delta[2]*sys.mu[1]
+               )
+               .+ z_1z_2[:,:,1] .* (
+                    -12*sys.delta[1]*sys.delta[1]*sys.mu[1]+9*sys.delta[1]*sys.delta[1]*sys.mu[2]+36*sys.delta[1]*sys.delta[2]*sys.mu[1]
+               )
+               .+ z_iz_i[:,:,2] .* (
+                    6*sys.delta[1]*sys.delta[1]*sys.mu[1]
+               )
+               .+ z_iz_i[:,:,1] .* state.height[:,:,1] .* (
+                12*(sys.delta[1]*sys.mu[1]-sys.delta[1]*sys.mu[2]-sys.delta[2]*sys.mu[1])
+               )
+               .+ z_iz_i[:,:,1] .* state.hi[:,:,1] .* (
+                    -24*sys.delta[1]*sys.mu[1]+12*sys.delta[1]*sys.mu[2]+12*sys.delta[2]*sys.mu[1]
+               )
+               .+ z_1z_2[:,:,1] .* state.hi[:,:,1] .* (
+                    12*sys.delta[1]*sys.mu[1]
+               )
+               .+ z_iz_i[:,:,1] .* z_iz_i[:,:,1] .* (
+                    4*sys.mu[1]-3*sys.mu[2]
+               )
+               .+ z_iz_i[:,:,1] .* z_1z_2[:,:,1] .* (
+                -8*sys.mu[1]+3*sys.mu[2]
+               )
+               .+ 4*sys.mu[1] .* z_iz_i[:,:,1] .* z_iz_i[:,:,2]
+           )
+        )
+
+        state.slipy[:,:, :].= state.slipx[:,:,:]
+ 
+       
+        state.slipx[:,:,1] .*=  6*sys.mu[1] .* state.height[:,:,1].* (
+              state.velx[:,:,1] .* (
+                -3*sys.delta[2]*sys.delta[2]*sys.mu[1]
+                .- state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]+6*sys.delta[2]*sys.mu[1]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -2*sys.mu[1]+6*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    4*sys.mu[1]-6*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,2] .* (
+                    -2*sys.mu[1]
+                )
+              )
+              .+ state.velx[:,:,2] .* (
+                state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -3*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    3*sys.mu[2]
+                )
+              )
+           ) 
+     state.slipx[:,:,2] .*=  6*sys.mu[2]*sys.mu[1] .* state.height[:,:,2] .* (
+        state.velx[:,:,1]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 3 .* z_iz_i[:,:,1]  
+            ) 
+        .- state.velx[:,:,2]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 2 .* z_iz_i[:,:,1]
+            ) 
+     )
+
+
+        state.slipy[:,:,1] .*=  6*sys.mu[1] .* state.height[:,:,1].* (
+              state.vely[:,:,1] .* (
+                -3*sys.delta[2]*sys.delta[2]*sys.mu[1]
+                .- state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]+6*sys.delta[2]*sys.mu[1]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -2*sys.mu[1]+6*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    4*sys.mu[1]-6*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,2] .* (
+                    -2*sys.mu[1]
+                )
+              )
+              .+ state.vely[:,:,2] .* (
+                state.height[:,:,2] .* (
+                    6*sys.delta[1]*sys.mu[2]
+                )
+                .+ z_iz_i[:,:,1] .* (
+                    -3*sys.mu[2]
+                )
+                .+ z_1z_2[:,:,1] .* (
+                    3*sys.mu[2]
+                )
+              )
+           ) 
+     state.slipy[:,:,2] .*=  6*sys.mu[2]*sys.mu[1] .* state.height[:,:,2] .* (
+        state.vely[:,:,1]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 3 .* z_iz_i[:,:,1]  
+            ) 
+        .- state.vely[:,:,2]  .* (
+                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 2 .* z_iz_i[:,:,1]
+            ) 
+     )
+    # end
+    return nothing
+end
+
+
+
+"""
+	function slippage_no_slip!(state::MultiLayer_2D, sys::SysConstMultiLayer)
+
+Calculates the friction force for a two layer thin film according to [Richter et al](https://arxiv.org/abs/2409.16659) in simplified no-slip case delta=0. There is a maple script generating the used code under `SI/multilayer_symbolics.mv`
+
+Right now no implementation of 3 layers or higher in 3D exists, in 2D we have a three layer implementation. 
+"""
+
+function slippage_no_slip!(state::MultiLayer_2D, sys::SysConstMultiLayer)
+    # if sys.layers==2
+    state.hi[:,:,1] .= state.height[:,:,1] .+ state.height[:,:,2]
+        state.slipx[:,:,1] .=  2*sys.mu[1] .* state.height[:,:,1] .* (
+            (
+                -3 .* (state.velx[:,:,1] .*(state.height[:,:,1] .* (2*sys.mu[1] -6*sys.mu[2]) .- 2*sys.mu[1] .* state.hi[:,:,1] ) .+ 3* sys.mu[2] .* state.velx[:,:,2] .* state.height[:,:,1])
+            )./(
+                state.height[:,:,1] .* state.height[:,:,1] .* ( state.height[:,:,1] .* (4*sys.mu[1]-3*sys.mu[2]) .- 4*sys.mu[1] .* state.hi[:,:,1])
+            ) 
+        )
+     state.slip[:,:,2] .= 2*sys.mu[2] .* state.height[:,:,2] .* (
+        (
+            3*sys.mu[1] .* (3 .*state.velx[:,:,1] .- 2 .* state.velx[:,:,2]) 
+        )./(
+           state.height[:,:,1] .* state.height[:,:,1] .* (4*sys.mu[1]-3*sys.mu[2]) .+ state.height[:,:,1] .* state.hi[:,:,1] .* ( -8*sys.mu[1] + 3*sys.mu[2]) .+ 4*sys.mu[1] .* state.hi[:,:,1] .* state.hi[:,:,1] 
+        )
+     )
+     state.slipy[:,:,1] .=  2*sys.mu[1] .* state.height[:,:,1] .* (
+            (
+                -3 .* (state.vely[:,:,1] .*(state.height[:,:,1] .* (2*sys.mu[1] -6*sys.mu[2]) .- 2*sys.mu[1] .* state.hi[:,:,1] ) .+ 3* sys.mu[2] .* state.vely[:,:,2] .* state.height[:,:,1])
+            )./(
+                state.height[:,:,1] .* state.height[:,:,1] .* ( state.height[:,:,1] .* (4*sys.mu[1]-3*sys.mu[2]) .- 4*sys.mu[1] .* state.hi[:,:,1])
+            ) 
+        )
+     state.slip[:,:,2] .= 2*sys.mu[2] .* state.height[:,:,2] .* (
+        (
+            3*sys.mu[1] .* (3 .*state.vely[:,:,1] .- 2 .* state.vely[:,:,2]) 
+        )./(
+           state.height[:,:,1] .* state.height[:,:,1] .* (4*sys.mu[1]-3*sys.mu[2]) .+ state.height[:,:,1] .* state.hi[:,:,1] .* ( -8*sys.mu[1] + 3*sys.mu[2]) .+ 4*sys.mu[1] .* state.hi[:,:,1] .* state.hi[:,:,1] 
+        )
+     )
+    # end
+    return nothing
+end
+
+"""
+    function slippage!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
+
+Calculates the friction force for a multilayer system with slip.
+
+    # Variables
+`state :: StateMultiLayer_1D` The fields
+`sys :: SysConstMultiLayer_1D` The system Variables
+
+    # Mathematics
+
+    ## 2 layers
+    The friction force reads ``F_i=2h_i\\mu_i a_i``
+
+    kwhere ``a_i`` is the solution of the linear system
+    ```math
+      \\begin{pmatrix}
+    \\beta_1^2 & - \\beta_1 & 1 & 0 & 0 & 0 \\\\
+    \\frac{z_1^2}{3} & \\frac{z_1}{2} & 1 & 0 & 0 & 0 \\\\
+    2 \\mu_1 z_1 & \\mu_1 & 0 & -2 \\mu_2 z_1 & - \\mu_2 & 0 \\\\
+    - z_1^2 & - z_1 & -1 & (z_1-\\beta_2)^2  & z_1-\\beta_2 & 1 \\\\
+    0& 0& 0&\\frac{z_2^3-z_1^3}{3(z_2-z_1)} & \\frac{z_2^2-z_1^2}{2(z_2-z_1)} & 1\\\\
+    0 & 0 & 0 & 2z_2 & 1 & 0  
+    \\end{pmatrix}\\begin{pmatrix}
+    a_1 \\\\ b_1 \\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2
+    \\end{pmatrix}=\\begin{pmatrix}
+    0 \\\\ U_1 \\\\ 0 \\\\ 0 \\\\  U_2\\\\ 0
+    \\end{pmatrix}. 
+    ```
+
+    ## 3 layers 
+    Actually solving the linear system gives ridiculously long terms. We do the next best thing, solving 
+    ```math
+    \\begin{pmatrix}
+        0 e 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\\\
+        \\frac{z_1^3}{3} & \\frac{z_1^2}{2} & z_1 & 0 & 0 & 0& 0 & 0 & 0\\\\
+        2z_1 & 1 & 0 & -2\\frac{\\mu_2}{\\mu_1}z_1 & - \\frac{\\mu_2}{\\mu_1 } & 0 & 0 & 0 & 0\\\\
+        z_1^2 & z_1 & 1 & - z_1^2 &- z_1 & -1 & 0 & 0 & 0\\\\
+        0 & 0 & 0 & \\frac{z_2^3-z_1^3}{3 }& \\frac{z_2^2-z_1^2}{2} & z_2-z_1 & 0 & 0 & 0\\\\
+        0 & 0 & 0 & 2z_2 & 1 & 0 & -2\\frac{\\mu_3}{\\mu_2} z_2 & -\\frac{\\mu_3}{\\mu_2} & 0 \\\\
+        0 & 0 & 0 & z_2^2 & z_2 & 1 & -z_2^2 & - z_2 & -1 \\\\
+        0 & 0 & 0 & 0 & 0 & 0 & \\frac{z_3^3-z_2^3}{3} & \\frac{z_3^2 - z_2^3}{2} & z_3-z_2\\\\
+        0 & 0 & 0 & 0 & 0 & 0 & 2z_3 & 1 & 0 
+    \\end{pmatrix}
+    \\begin{pmatrix}
+        a_1 \\\\ b_1 \\\\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2 \\\\ a_3 \\\\ b_3 \\\\ c_3 
+    \\end{pmatrix}
+    = \\begin{pmatrix}
+        0 \\\\ z_1 U_1 \\\\ 0 \\\\ 0 \\\\ (z_2-z_1) U_2 \\\\ 0 \\\\ 0\\\\ (z_3-z_2) U_3 \\\\ 0
+    \\end{pmatrix}
+    ```
+    and then we just add a factor of ``\\mu_i\\mu_jd^n`` under the fraction such that the dimensions are correct. That is not the actual thing but just a very pragmatic solution. Whenever you are really interested in the dynamics You better resort to `slippage_no_slip!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)`
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+# Number of layers
+
+With slip we have only implemented two layers, there is a three layer implementation of the simplified no-slip case [slippage_no_slip!](@ref)
+"""
+function slippage!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
+    if sys.layers==2
+        state.hi[:,1] .= state.height[:,1] .+ state.height[:,2]
+        state.slip[:,1] .= 2*sys.mu[1] .* state.height[:,1] .* friction_force_2_1_slip.(sys.mu[1],sys.mu[2], state.height[:,1], state.hi[:,1], state.vel[:,1], state.vel[:,2],sys.delta[1],sys.delta[2])
+        state.slip[:,2] .= 2*sys.mu[2] .* state.height[:,2] .* friction_force_2_2_slip.(sys.mu[1],sys.mu[2], state.height[:,1], state.hi[:,1], state.vel[:,1], state.vel[:,2],sys.delta[1],sys.delta[2])
+    elseif sys.layers==3
+        state.hi[:,1] .= state.height[:,1] .+ state.height[:,2]
+        state.hi[:,2] .= state.hi[:,1] .+ state.height[:,3]
+        state.slip[:,1] .= 2*sys.mu[1] .* state.height[:,1] .* friction_force_3_1_slip.(sys.mu[1], sys.mu[2], sys.mu[3], state.height[:,1], state.hi[:,1], state.hi[:,2], state.vel[:,1], state.vel[:,2], state.vel[:,3],sys.delta[1])
+        state.slip[:,2] .= 2*sys.mu[2] .* state.height[:,2] .* friction_force_3_2_slip.(sys.mu[1], sys.mu[2], sys.mu[3], state.height[:,1], state.hi[:,1], state.hi[:,2], state.vel[:,1], state.vel[:,2], state.vel[:,3],sys.delta[1])
+        state.slip[:,3] .= 2*sys.mu[3] .* state.height[:,3] .* friction_force_3_3_slip.(sys.mu[1], sys.mu[2], sys.mu[3], state.height[:,1], state.hi[:,1], state.hi[:,2], state.vel[:,1], state.vel[:,2], state.vel[:,3],sys.delta[1])
+    end
+    return nothing
+end
+
+
+
+
+"""
+    function slippage_no_slip!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
+
+Calculates the friction force for a multilayer system with slip.
+
+    # Variables
+`state :: StateMultiLayer_1D` The fields
+`sys :: SysConstMultiLayer_1D` The system Variables
+
+    # Mathematics
+
+    ## 2 layers
+    The friction force reads ``F_i=2h_i\\mu_i a_i``
+
+    where ``a_i`` is the solution of the linear system
+    ```math
+      \\begin{pmatrix}
+    0 & 0 & 1 & 0 & 0 & 0 \\\\
+    \\frac{z_1^2}{3} & \\frac{z_1}{2} & 1 & 0 & 0 & 0 \\\\
+    2 \\mu_1 z_1 & \\mu_1 & 0 & -2 \\mu_2 z_1 & - \\mu_2 & 0 \\\\
+    - z_1^2 & - z_1 & -1 & z_1^2  & z_1& 1 \\\\
+    0& 0& 0&\\frac{z_2^3-z_1^3}{3(z_2-z_1)} & \\frac{z_2^2-z_1^2}{2(z_2-z_1)} & 1\\\\
+    0 & 0 & 0 & 2z_2 & 1 & 0  
+    \\end{pmatrix}\\begin{pmatrix}
+    a_1 \\\\ b_1 \\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2
+    \\end{pmatrix}=\\begin{pmatrix}
+    0 \\\\ U_1 \\\\ 0 \\\\ 0 \\\\  U_2\\\\ 0
+    \\end{pmatrix}. 
+    ```
+
+    ## 3 layers 
+    Actually solving the linear system gives ridiculously long terms. We do the next best thing, solving 
+    ```math
+    \\begin{pmatrix}
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\\\
+        \\frac{z_1^3}{3} & \\frac{z_1^2}{2} & z_1 & 0 & 0 & 0& 0 & 0 & 0\\\\
+        2z_1 & 1 & 0 & -2\\frac{\\mu_2}{\\mu_1}z_1 & - \\frac{\\mu_2}{\\mu_1 } & 0 & 0 & 0 & 0\\\\
+        z_1^2 & z_1 & 1 & - z_1^2 &- z_1 & -1 & 0 & 0 & 0\\\\
+        0 & 0 & 0 & \\frac{z_2^3-z_1^3}{3 }& \\frac{z_2^2-z_1^2}{2} & z_2-z_1 & 0 & 0 & 0\\\\
+        0 & 0 & 0 & 2z_2 & 1 & 0 & -2\\frac{\\mu_3}{\\mu_2} z_2 & -\\frac{\\mu_3}{\\mu_2} & 0 \\\\
+        0 & 0 & 0 & z_2^2 & z_2 & 1 & -z_2^2 & - z_2 & -1 \\\\
+        0 & 0 & 0 & 0 & 0 & 0 & \\frac{z_3^3-z_2^3}{3} & \\frac{z_3^2 - z_2^3}{2} & z_3-z_2\\\\
+        0 & 0 & 0 & 0 & 0 & 0 & 2z_3 & 1 & 0 
+    \\end{pmatrix}
+    \\begin{pmatrix}
+        a_1 \\\\ b_1 \\\\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2 \\\\ a_3 \\\\ b_3 \\\\ c_3 
+    \\end{pmatrix}
+    = \\begin{pmatrix}
+        0 \\\\ z_1 U_1 \\\\ 0 \\\\ 0 \\\\ (z_2-z_1) U_2 \\\\ 0 \\\\ 0\\\\ (z_3-z_2) U_3 \\\\ 0
+    \\end{pmatrix}
+    ```
+    and then we just add a factor of ``\\mu_i\\mu_jd^n`` under the fraction such that the dimensions are correct. That is not the actual thing but just a very pragmatic solution. Whenever you are really interested in the dynamics You better resort to `slippage_no_slip!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)`
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+# Number of layers
+
+Here we have implemented also the three layer case
+
+"""
+function slippage_no_slip!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
+    if sys.layers==2
+       state.hi[:,1] .= state.height[:,1] .+ state.height[:,2]
+        state.slip[:,1] .= 2*sys.mu[1] .* state.height[:,1] .* friction_force_2_1_no_slip.(sys.mu[1],sys.mu[2], state.height[:,1], state.hi[:,1], state.vel[:,1], state.vel[:,2])
+        state.slip[:,2] .= 2*sys.mu[2] .* state.height[:,2] .* friction_force_2_2_no_slip.(sys.mu[1],sys.mu[2], state.height[:,1], state.hi[:,1], state.vel[:,1], state.vel[:,2])
+    elseif sys.layers==3
+        state.hi[:,1] .= state.height[:,1] .+ state.height[:,2]
+        state.hi[:,2] .= state.hi[:,1] .+ state.height[:,3]
+        state.slip[:,1] .= 2*sys.mu[1] .* state.height[:,1] .* friction_force_3_1_no_slip.(sys.mu[1], sys.mu[2], sys.mu[3], state.height[:,1], state.hi[:,1], state.hi[:,2], state.vel[:,1], state.vel[:,2], state.vel[:,3])
+        state.slip[:,2] .= 2*sys.mu[2] .* state.height[:,2] .* friction_force_3_2_no_slip.(sys.mu[1], sys.mu[2], sys.mu[3], state.height[:,1], state.hi[:,1], state.hi[:,2], state.vel[:,1], state.vel[:,2], state.vel[:,3])
+        state.slip[:,3] .= 2*sys.mu[3] .* state.height[:,3] .* friction_force_3_3_no_slip.(sys.mu[1], sys.mu[2], sys.mu[3], state.height[:,1], state.hi[:,1], state.hi[:,2], state.vel[:,1], state.vel[:,2], state.vel[:,3])
+    end
+    return nothing
+end
+
+"""
+    function friction_force_2_1_no_slip(mu1,mu2,z1,z2,U1,U2)
+
+Returns the coefficient a_1 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+    # Arguments
+
+-`mu1 :: Float64` first viscosity  
+-`mu2 :: Float64` second viscosity  
+-`z1 :: Float64` first interface position 
+-`z2 :: Float64` second interface position 
+-`U1 :: Float64` first flux
+-`U2 :: Float64` second flux
+
+    # Mathematics
+
+This is the frirst entry of the solution of 
+
+```math
+\\begin{pmatrix}
+    0 & 0 & 1 & 0 & 0 & 0 \\\\
+    \\frac{z_1^2}{3} & \\frac{z_1}{2} & 1 & 0 & 0 & 0 \\\\
+    2 \\mu_1 z_1 & \\mu_1 & 0 & -2 \\mu_2 z_1 & - \\mu_2 & 0 \\\\
+    - z_1^2 & - z_1 & -1 & z_1^2  & z_1 & 1 \\\\
+    0& 0& 0&\\frac{z_2^3-z_1^3}{3(z_2-z_1)} & \\frac{z_2^2-z_1^2}{2(z_2-z_1)} & 1\\\\
+    0 & 0 & 0 & 2z_2 & 1 & 0  
+    \\end{pmatrix}\\begin{pmatrix}
+    a_1 \\\\ b_1 \\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2
+    \\end{pmatrix}=\\begin{pmatrix}
+    0 \\\\ U_1 \\\\ 0 \\\\ 0 \\\\  U_2\\\\ 0
+    \\end{pmatrix}. 
+```
+
+    # Comments
+
+The linear system has been solved by maple and copy pasted here. 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_2_1_no_slip(mu1,mu2,z1,z2,U1,U2)
+    return   -6 * (mu1 * z1 - mu1 * z2 - 3 * mu2 * z1) / (4 * mu1 * z1 - 4 * mu1 * z2 - 3 * mu2 * z1) / z1 ^ 2 * U1 - 9 / z1 * mu2 / (4 * mu1 * z1 - 4 * mu1 * z2 - 3 * mu2 * z1) * U2
+end
+"""
+    function friction_force_2_2_no_slip(mu1,mu2,z1,z2,U1,U2)
+
+Returns the coefficient a_1 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+  see `friction_force_2_1_no_slip(mu1,mu2,z1,z2,U1,U2)`
+```
+
+    # Comments
+
+The linear system has been solved by maple and copy pasted here. 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_2_2_no_slip(mu1,mu2,z1,z2,U1,U2)
+    return   9 * mu1 / (4 * z1 ^ 2 * mu1 - 8 * z2 * z1 * mu1 + 4 * mu1 * z2 ^ 2 - 3 * z1 ^ 2 * mu2 + 3 * z2 * z1 * mu2) * U1 - 6 * mu1 / (4 * z1 ^ 2 * mu1 - 8 * z2 * z1 * mu1 + 4 * mu1 * z2 ^ 2 - 3 * z1 ^ 2 * mu2 + 3 * z2 * z1 * mu2) * U2
+end
+
+
+"""
+    function friction_force_2_1_slip(mu1,mu2,z1,z2,U1,U2)
+
+Returns the coefficient a_1 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+    # Arguments
+
+-`mu1 :: Float64` first viscosity  
+-`mu2 :: Float64` second viscosity  
+-`z1 :: Float64` first interface position 
+-`z2 :: Float64` second interface position 
+-`U1 :: Float64` first flux
+-`U2 :: Float64` second flux
+-`d1 :: Float64` first slip length
+-`d2 :: Float64` second slip length
+
+    # Mathematics
+
+This is the frirst entry of the solution of 
+
+```math
+\\beta_1^2 & - \\beta_1 & 1 & 0 & 0 & 0 \\\\
+\\frac{z_1^2}{3} & \\frac{z_1}{2} & 1 & 0 & 0 & 0 \\\\
+2 \\mu_1 z_1 & \\mu_1 & 0 & -2 \\mu_2 z_1 & - \\mu_2 & 0 \\\\
+- z_1^2 & - z_1 & -1 & (z_1-\\beta_2)^2  & z_1-\\beta_2 & 1 \\\\
+0& 0& 0&\\frac{z_2^3-z_1^3}{3(z_2-z_1)} & \\frac{z_2^2-z_1^2}{2(z_2-z_1)} & 1\\\\
+0 & 0 & 0 & 2z_2 & 1 & 0  
+\\end{pmatrix}\\begin{pmatrix}
+a_1 \\\\ b_1 \\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2
+\\end{pmatrix}=\\begin{pmatrix}
+0 \\\\ U_1 \\\\ 0 \\\\ 0 \\\\  U_2\\\\ 0
+\\end{pmatrix}.
+```
+
+    # Comments
+
+The linear system has been solved by maple and copy pasted here. 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_2_1_slip(mu1,mu2,z1,z2,U1,U2,d1,d2)
+    return  (
+        3 * (6 * d1 * mu2 * z1 - 6 * d1 * mu2 * z2 - 3 * d2 ^ 2 * mu1 + 6 * d2 * mu1 * z1 - 6 * d2 * mu1 * z2 - 2 * z1 ^ 2 * mu1 + 4 * z2 * z1 * mu1 - 2 * mu1 * z2 ^ 2 + 6 * z1 ^ 2 * mu2 - 6 * z2 * z1 * mu2) / (9 * d1 ^ 2 * d2 ^ 2 * mu1 - 18 * d1 ^ 2 * d2 * mu1 * z1 + 18 * d1 ^ 2 * d2 * mu1 * z2 + 6 * d1 ^ 2 * mu1 * z1 ^ 2 - 12 * d1 ^ 2 * mu1 * z1 * z2 + 6 * d1 ^ 2 * mu1 * z2 ^ 2 - 9 * d1 ^ 2 * mu2 * z1 ^ 2 + 9 * d1 ^ 2 * mu2 * z1 * z2 + 18 * d1 * d2 ^ 2 * mu1 * z1 - 36 * d1 * d2 * mu1 * z1 ^ 2 + 36 * d1 * d2 * mu1 * z1 * z2 + 12 * d1 * mu1 * z1 ^ 3 - 24 * d1 * mu1 * z1 ^ 2 * z2 + 12 * d1 * mu1 * z1 * z2 ^ 2 - 12 * d1 * mu2 * z1 ^ 3 + 12 * d1 * mu2 * z1 ^ 2 * z2 + 6 * d2 ^ 2 * mu1 * z1 ^ 2 - 12 * d2 * mu1 * z1 ^ 3 + 12 * d2 * mu1 * z1 ^ 2 * z2 + 4 * mu1 * z1 ^ 4 - 8 * mu1 * z1 ^ 3 * z2 + 4 * mu1 * z1 ^ 2 * z2 ^ 2 - 3 * mu2 * z1 ^ 4 + 3 * mu2 * z1 ^ 3 * z2) * U1
+         - 9 * mu2 * (z1 - z2) * (2 * d1 + z1) / (9 * d1 ^ 2 * d2 ^ 2 * mu1 - 18 * d1 ^ 2 * d2 * mu1 * z1 + 18 * d1 ^ 2 * d2 * mu1 * z2 + 6 * d1 ^ 2 * mu1 * z1 ^ 2 - 12 * d1 ^ 2 * mu1 * z1 * z2 + 6 * d1 ^ 2 * mu1 * z2 ^ 2 - 9 * d1 ^ 2 * mu2 * z1 ^ 2 + 9 * d1 ^ 2 * mu2 * z1 * z2 + 18 * d1 * d2 ^ 2 * mu1 * z1 - 36 * d1 * d2 * mu1 * z1 ^ 2 + 36 * d1 * d2 * mu1 * z1 * z2 + 12 * d1 * mu1 * z1 ^ 3 - 24 * d1 * mu1 * z1 ^ 2 * z2 + 12 * d1 * mu1 * z1 * z2 ^ 2 - 12 * d1 * mu2 * z1 ^ 3 + 12 * d1 * mu2 * z1 ^ 2 * z2 + 6 * d2 ^ 2 * mu1 * z1 ^ 2 - 12 * d2 * mu1 * z1 ^ 3 + 12 * d2 * mu1 * z1 ^ 2 * z2 + 4 * mu1 * z1 ^ 4 - 8 * mu1 * z1 ^ 3 * z2 + 4 * mu1 * z1 ^ 2 * z2 ^ 2 - 3 * mu2 * z1 ^ 4 + 3 * mu2 * z1 ^ 3 * z2) * U2
+    )
+end
+"""
+    function friction_force_2_2_slip(mu1,mu2,z1,z2,U1,U2)
+
+Returns the coefficient a_1 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+  see `friction_force_2_1_slip(mu1,mu2,z1,z2,U1,U2)`
+```
+
+    # Comments
+
+The linear system has been solved by maple and copy pasted here. 
+
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_2_2_slip(mu1,mu2,z1,z2,U1,U2,d1,d2)
+    return  (
+        9 * mu1 * (d1 ^ 2 + 2 * d1 * z1 + z1 ^ 2) / (9 * d1 ^ 2 * d2 ^ 2 * mu1 - 18 * d1 ^ 2 * d2 * mu1 * z1 + 18 * d1 ^ 2 * d2 * mu1 * z2 + 6 * d1 ^ 2 * mu1 * z1 ^ 2 - 12 * d1 ^ 2 * mu1 * z1 * z2 + 6 * d1 ^ 2 * mu1 * z2 ^ 2 - 9 * d1 ^ 2 * mu2 * z1 ^ 2 + 9 * d1 ^ 2 * mu2 * z1 * z2 + 18 * d1 * d2 ^ 2 * mu1 * z1 - 36 * d1 * d2 * mu1 * z1 ^ 2 + 36 * d1 * d2 * mu1 * z1 * z2 + 12 * d1 * mu1 * z1 ^ 3 - 24 * d1 * mu1 * z1 ^ 2 * z2 + 12 * d1 * mu1 * z1 * z2 ^ 2 - 12 * d1 * mu2 * z1 ^ 3 + 12 * d1 * mu2 * z1 ^ 2 * z2 + 6 * d2 ^ 2 * mu1 * z1 ^ 2 - 12 * d2 * mu1 * z1 ^ 3 + 12 * d2 * mu1 * z1 ^ 2 * z2 + 4 * mu1 * z1 ^ 4 - 8 * mu1 * z1 ^ 3 * z2 + 4 * mu1 * z1 ^ 2 * z2 ^ 2 - 3 * mu2 * z1 ^ 4 + 3 * mu2 * z1 ^ 3 * z2) * U1
+         - 3 * (3 * d1 ^ 2 + 6 * d1 * z1 + 2 * z1 ^ 2) * mu1 / (9 * d1 ^ 2 * d2 ^ 2 * mu1 - 18 * d1 ^ 2 * d2 * mu1 * z1 + 18 * d1 ^ 2 * d2 * mu1 * z2 + 6 * d1 ^ 2 * mu1 * z1 ^ 2 - 12 * d1 ^ 2 * mu1 * z1 * z2 + 6 * d1 ^ 2 * mu1 * z2 ^ 2 - 9 * d1 ^ 2 * mu2 * z1 ^ 2 + 9 * d1 ^ 2 * mu2 * z1 * z2 + 18 * d1 * d2 ^ 2 * mu1 * z1 - 36 * d1 * d2 * mu1 * z1 ^ 2 + 36 * d1 * d2 * mu1 * z1 * z2 + 12 * d1 * mu1 * z1 ^ 3 - 24 * d1 * mu1 * z1 ^ 2 * z2 + 12 * d1 * mu1 * z1 * z2 ^ 2 - 12 * d1 * mu2 * z1 ^ 3 + 12 * d1 * mu2 * z1 ^ 2 * z2 + 6 * d2 ^ 2 * mu1 * z1 ^ 2 - 12 * d2 * mu1 * z1 ^ 3 + 12 * d2 * mu1 * z1 ^ 2 * z2 + 4 * mu1 * z1 ^ 4 - 8 * mu1 * z1 ^ 3 * z2 + 4 * mu1 * z1 ^ 2 * z2 ^ 2 - 3 * mu2 * z1 ^ 4 + 3 * mu2 * z1 ^ 3 * z2) * U2
+    )
+end
+
+"""
+    function friction_force_3_1_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)
+
+Returns the coefficient a_1 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+    # Arguments
+
+-`mu1 :: Float64` first viscosity  
+-`mu2 :: Float64` second viscosity  
+-`mu3 :: Float64` third viscosity  
+-`z1 :: Float64` first interface position 
+-`z2 :: Float64` second interface position 
+-`z3 :: Float64` third interface position 
+-`U1 :: Float64` first flux
+-`U2 :: Float64` second flux
+-`U3 :: Float64` third flux
+
+    # Mathematics
+
+This is the frirst entry of the solution of 
+
+```math
+\\begin{pmatrix}
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\\\
+        \\frac{z_1^3}{3} & \\frac{z_1^2}{2} & z_1 & 0 & 0 & 0& 0 & 0 & 0\\\\
+        2z_1 & 1 & 0 & -2\\frac{\\mu_2}{\\mu_1}z_1 & - \\frac{\\mu_2}{\\mu_1 } & 0 & 0 & 0 & 0\\\\
+        z_1^2 & z_1 & 1 & - z_1^2 &- z_1 & -1 & 0 & 0 & 0\\\\
+        0 & 0 & 0 & \\frac{z_2^3-z_1^3}{3 }& \\frac{z_2^2-z_1^2}{2} & z_2-z_1 & 0 & 0 & 0\\\\
+        0 & 0 & 0 & 2z_2 & 1 & 0 & -2\\frac{\\mu_3}{\\mu_2} z_2 & -\\frac{\\mu_3}{\\mu_2} & 0 \\\\
+        0 & 0 & 0 & z_2^2 & z_2 & 1 & -z_2^2 & - z_2 & -1 \\\\
+        0 & 0 & 0 & 0 & 0 & 0 & \\frac{z_3^3-z_2^3}{3} & \\frac{z_3^2 - z_2^3}{2} & z_3-z_2\\\\
+        0 & 0 & 0 & 0 & 0 & 0 & 2z_3 & 1 & 0 
+    \\end{pmatrix}
+    \\begin{pmatrix}
+        a_1 \\\\ b_1 \\\\\\ c_1 \\\\ a_2 \\\\ b_2 \\\\ c_2 \\\\ a_3 \\\\ b_3 \\\\ c_3 
+    \\end{pmatrix}
+    = \\begin{pmatrix}
+        0 \\\\ z_1 U_1 \\\\ 0 \\\\ 0 \\\\ (z_2-z_1) U_2 \\\\ 0 \\\\ 0\\\\ (z_3-z_2) U_3 \\\\ 0
+    \\end{pmatrix}
+```
+
+    # Comments
+
+The linear system has been solved by maple and copy pasted here. 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_3_1_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)
+    return (
+        -3/2 * (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 12 * mu2 ^ 2 * z1 * z2 + 12 * mu2 ^ 2 * z1 * z3 - 12 * mu2 * mu3 * z1 ^ 2 + 12 * mu2 * mu3 * z1 * z2) / (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) / z1 ^ 2 * U1
+     + 9/2 * mu2 / z1 * (2 * mu2 * z2 - 2 * mu2 * z3 + 3 * mu3 * z1 - 3 * mu3 * z2) / (-z2 + z1) / (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) * (z2 - z1) * U2 
+    - 9/2 / z1 * (-z2 + z1) * mu3 * mu2 / (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) * (z3 - z2) * U3
+    )
+end
+
+
+"""
+    function friction_force_3_2_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)
+
+Returns the coefficient a_2 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+See `friction_force_3_1_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)`
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_3_2_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)
+    return (
+        9/2 * mu1 * (2 * mu2 * z2 - 2 * mu2 * z3 + 3 * mu3 * z1 - 3 * mu3 * z2) / (-z2 + z1) / (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) * U1
+         + 3/2 * (4 * mu1 * mu2 * z2 - 4 * mu1 * mu2 * z3 + 12 * mu1 * mu3 * z1 - 12 * mu1 * mu3 * z2 - 3 * mu2 * mu3 * z1) / (-z2 + z1) ^ 2 / (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) * (z2 - z1) * U2
+          - 9/2 * (2 * mu1 * z1 - 2 * mu1 * z2 - mu2 * z1) * mu3 / (-z2 + z1) / (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) * (z3 - z2) * U3
+    )
+end
+
+"""
+    function friction_force_3_2_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)
+
+Returns the coefficient a_3 for the friction force of the lowest (counting from the botton) layer of a three layer system without slip
+
+See `friction_force_3_1_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)` 
+
+
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_3_3_no_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)
+   return (
+        -9/2 * mu2 * (-z2 + z1) * mu1 / (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) * U1
+         - 9/2 * mu2 * (2 * mu1 * z1 - 2 * mu1 * z2 - mu2 * z1) / (-z2 + z1) / (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) * (z2 - z1) * U2
+          + 3/2 * (4 * mu1 * z1 - 4 * mu1 * z2 - 3 * mu2 * z1) * mu2 / (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) / (-z3 + z2) * (z3 - z2) * U3
+    )
+end
+
+
+"""
+    function friction_force_3_1_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3,d)
+
+Returns the coefficient a_1 for the friction force of the lowest (counting from the botton) layer of a three layer system with slip
+
+    # Arguments
+
+-`mu1 :: Float64` first viscosity  
+-`mu2 :: Float64` second viscosity  
+-`mu3 :: Float64` third viscosity  
+-`z1 :: Float64` first interface position 
+-`z2 :: Float64` second interface position 
+-`z3 :: Float64` third interface position 
+-`U1 :: Float64` first flux
+-`U2 :: Float64` second flux
+-`U3 :: Float64` third flux
+-`d :: Float64` slip length
+
+    # Mathematics
+
+Solving the actual equations for a 3 layer film with slippage leads to a ridicusly long term. Instead I just add a term proportional to ``\\mu_i\\mu_j*d^4`` under the fraction 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_3_1_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3,d)
+    return (
+        -3/2 * (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 12 * mu2 ^ 2 * z1 * z2 + 12 * mu2 ^ 2 * z1 * z3 - 12 * mu2 * mu3 * z1 ^ 2 + 12 * mu2 * mu3 * z1 * z2) / ((4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) * z1 ^ 2 + 1.5 * mu1 * mu1* d^4) * U1
+     + 9/2 * mu2 * (2 * mu2 * z2 - 2 * mu2 * z3 + 3 * mu3 * z1 - 3 * mu3 * z2) / (z1 * (-z2 + z1) * (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) + 4.5 * mu1 * mu2 * d^4) * (z2 - z1) * U2 
+    - 9/2 * (-z2 + z1) * mu3 * mu2 / ( z1 * (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) + 4.5 * mu1 * mu3* d^4) * (z3 - z2) * U3
+    )
+end
+
+
+"""
+    function friction_force_3_2_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3,d)
+
+Returns the coefficient a_2 for the friction force of the lowest (counting from the botton) layer of a three layer system with slip
+
+See `friction_force_3_1_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)`
+
+Solving the actual equations for a 3 layer film with slippage leads to a ridicusly long term. Instead I just add a term proportional to ``\\mu_i\\mu_jd^n``` under the fraction where n is chosen such that dimensions are respected 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_3_2_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3,d)
+    return (
+        9/2 * mu1 * (2 * mu2 * z2 - 2 * mu2 * z3 + 3 * mu3 * z1 - 3 * mu3 * z2)  / ((-z2 + z1) *(4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) + 4.5* mu2 * mu1 *d^3) * U1
+         + 3/2 * (4 * mu1 * mu2 * z2 - 4 * mu1 * mu2 * z3 + 12 * mu1 * mu3 * z1 - 12 * mu1 * mu3 * z2 - 3 * mu2 * mu3 * z1) /((-z2 + z1)^2 * (4 * mu1 * mu2 * z1 * z2 - 4 * mu1 * mu2 * z1 * z3 - 4 * mu1 * mu2 * z2 ^ 2 + 4 * mu1 * mu2 * z2 * z3 + 3 * mu1 * mu3 * z1 ^ 2 - 6 * mu1 * mu3 * z1 * z2 + 3 * mu1 * mu3 * z2 ^ 2 - 3 * mu2 ^ 2 * z1 * z2 + 3 * mu2 ^ 2 * z1 * z3 - 3 * mu2 * mu3 * z1 ^ 2 + 3 * mu2 * mu3 * z1 * z2) + 1.5 * mu2 * mu2 * d^4) * (z2 - z1) * U2
+          - 9/2 * (2 * mu1 * z1 - 2 * mu1 * z2 - mu2 * z1) * mu3 /((-z2 + z1) * (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) + 4.5 * mu2 * mu3* d^4) * (z3 - z2) * U3
+    )
+end
+
+"""
+    function friction_force_3_2_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3,d)
+
+Returns the coefficient a_3 for the friction force of the lowest (counting from the botton) layer of a three layer system with slip
+
+See `friction_force_3_1_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3)` 
+
+Solving the actual equations for a 3 layer film with slippage leads to a ridicusly long term. Instead I just add a term proportional to ``\\mu_i\\mu_jd^n``` under the fraction where n is chosen such that dimensions are respected 
+
+# Reference
+
+There is a symbolic calculation file creating the here used code at `SI/multilayer_symbolics.mv`.
+
+
+"""
+function friction_force_3_3_slip(mu1,mu2,mu3,z1,z2,z3,U1,U2,U3,d)
+    return (
+        -9/2 * mu2 * (-z2 + z1) * mu1 / (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3 + 4.5*mu3*mu1*d^3) * U1
+         - 9/2 * mu2 * (2 * mu1 * z1 - 2 * mu1 * z2 - mu2 * z1) / ((-z2 + z1) * (4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) + 4.5 *mu3*mu2* d^4) * (z2 - z1) * U2
+          + 3/2 * (4 * mu1 * z1 - 4 * mu1 * z2 - 3 * mu2 * z1) * mu2 / ((4 * mu1 * mu2 * z1 * z2 ^ 2 - 8 * mu1 * mu2 * z1 * z2 * z3 + 4 * mu1 * mu2 * z1 * z3 ^ 2 - 4 * mu1 * mu2 * z2 ^ 3 + 8 * mu1 * mu2 * z2 ^ 2 * z3 - 4 * mu1 * mu2 * z2 * z3 ^ 2 + 3 * mu1 * mu3 * z1 ^ 2 * z2 - 3 * mu1 * mu3 * z1 ^ 2 * z3 - 6 * mu1 * mu3 * z1 * z2 ^ 2 + 6 * mu1 * mu3 * z1 * z2 * z3 + 3 * mu1 * mu3 * z2 ^ 3 - 3 * mu1 * mu3 * z2 ^ 2 * z3 - 3 * mu2 ^ 2 * z1 * z2 ^ 2 + 6 * mu2 ^ 2 * z1 * z2 * z3 - 3 * mu2 ^ 2 * z1 * z3 ^ 2 - 3 * mu2 * mu3 * z1 ^ 2 * z2 + 3 * mu2 * mu3 * z1 ^ 2 * z3 + 3 * mu2 * mu3 * z1 * z2 ^ 2 - 3 * mu2 * mu3 * z1 * z2 * z3) * (-z3 + z2) + 4.5 *mu3*mu3* d^4) * (z3 - z2) * U3
+    )
+end
+
+
 
 """
     h∇p!(state)
@@ -163,6 +970,98 @@ function h∇p!(state::LBM_state_2D)
     return nothing
 end
 
+function h∇p!(state::MultiLayer_2D,sys::SysConstMultiLayer)
+    fip, fjp, fim, fjm, fipjp, fimjp, fimjm, fipjm = viewneighborsMultiLayer(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(fip, state.pressure, (1,0))
+    circshift!(fjp, state.pressure, (0,1))
+    circshift!(fim, state.pressure, (-1,0))
+    circshift!(fjm, state.pressure, (0,-1))
+    # Diagonal elements  
+    circshift!(fipjp, state.pressure, (1,1))
+    circshift!(fimjp, state.pressure, (-1,1))
+    circshift!(fimjm, state.pressure, (-1,-1))
+    circshift!(fipjm, state.pressure, (1,-1))
+    # In the end it is just a weighted sum...
+    # if sys.layers==2
+    state.h∇px[:,:,1] .= state.height[:,:,1] .* (
+        -1/3 .* (fip[:,:,1] .- fim[:,:,1]) .- 1/12 .* (fipjp[:,:,1] .- fimjp[:,:,1] .- fimjm[:,:,1] .+ fipjm[:,:,1])
+        -1/3 .* (fip[:,:,2] .- fim[:,:,2]) .- 1/12 .* (fipjp[:,:,2] .- fimjp[:,:,2] .- fimjm[:,:,2] .+ fipjm[:,:,2])
+        )
+    state.h∇py[:,:,1] .= state.height[:,:,1] .* (
+        -1/3 .* (fjp[:,:,1] .- fjm[:,:,1]) .- 1/12 .* (fipjp[:,:,1] .+ fimjp[:,:,1] .- fimjm[:,:,1] .- fipjm[:,:,1])
+        -1/3 .* (fjp[:,:,2] .- fjm[:,:,2]) .- 1/12 .* (fipjp[:,:,2] .+ fimjp[:,:,2] .- fimjm[:,:,2] .- fipjm[:,:,2])
+        )
+    state.h∇px[:,:,2] .= state.height[:,:,2] .* (-1/3 .* (fip[:,:,2] .- fim[:,:,2]) .- 1/12 .* (fipjp[:,:,2] .- fimjp[:,:,2] .- fimjm[:,:,2] .+ fipjm[:,:,2]))
+    state.h∇py[:,:,2] .= state.height[:,:,2] .* (-1/3 .* (fjp[:,:,2] .- fjm[:,:,2]) .- 1/12 .* (fipjp[:,:,2] .+ fimjp[:,:,2] .- fimjm[:,:,2] .- fipjm[:,:,2]))
+    # end
+    return nothing
+end
+
+
+function h∇p!(state::StateMultiLayer_1D,sys::SysConstMultiLayer_1D)
+    fip, fim = viewneighborsMultiLayer_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    # In the end it is just a weighted sum...
+    if sys.layers==2
+        # state.h∇p[:,1] .= state.height[:,1] .* -0.5 .* (fip[:,1] .- fim[:,1] .+ fip[:,2] .- fim[:,2])
+        state.h∇p[:,1] .= state.height[:,1] .* -0.5 .* (fip[:,1] .- fim[:,1] )
+        state.h∇p[:,2] .= state.height[:,2] .* -0.5 .* (fip[:,2] .- fim[:,2])
+    elseif sys.layers==3
+        state.h∇p[:,1] .= state.height[:,1] .* -0.5 .* (fip[:,1] .- fim[:,1])
+        state.h∇p[:,2] .= state.height[:,2] .* -0.5 .* (fip[:,2] .- fim[:,2])
+        state.h∇p[:,3] .= state.height[:,3] .* -0.5 .* (fip[:,3] .- fim[:,3])
+    end
+    return nothing
+end
+
+
+#active thin film version
+function h∇p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.h∇p .= state.height .* -0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+"""
+	function rho_grad_p!(state::Active_1D)
+
+Calculates ``\\rho\\nabla p`` where p is the pressure for ``\\rho``
+
+See also: [`Swalbe.rho_grad_p!`](@ref)
+"""
+function rho_grad_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.rho∇p .= state.rho .* -0.5 .* (fip .- fim)
+    return nothing
+end
+
+# for Miscible films
+function h∇p!(state::StateMiscible_1D,sys::SysConstMiscible_1D)
+    fip, fim = viewneighborsMiscible_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.pressure, 1)
+    circshift!(fim, state.pressure, -1)
+    # In the end it is just a weighted sum...
+    # if sys.layers==2
+        state.h∇p .= state.height .* -0.5 .* (fip .- fim)
+    # end
+    return nothing
+end
+
 function h∇p!(state::LBM_state_1D)
     fip, fim = viewneighbors_1D(state.dgrad)
     # One dim case, central differences
@@ -207,6 +1106,34 @@ function h∇p!(state::Expanded_1D)
 
     return nothing
 end
+
+"""
+    ∇gamma!(state)
+
+Computes the gradient of a spatially resolved surface tension field via central differneces and then concludes the surface stress as 
+
+`` \\frac{h^2 + 2 \\delta h }{2M(h)}``
+
+with 
+
+``M(h)= \\frac{2h^2 + 6 \\delta h + 3\\delta^2 }{ 6}``
+
+and implicitly ``\\rho_h=1``. 
+"""
+function ∇gamma!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
+    fip, fim = viewneighbors_1D(state.dgrad[:,:,1])
+    # One dim case, central differences
+    circshift!(fip, state.gamma[:,1], 1)
+    circshift!(fim, state.gamma[:,1], -1)
+    
+    # In the end it is just a weighted sum...
+    # state.∇γ .= -3/2 .* ((fip .- fim) ./ 2.0)
+    state.∇gamma .=((fip .- fim) .* -0.5)
+    state.stress[:,1] .= state.∇gamma .* ((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2]) .* 0.5 .+ sys.delta .*(state.height[:,1] .+ state.height[:,2])) .* 6 ./ (2 .* (state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2]) .+ 6*sys.delta .* (state.height[:,1] .+ state.height[:,2]) .+ 3*sys.delta*sys.delta )
+    state.stress[:,2] .= state.stress[:,1]
+    return nothing
+end
+
 
 """
     thermal!(fx, fy, height, kᵦT, μ, δ)
@@ -423,6 +1350,221 @@ function ∇γ!(state::T, sys::SysConst_1D) where {T<:Expanded_1D}
         ((fip .- fim) ./ 2.0)
     return nothing
 end
+
+
+"""
+    function rho_grad_disj_p!(state::Active_1D)
+
+A central differences scheme to calculate ``\\rho \\nabla p_{\\rho}``.
+"""
+function rho_grad_disj_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_pressure, 1)
+    circshift!(fim, state.rho_pressure, -1)
+    # In the end it is just a weighted sum...
+    state.rho∇p .= state.rho .* 0.5 .* (fip .- fim)
+    return nothing
+end
+
+
+"""
+    function rho_A_grad_disj_p!(state::Active_1D)
+
+A central differences scheme to calculate ``\\rho_A \\nabla p_{\\rho}``.
+"""
+function rho_A_grad_disj_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_A_pressure, 1)
+    circshift!(fim, state.rho_A_pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.rho_A∇p .= state.rho_A .* 0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+
+
+"""
+    function rho_B_grad_disj_p!(state::Active_1D)
+
+A central differences scheme to calculate ``\\rho_B \\nabla p_{\\rho}``.
+"""
+function rho_B_grad_disj_p!(state::Active_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.rho_B_pressure, 1)
+    circshift!(fim, state.rho_B_pressure, -1)
+    
+    # In the end it is just a weighted sum...
+    state.rho_B∇p .= state.rho_B .* 0.5 .* (fip .- fim)
+
+    return nothing
+end
+
+
+
+"""
+    function V_gamma!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the term ``V_\\gamma`` that enters as a part of the diffusive velocity of the solvent ``\\rho`` as ``V_\\gamma \\nabla \\gamma``. We have 
+
+``V_\\gamma = \\begin{cases}
+\\delta & \\alpha = \\infty\\\\
+\\frac{1}{1-e^{-\\alpha h}}\\left( -\\delta e^{-\\alpha h}+ \\frac{1-e^{-\\alpha h }( \\alpha h +1 )}{\\alpha}+\\delta\\right) & \\alpha \\geq 0 \\\\
+\\delta + \\frac{h}{2} & \\alpha =0\\\\
+\\frac{1}{e^{\\alpha h}-1}\\left( \\delta (e^{\\alpha h}-1)+ \\frac{e^{\\alpha h}-1}{\\alpha }-h \\right) & \\alpha \\leq 0\\\\
+\\delta + h & \\alpha =-\\infty
+\\end{cases}``
+"""
+function V_gamma!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.V_gamma .= sys.δ .+ state.height
+    elseif sys.alpha<0
+        state.V_gamma .= (sys.δ .* (exp.(sys.alpha .* state.height) .- 1) .+ (exp.(sys.alpha .* state.height) .- 1) ./ sys.alpha .- state.height ) ./ (exp.(sys.alpha .* state.height) .- 1)
+    elseif sys.alpha==0
+        state.V_gamma .= (2 .* sys.δ .+ state.height ) ./ 2
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.V_gamma .=  ( -sys.δ .* exp.(-sys.alpha .* state.height) .+ (1 .- exp.(-sys.alpha .* state.height) .* (sys.alpha .* state.height .+ 1)) ./ sys.alpha .+ sys.δ) ./ (1 .- exp.(-sys.alpha .* state.height))
+    else
+        state.V_gamma .=  sys.δ
+    end
+    return nothing
+end
+
+function V_gamma_A!(state::Active_1D, sys::SysConstActive_1D)
+        state.V_gamma_A .= (2 .* sys.δ .+ state.height ) ./ 2
+    return nothing
+end
+
+
+
+
+"""
+    function V_p!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates ``V_p`` that determines the pressure driven part of the solvent advection that has a velocity ``\\frac{\\nalbla p }{\\mu }V_p`` as
+
+``V_p= \\begin{cases}
+\\frac{\\delta^2}{2}+ \\delta h & \\alpha =\\infty\\\\
+- \\frac{2 - 2 \\alpha h - \\alpha^2 \\delta (\\delta  + 2 h) + e^{-\\alpha h} ( \\alpha^2 (\\delta  + h)^2-2)}{2 \\alpha^2(1-e^{-\\alpha h})} & \\alpha \\geq 0 \\\\
+\\frac{1}{6} (3 \\delta^2 + 6 \\delta h + 2 h^2) & \\alpha =0 \\\\
+-  \\frac{-2 + \\alpha^2 (\\delta + h)^2 - e^{\\alpha h}\\left(-2 + 2 \\alpha h + \\alpha^2 \\delta (\\delta + 2 h)\\right)}{2 a^2(e^{\\alpha h}-1)} & \\alpha \\leq 0\\
+\\frac{1}{2}(\\delta^2 + 2\\delta + h^2) & \\alpha =-\\infty
+\\end{cases}``
+"""
+function V_p!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.V_p .= (sys.δ*sys.δ .+ 2 * sys.δ .* state.height .+ state.height .* state.height) .* 0.5
+    elseif sys.alpha<0
+        state.V_p .= .-(-2 .+ sys.alpha*sys.alpha .* (sys.δ .+ state.height) .* (sys.δ .+ state.height).- exp.(sys.alpha .* state.height) .* (-2 .+ 2*sys.alpha .* state.height .+ sys.alpha*sys.alpha * sys.δ .*(sys.δ .+ 2 .* state.height))) ./ (2*sys.alpha*sys.alpha .* (exp.(sys.alpha .* state.height) .- 1))
+    elseif sys.alpha==0
+        state.V_p .= (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ ) ./ (6)
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.V_p .= .-(2 .-2 * sys.alpha .* state.height .- sys.alpha*sys.alpha * sys.δ .* (sys.δ .+ 2 .* state.height ) .+ exp.(-sys.alpha .* state.height) .* (sys.alpha*sys.alpha .*(sys.δ .+ state.height) .* (sys.δ .+ state.height).-2)) ./ (2*sys.alpha*sys.alpha .* (1 .- exp.(-sys.alpha .* state.height)))
+    else
+        state.V_p .= sys.δ*sys.δ/2  .+ sys.δ .* state.height
+    end
+    return nothing
+end
+
+function V_p_A!(state::Active_1D, sys::SysConstActive_1D)
+        state.V_p_A .= (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ ) ./ (6)
+    return nothing
+end
+
+
+
+"""
+    function nabla_F!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the Fick Jackobs term that corrects the diffusion according to a exponential distribution of solute. 
+
+``\\beta \\frac{1}{\\nabla h} \\nabla \\mathcal{F}= \\begin{cases}
+0 & \\alpha = \\pm \\infty\\\\
+- \\frac{1}{h} & \\alpha =0\\\\
+\\frac{\\alpha}{e^{\\alpha h}-1} & \\alpha \\geq 0\\\\
+\\frac{\\alpha e^{\\alpha h}}{e^{\\alpha h}-1} & \\alpha \\leq 0  
+\\end{cases}``
+"""
+function nabla_F!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.nabla_F .= 0
+    elseif sys.alpha<0
+        state.nabla_F .=  .- sys.alpha .* exp.(sys.alpha .* state.height) ./ (exp.(sys.alpha .* state.height) .- 1)
+    elseif sys.alpha==0
+        state.nabla_F .= .-1 ./ state.height
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.nabla_F .=  .- sys.alpha ./ (exp.(sys.alpha .* state.height) .- 1)
+    else
+        state.nabla_F .= 0
+    end
+    return nothing
+end
+
+
+
+function nabla_F_precursor!(state::Active_1D, sys::SysConstActive_1D)
+    if sys.alpha==-Inf
+        state.nabla_F .= 0
+    elseif sys.alpha<0
+        state.nabla_F .=  .- sys.alpha .* exp.(sys.alpha .* state.height) ./ (exp.(sys.alpha .* state.height) .- 1)
+    elseif sys.alpha==0
+        state.nabla_F .= .-1 ./ state.height
+    elseif sys.alpha>0 && sys.alpha < Inf
+        state.nabla_F .=  .- sys.alpha ./ (exp.(sys.alpha .* state.height) .- 1)
+    else
+        state.nabla_F .= 0
+    end
+    @. state.precursor = ifelse(state.height <= sys.hmin - sys.hcrit + 0.01, 0,1)
+    state.nabla_F .-= (1 .- state.precursor) .* sys.prescursor_nabla_F
+    return nothing
+end
+
+"""
+    function nabla_F_0!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the Fick Jackobs term that corrects the diffusion according to a exponential distribution of solute. 
+
+``\\beta \\frac{1}{\\nabla h} \\nabla \\mathcal{F}= - \\frac{1}{h} ``
+"""
+function nabla_F_0!(state::Active_1D)
+    state.nabla_F_0 .= .-1 ./ state.height
+    return nothing
+end
+
+
+
+"""
+    function V_p_0!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates ``V_p`` that determines the pressure driven part of the solvent advection that has a velocity ``\\frac{\\nalbla p }{\\mu }V_p`` as
+
+``V_p= \\frac{1}{6} (3 \\delta^2 + 6 \\delta h + 2 h^2)``
+"""
+function V_p_0!(state::Active_1D, sys::SysConstActive_1D)
+    state.V_p_0 .= (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ ) ./ (6)
+    return nothing
+end
+
+
+
+"""
+    function V_gamma_0!(state::Active_1D, sys::SysConstActive_1D)
+
+Calculates the term ``V_\\gamma`` that enters as a part of the diffusive velocity of the solvent ``\\rho_A`` as ``V_\\gamma \\nabla \\gamma``. We have 
+
+``V_\\gamma =\\delta + \\frac{h}{2} & \\alpha =0\\\\``
+"""
+function V_gamma_0!(state::Active_1D, sys::SysConstActive_1D)
+    state.V_gamma .= (2 .* sys.δ .+ state.height ) ./ 2
+    return nothing
+end
+
+
+
 
 """
     view_four()

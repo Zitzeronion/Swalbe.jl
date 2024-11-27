@@ -287,3 +287,47 @@ function viewneighbors_1D(f)
     return f1, f2
 end
 
+"""
+    viewneighborsMultiLayer(f)
+
+Generates a view for all nine populations of a **D2Q9** distribution function in a multilayer model. Each view includes the additional layer dimension.
+
+See also: [`Swalbe.viewneighbors`](@ref), [`Swalbe.filmpressure!`](@ref)
+"""
+function viewneighborsMultiLayer(f)
+    f1 = view(f, :, :, :, 1)
+    f2 = view(f, :, :, :, 2)
+    f3 = view(f, :, :, :, 3)
+    f4 = view(f, :, :, :, 4)
+    f5 = view(f, :, :, :, 5)
+    f6 = view(f, :, :, :, 6)
+    f7 = view(f, :, :, :, 7)
+    f8 = view(f, :, :, :, 8)
+
+    return f1, f2, f3, f4, f5, f6, f7, f8
+end
+"""
+    viewneighborsMultiLayer_1D(f)
+
+Generates a view for the two neighbors of a **D1Q3** distribution function in a multilayer model. Each view includes the additional layer dimension.
+
+See also: [`Swalbe.viewneighbors_1D`](@ref), [`Swalbe.filmpressure!`](@ref)
+"""
+function viewneighborsMultiLayer_1D(f)
+    f1 = view(f, :, 1, :)
+    f2 = view(f, :, 2, :)
+
+    return f1, f2
+end
+
+"""
+	function viewneighborsMiscible_1D(f)
+
+See [`viewneighbour_1D`](@ref), but with two chemical species arranged in a Lx2 matrix
+"""
+function viewneighborsMiscible_1D(f)
+    f1 = view(f, :, 1, :)
+    f2 = view(f, :, 2, :)
+    
+    return f1, f2
+end
