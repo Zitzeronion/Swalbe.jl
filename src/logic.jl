@@ -260,7 +260,7 @@ end
 
 
 """
-    fast_disj_32(arg::Float64)
+    fast_32(arg::Float64)
 
 Computes `arg^3 - arg^2` more efficiently using the `power_3` and `power_2` functions. This method avoids computing `arg^2` multiple times.
 
@@ -272,22 +272,18 @@ Computes `arg^3 - arg^2` more efficiently using the `power_3` and `power_2` func
 
 # Example
 ```jldoctest
-julia> fast_disj_32(2)
+julia> fast_32(2)
 4
 ```
 """
-function fast_disj_32(arg::Float64)
+function fast_32(arg::Float64)
     return power_3(arg) - power_2(arg)
 end
 
-function fast_disj_32(arg::Float64, fac::Float64)
-    # This was introducing anisotropy for reasons I don't understand
-    # return fac*power_3(arg)-power_2(arg)
-    return power_3(arg)-power_2(arg)
-end
+
 
 """
-    fast_disj_93(arg::Float64)
+    fast_93(arg::Float64)
 
 Computes `arg^3 - arg^3(arg)` more efficiently using the `power_3` function twice. This method avoids redundant power calculations.
 
@@ -299,21 +295,15 @@ Computes `arg^3 - arg^3(arg)` more efficiently using the `power_3` function twic
 
 # Example
 ```jldoctest
-julia> fast_disj_93(2)
+julia> fast_93(2)
 56
 ```
 """
-function fast_disj_93(arg::Float64)
+function fast_93(arg::Float64)
     temp = power_3(arg)
     return power_3(temp) - temp
 end
 
-function fast_disj_93(arg::Float64, fac::Float64)
-    temp = power_3(arg)
-    # # This was introding anisotropy for reasons I don't understand
-    # return fac*power_3(temp)-(fac+1)/2*temp
-    return power_3(temp)-temp
-end
 
 """
     to_4_digits(i)
@@ -350,7 +340,7 @@ function to_4_digits(i)
     end
 end
 
-function fast_disj_63(arg::Float64, fac::Float64)
+function fast_63(arg::Float64, fac::Float64)
     temp = power_3(arg)
     # This was introducing anisotropy for reasons I don't understand
     # return fac*power_2(temp)-temp

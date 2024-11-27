@@ -80,8 +80,8 @@ slippage!(state::Expanded_1D, sys::Consts_1D) = slippage!(
     sys.param.μ,
 )
 
-slippage!(state::Active_1D, sys::SysConstsActive_1D) = slippage!(state.slip, state.height, state.vel, sys.δ, sys.μ)
-slippage!(state::LBM_state_1D, sys::SysConstsMiscible_1D) = slippage!(state.slip, state.height, state.vel, sys.delta, sys.μ)
+slippage!(state::Active_1D, sys::SysConstActive_1D) = slippage!(state.slip, state.height, state.vel, sys.δ, sys.μ)
+slippage!(state::LBM_state_1D, sys::SysConstMiscible_1D) = slippage!(state.slip, state.height, state.vel, sys.delta, sys.μ)
 
 # Dirty hack for reducing slip length
 function slippage2!(state::LBM_state_2D, sys::SysConst)
@@ -1579,3 +1579,30 @@ function view_four(f)
 
     return f1, f2, f3, f4
 end
+
+
+"""
+    surface_tension_gradient!(state)
+
+Computes the gradient of a spatially resolved surface tension field via central differneces and then concludes the surface stress as
+
+`` \\frac{h^2 + 2 \\delta h }{2M(h)}``
+
+with
+
+``M(h)= \\frac{2h^2 + 6 \\delta h + 3\\delta^2 }{ 6}``
+
+and implicitly ``\\rho_h=1``.
+"""
+function ∇γ!(state::Active_1D, sys::SysConstActive_1D)
+    fip, fim = viewneighbors_1D(state.dgrad)
+    # One dim case, central differences
+    circshift!(fip, state.γ, 1)
+    circshift!(fim, state.γ, -1)
+    # In the end it is just a weighted sum...
+    # state.∇γ .= -3/2 .* ((fip .- fim) ./ 2.0)
+    state.∇γ .=((fip .- fim) .* -0.5)
+    state.stress .= state.∇γ .* (state.height .* state.height .* 0.5 .+ sys.δ .* state.height) .* 6 ./ (2 .* state.height .* state.height .+ 6*sys.δ .* state.height .+ 3*sys.δ*sys.δ )
+    return nothing
+end
+

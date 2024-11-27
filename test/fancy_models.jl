@@ -9,7 +9,7 @@
     		tdump=Int(floor(Tmax/10)), # dump time
     		h= 1,                       # initial film height
     		rho=1,                      # initial catalyst concentration
-    		ϵ=0.001,                    # initial noise
+    		eps=0.001,                    # initial noise
     		γ_0=0.001,                  # reference surface tension in the absence of chemical compounds
     		Γ = 0.1,                    # Surface tension effect product rho_A
     		GammaB=0.1,                 # Surface tension effect reactant rhoB
@@ -61,7 +61,7 @@
         		state.rho_A .= rho_0A
         		state.rho_B .= rho_0B
         		# This set up the film height as constant plus a small noise without high wavenumber frequencies
-        		Swalbe.browniannoise!(state.height, h, ϵ, L/2-L/10)
+			state.height .= h .* ones(L) .* eps .* rand(L)
 			height_0 = zeros(L)
 			height_0 .= state.height
         			# The LBM time loop
@@ -95,7 +95,7 @@
 	@testset "Curved Substrates" begin 
 	println("testing liquid films on curved substrates")
 		function curved(;
-        		Tmax=1e3,                       # Simulation time
+        		Tmax=1000,                       # Simulation time
         		tdump=Int(floor(Tmax/10)),     # dump time
         		h= 1,                           # initial film height
         		eps=0.001,                      # initial noise
@@ -107,7 +107,7 @@
         		omega=3,                        # number of periods of the underlying substrate
 		)
         		# set up system
-        		sys = Swalbe.SysConst_1D{Float64}(L =  L ,Tmax=Tmax, tdump=tdump, γ = gamma, δ=delta,θ =theta, n=n,m=m,hmin=hmin)
+			sys=Swalbe.SysConst_1D(L=L, param=Swalbe.Taumucs(Tmax=Tmax, tdump=tdump, γ = gamma, δ=delta,θ =theta, n=n,m=m,hmin=hmin))
         		state = Swalbe.Sys(sys, kind="curved")
         		# Initial data
         		state.height.= h .+ eps .* rand(sys.L)

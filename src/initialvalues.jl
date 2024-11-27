@@ -445,3 +445,14 @@ function trianglepattern(
     return θ, P
 end
 
+function droplet_base(height::Vector, s, theta, center; precursor=0.05)
+	L=size(height)[1]
+	dummy=zeros(L)
+	r=s/(2*sinpi(theta))
+	h=r*(1-cospi(theta))
+	height .= precursor
+	for x in Int(center-s/2):Int(center+s/2)
+		dummy[x]=sqrt(r^2-(x-center)^2)-r+h
+	end
+	return dummy.=max.(dummy, precursor)
+end

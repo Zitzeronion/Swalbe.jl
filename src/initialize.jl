@@ -4,11 +4,13 @@ abstract type LBM_state end
 abstract type LBM_state_2D <: LBM_state end
 
 abstract type Expanded_2D <: LBM_state_2D end
+abstract type MultiLayer_2D <: LBM_state_2D end
 # Derived type for 1D LBM states
 abstract type LBM_state_1D <: LBM_state end
 
 abstract type Expanded_1D <: LBM_state_1D end
 abstract type Boundary_1D <: Expanded_1D end
+abstract type Active_1D <: LBM_state_1D end
 
 # Parent type for system specific constants
 abstract type Consts end
@@ -1238,7 +1240,6 @@ function Sys(sysc::Consts_1D; T = Float64, kind = "simple")
             ∇γ = zeros(sysc.L),
             fbound = zeros(sysc.L, 3),
         )
-    end
     elseif kind == "curved"
             if device=="CPU"
             	    dyn = State_curved_1D{T}(
