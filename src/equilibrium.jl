@@ -129,6 +129,47 @@ equilibrium!(state::Expanded_2D, sys::SysConst) = equilibrium!(
 
 
 """
+	function equilibrium!(state::MultiLayer_2D)
+
+Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method, for Multilayer model, having and extra layer dimension in all fields
+"""
+function equilibrium!(state::MultiLayer_2D)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = viewdistsMultiLayer(state.feq) 
+    # Some constants, gravity and weights
+    w1 = 1/9
+    w5 = 1/36
+
+    state.vsq .= state.velx .* state.velx .+ state.vely .* state.vely 
+
+    # Zeroth dist
+    f0 .= state.height .* (1 .- 2/3 .* state.vsq)
+    # First
+    f1 .= w1 .* state.height .* (3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
+    # Second
+    f2 .= w1 .* state.height .* (3 .* state.vely .+ 4.5 .* state.vely.^2 .- 1.5 .* state.vsq)
+    # Third
+    f3 .= w1 .* state.height .* (-3 .* state.velx .+ 4.5 .* state.velx.^2 .- 1.5 .* state.vsq)
+    # Forth
+    f4 .= w1 .* state.height .* (-3 .* state.vely .+ 4.5 .* state.vely.^2 .- 1.5 .* state.vsq)
+    # Fifth
+    f5 .= w5 .* state.height .* (3 .* (state.velx .+ state.vely) .+ 
+                         4.5 .* (state.velx .+ state.vely).^2 .- 1.5 .* state.vsq)
+    # Sixth
+    f6 .= w5 .* state.height .* (3 .* (state.vely .- state.velx) .+ 
+                         4.5 .* (state.vely .- state.velx).^2 .- 1.5 .* state.vsq)
+    # Seventh
+    f7 .= w5 .* state.height .* (-3 .* (state.velx .+ state.vely) .+
+                         4.5 .* (state.velx .+ state.vely).^2 .- 1.5 .* state.vsq)
+    # Eight
+    f8 .= w5 .* state.height .* (3 .* (state.velx .- state.vely) .+ 
+                         4.5 .* (state.velx .- state.vely).^2 .- 1.5 .* state.vsq)
+    return nothing
+end
+
+
+
+"""
     equilibrium!(feq, height, velocity, gravity)
 
 Calculation of the equilibrium distribution `feq` for the shallow water lattice Boltzmann method.
@@ -189,3 +230,44 @@ equilibrium!(state::Expanded_1D, sys::Consts_1D) = equilibrium!(
     state.basestate.vel,
     sys.param.g,
 )
+
+equilibrium!(state::Active_1D; g=0) = equilibrium!(state.feq, state.height, state.vel, g)
+
+rho_equilibrium_quadratic!(state::Active_1D) = equilibrium!(state.geq, state.rho, state.rho_vel, 0)
+rho_A_equilibrium_quadratic!(state::Active_1D) = equilibrium!(state.heq, state.rho_A, state.rho_A_vel, 0)
+rho_B_equilibrium_quadratic!(state::Active_1D) = equilibrium!(state.beq, state.rho_B, state.rho_B_vel, 0)
+
+
+
+# euquilibrium for the two miscible fluids model
+function equilibrium!(state::StateMiscible_1D)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2 = viewdistsMiscible_1D(state.feq) 
+    
+    # Zeroth dist
+    f0 .= state.height .* (1 .- state.vel.^2)
+    # First
+    f1 .= state.height .* (0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    # Second
+    f2 .= state.height .* (-0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    return nothing
+end
+
+
+
+
+function equilibrium!(state::StateMultiLayer_1D)
+    # Views help to circumvent having a loop, which sucks on the GPU
+    f0, f1, f2 = viewdistsMultiLayer_1D(state.feq) 
+    
+    # Zeroth dist
+    f0 .= state.height .* (1 .- state.vel.^2)
+    # First
+    f1 .= state.height .* (0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    # Second
+    f2 .= state.height .* (-0.5 .* state.vel .+ 0.5 .* state.vel.^2)
+    return nothing
+end
+
+
+
