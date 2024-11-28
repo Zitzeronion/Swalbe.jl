@@ -237,7 +237,7 @@ rho_equilibrium_quadratic!(state::Active_1D) = equilibrium!(state.geq, state.rho
 rho_A_equilibrium_quadratic!(state::Active_1D) = equilibrium!(state.heq, state.rho_A, state.rho_A_vel, 0)
 rho_B_equilibrium_quadratic!(state::Active_1D) = equilibrium!(state.beq, state.rho_B, state.rho_B_vel, 0)
 
-
+equilibrium!(state::State_curved_1D; g=0) = equilibrium!(state.feq, state.height, state.vel, g)
 
 # euquilibrium for the two miscible fluids model
 function equilibrium!(state::StateMiscible_1D)

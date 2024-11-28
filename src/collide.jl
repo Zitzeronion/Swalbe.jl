@@ -200,8 +200,8 @@ function BGKandStream!(fout, feq, ftemp, F::Vector, τ)
     return nothing
 end
 
-BGKandStream!(state::State_1D, sys::SysConst_1D) =
-    BGKandStream!(state.fout, state.feq, state.ftemp, state.F, sys.param.τ)
+BGKandStream!(state::State_1D, sys::SysConst_1D) = BGKandStream!(state.fout, state.feq, state.ftemp, state.F, sys.param.τ)
+BGKandStream!(state::State_curved_1D, sys::SysConst_1D) = BGKandStream!(state.fout, state.feq, state.ftemp, state.F, sys.param.τ)
 
 BGKandStream!(state::Expanded_1D, sys::SysConst_1D) = BGKandStream!(
     state.basestate.fout,

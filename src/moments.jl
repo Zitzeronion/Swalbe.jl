@@ -242,6 +242,17 @@ v_i(x, t) -= D \\cdot \\frac{h_j \\cdot \\nabla h_i - h_i \\cdot \\nabla h_j}{(h
 ```
 where \\( D \\) is the diffusion coefficient, and \\( \\nabla h \\) is the height gradient.
 
+# Problems
+
+I am not sure if this is physical for two reasons: 
+
+- Some simulations look weird
+- I am relatively confident that what is implemented reproduces [Baumgartner et al.](https://doi.org/10.1073/pnas.2120432119) as written in the PhD Thesis of Tilman Richter, but that is not consistent with the equations of [Karpitschka et al](https://www.cambridge.org/core/journals/journal-of-fluid-mechanics/article/sharp-transition-between-coalescence-and-noncoalescence-of-sessile-drops/121D63B9ABFD9040C327ED8AC10FBE01), [Thiele](dx.doi.org/10.1140/epjst/e2011-01462-7),  or the solute model in the PhD Thesis of Tilman Richter or the equation 
+
+It could of course be that my implementation is not really reproducing what I think it is. It could be that what I think is weird actually is to be expected. Or, I think most likely, the problem lies somewhere in the inconsistency with the models in literature. 
+
+Apparently to really sort this out one has to spend more time than expected which right now I don't have. 
+
 
 # Examples
 
@@ -294,9 +305,11 @@ function moments!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
     #diffusion
     ∇f_Miscible!(state.grad_h, state.height, state.dgrad)
     # state.vel[:,1] .-= sys.D .* ( (state.height[:,2] .* state.grad_h[:,1] .- state.height[:,1] .* state.grad_h[:,2])./((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))./ state.height[:,1]
-    state.vel[:,1] .-= sys.D .* ( (state.height[:,2] .* state.grad_h[:,1] .- state.height[:,1] .* state.grad_h[:,2])./((state.height[:,1] .+ state.height[:,2]) ))./ state.height[:,1]
+    # state.vel[:,1] .-= sys.D .* ( (state.height[:,2] .* state.grad_h[:,1] .- state.height[:,1] .* state.grad_h[:,2])./((state.height[:,1] .+ state.height[:,2]) ))./ state.height[:,1]
+	state.vel[:,1] .-= sys.D ./ state.height[:,1] .*( state.grad_h[:,1] ./ (state.height[:,1] .+ state.height[:,2]) .- state.height[:,1] .* (state.grad_h[:,1] .+ state.grad_h[:,2]) ./ ((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))
     # state.vel[:,2] .-= sys.D .* ( (state.height[:,1] .* state.grad_h[:,2] .- state.height[:,2] .* state.grad_h[:,1])./((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))./ state.height[:,2]
-    state.vel[:,2] .-= sys.D .* ( (state.height[:,1] .* state.grad_h[:,2] .- state.height[:,2] .* state.grad_h[:,1])./((state.height[:,1] .+ state.height[:,2]) ))./ state.height[:,2]
+    # state.vel[:,2] .-= sys.D .* ( (state.height[:,1] .* state.grad_h[:,2] .- state.height[:,2] .* state.grad_h[:,1])./((state.height[:,1] .+ state.height[:,2]) ))./ state.height[:,2]
+	state.vel[:,2] .-= sys.D ./ state.height[:,2] .*( state.grad_h[:,2] ./ (state.height[:,1] .+ state.height[:,2]) .- state.height[:,2] .* (state.grad_h[:,1] .+ state.grad_h[:,2]) ./ ((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))
     return nothing
 end
 

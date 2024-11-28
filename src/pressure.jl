@@ -803,7 +803,7 @@ function filmpressure_curved!(state::State_curved_1D, sys::SysConst_1D)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height .+ state.substrate, 1)
     circshift!(him, state.height .+ state.substrate, -1)
-        if sys.n==9 && sys.m==3
+        if sys.param.n==9 && sys.param.m==3
                 state.pressure .= -(1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* sys.param.γ .* (1 .- cospi.(sys.param.θ)) .* (sys.param.n - 1) .* (sys.param.m - 1) ./ ((sys.param.n - sys.param.m) * sys.param.hmin) .* Swalbe.fast_93.(sys.param.hmin./(state.height .+ sys.param.hcrit))
         elseif sys.param.n==3 && sys.param.m==2
                 state.pressure .= - (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* sys.param.γ .* (1 .- cospi.(sys.param.θ)) .* (sys.param.n - 1) .* (sys.param.m - 1) ./ ((sys.param.n - sys.param.m) * sys.param.hmin) .* Swalbe.fast_32.(sys.param.hmin./(state.height .+ sys.param.hcrit))

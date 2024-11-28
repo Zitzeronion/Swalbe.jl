@@ -389,15 +389,15 @@ Here is an example on how to do this
 ```julia 
 using Swalbe, DelimitedFiles, Dates
 function simulation(;
-	Tmax=1e8, 			# Simulation time
+	Tmax=1e5, 			# Simulation time
 	tdump=Int(floor(Tmax/100)),	# dump time
 	h= 1,				# initial film height  
 	eps=0.001, 			# initial noise
 	gamma=1/6^2,			# surface tension
 	data = "data",			# folder for saving data
- 	L=2^12,				# system size
+ 	L=2^8,				# system size
     	theta=1/9,			# contact angle
-    	n=9, m=3, hmin=0.1, 		# parameters for disjoining pressure
+    	n=9, m=3, hmin=0.2, 		# parameters for disjoining pressure
 	delta=1.0,			# slip length, in combination with heigher hmin i
 	omega=3,			# number of periods of the underlying substrate
 )

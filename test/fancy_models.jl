@@ -60,15 +60,17 @@
         		state.rho.=rho
         		state.rho_A .= rho_0A
         		state.rho_B .= rho_0B
+			println("rho=$rho, rho_0A=$rho_0A, rho_0B=$rho_0B")
         		# This set up the film height as constant plus a small noise without high wavenumber frequencies
-			state.height .= h .* ones(L) .* eps .* rand(L)
+			# state.height .= h .* ones(L) .* eps .* rand(L)
+        		Swalbe.browniannoise!(state.height, h, eps, L/2-L/10)
 			height_0 = zeros(L)
 			height_0 .= state.height
         			# The LBM time loop
         		i=0
         		for t in 0:sys.Tmax
 				if t%sys.tdump ==0
-					println("timestep t=$t")
+					println("timestep t=$t, mass=$(sum(state.height))")
 				end
                 		# system update, mostly as in a standard TFE simulation, the parts that are different are commented
                 		Swalbe.surface_tension_4_fields!(state, sys)
@@ -119,8 +121,8 @@
         		Swalbe.∇f!(state.grad_substrate, state.substrate, state.dgrad)
         		println("Starting Lattice Boltzmann time loop for active thin film")
         		i=0
-        		for t in 0:sys.Tmax
-				if t%sys.tdump == 0 
+        		for t in 0:sys.param.Tmax
+				if t%sys.param.tdump == 0 
 					println("timestep t=$t")
 				end
                 		# system update, using the pressure for curved substrates

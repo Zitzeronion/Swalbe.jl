@@ -1241,7 +1241,7 @@ function Sys(sysc::Consts_1D; T = Float64, kind = "simple")
             fbound = zeros(sysc.L, 3),
         )
     elseif kind == "curved"
-            if device=="CPU"
+	    println("preparing State_curved_1D")
             	    dyn = State_curved_1D{T}(
                 	    fout = zeros(sysc.L, 3),
                 	    ftemp = zeros(sysc.L, 3),
@@ -1257,12 +1257,7 @@ function Sys(sysc::Consts_1D; T = Float64, kind = "simple")
                 	    grad_substrate = zeros(sysc.L)
             	    )
             	    return dyn
-            else
-            	    println("Device not available")
-            end
     end
-    return dyn
-
 end
 
 

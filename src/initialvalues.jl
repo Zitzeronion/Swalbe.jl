@@ -456,3 +456,53 @@ function droplet_base(height::Vector, s, theta, center; precursor=0.05)
 	end
 	return dummy.=max.(dummy, precursor)
 end
+
+
+"""
+    browniannoise(height, h_0, ϵ, q_high)
+
+Creates a random heigth field with average height `h₀` and displacement magnitude `ϵ` but no excited wavemodes above `q_high`
+
+might be broken
+"""
+function browniannoise!(height, h_0, ϵ, q_high)
+    L=length(height)[1]
+	x=randn(L)
+	y=FFTW.rfft(x)
+	st=zeros(Int(L/2+1))
+	for i in 1:Int(floor(q_high))
+		st[i]=1
+	end
+	y.=y.*st
+	z=irfft(y, L)
+	height.=h_0.+(z./maximum(abs.(z))).*ϵ
+    return nothing
+end
+
+function browniannoise2D!(y, h_0, eps,  q_high)
+	Lx,Ly=size(y)
+	x=rand(Lx,Ly).-0.5
+	fftx=FFTW.fft(x)
+	fftx .= circshift(fftx, (Lx/2, Ly/2))
+	for i in 1:Lx
+		crit=Int(floor(sqrt(abs((Lx/2-q_high)^2-(i-Lx/2)^2))))
+		for j in 1:Int(Ly/2)-crit
+			fftx[i,j]=0
+		end
+		for j in Int(Ly/2)+crit:Ly
+			fftx[i,j]=0
+		end
+	end
+	for j in 1:Ly
+		crit=Int(floor(sqrt(abs((Lx/2-q_high)^2-(j-Ly/2)^2))))
+		for i in 1:Int(Lx/2)-crit
+			fftx[i,j]=0
+		end
+		for i in Int(Lx/2)+crit:Lx
+			fftx[i,j]=0
+		end
+	end
+	return y.=h_0 .+ eps .*real(ifft(fftx))
+end
+
+
