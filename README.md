@@ -146,6 +146,7 @@ After the first two publications we cleaned up the repository and added [documen
 For this letter in Phys. Rev. Fluids we investigate a dewetting thin film on a "switchable" substrate. The idea is that based on external stimuli, such as light, local surface chemistry can be altered. We build a toy model that effects the local wettability both in time and space. We found non-dimensional number that explained the morphology changes that we observe and were able to motivate further results with theoretical considerations. We also fed numerical data into blender to render simulations. 
 
 Preprints:
+- [Instabilities of ring-rivulets: Impact of substrate wettability](https://arxiv.org/abs/2412.10230)
 - [To coalesce or not to coalesce: Droplets and surface tension gradients](https://arxiv.org/abs/2208.09307)
 - [Chemically reactive thin films: dynamics and stability](https://arxiv.org/abs/2402.14635)
 - [Modeling of thin liquid films with arbitrary many layers](https://arxiv.org/abs/2409.16659)
