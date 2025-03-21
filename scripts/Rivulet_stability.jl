@@ -1,7 +1,7 @@
 using DrWatson
 @quickactivate :Swalbe
 using CUDA, DataFrames, FileIO, Dates
-# CUDA.device!(1)
+CUDA.device!(0)
 
 # Fluid dynamics we need for the experiment
 """
@@ -22,6 +22,7 @@ The thermal fluctuations are considered using the fluctuating thin film equation
 - `dump::Int`: Dumping frequency for output creation  
 - `fluid::AbstractArray`: Allocation of the output array (contains the results)
 - `verbos::bool`: Switch to make the simulation write to console while running
+- `ref2::bool`: Switch to use a different slip model
 
 """
 function rivulet_run(
@@ -35,7 +36,8 @@ function rivulet_run(
     ϵ = 0.01,
     dump = 1000,  
     fluid=zeros(sys.param.Tmax÷dump, sys.Lx*sys.Ly),
-    verbos=true
+    verbos=true,
+    ref2=false
 )
     msg = "The substrate is uniform with theta = $(sys.param.θ)"
     if arrested 
@@ -45,11 +47,14 @@ function rivulet_run(
     end
     println("Running a simulation on rivulet stability\nThe rivulet is curved and resembles a torus\n$(msg)")
     state = Swalbe.Sys(sys, device, kind="thermal")
+    # state = Swalbe.Sys(sys, device)
     # Set up initial condition
     if shape == :ring
         h = Swalbe.torus(sys.Lx, sys.Ly, rr, R, sys.param.θ, (sys.Lx÷2, sys.Ly÷2), noise=ϵ)
     elseif shape == :rivulet
-        h = Swalbe.rivulet(sys.Lx, sys.Ly, rr, sys.param.θ, :y, sys.Lx÷2, sys.param.hcrit, noise=ϵ)
+        # h = Swalbe.rivulet(sys.Lx, sys.Ly, rr, sys.param.θ, :y, sys.Lx÷2, sys.param.hcrit, noise=ϵ)
+        # Slight increase of precursor layer for ref 2
+        h = Swalbe.rivulet(sys.Lx, sys.Ly, rr, sys.param.θ, :y, sys.Lx÷2, sys.param.hcrit, 0.2, noise=ϵ)
     end
     if arrested
         theta = zeros(sys.Lx, sys.Ly)
@@ -95,6 +100,7 @@ function rivulet_run(
             mass = sum(state.height)
             if verbos
                 println("Time step $t mass is $(round(mass, digits=3))")
+                # println("Pressure $(sum(state.h∇px))\nSlip $(sum(state.slipx))")
             end
         end
         
@@ -104,7 +110,12 @@ function rivulet_run(
             Swalbe.filmpressure!(state, sys)
         end
         Swalbe.h∇p!(state)
-        Swalbe.slippage!(state, sys)
+        if ref2
+            Swalbe.slippage_ring_riv!(state, sys)
+            # println("This is slip = $(sum(state.slipx))")
+        else
+            Swalbe.slippage!(state, sys)
+        end
         # Forces are 
         #   - pressure gradient 
         #   - substrate friction and slippage
@@ -127,21 +138,26 @@ end
 timeInterval = 25000
 
 # Make a parameter sweep
-for inC in [(150, 40, 1/9), (200, 80, 1/9), (150, 80, 1/18), (180, 80, 1/18), (200, 80, 1/18)] # 1/9, 1/6,  
+for inC in [(80, 40, 1/9), (120, 40, 1/9), (120, 80, 1/9), (180, 20, 1/9), (180, 40, 1/9), (200, 40, 1/9)] # 1/9, 1/6,  
     # for deltas in [1.0] # 0.5, 2.5
     # for mintheta in [1/6, 2/9] # 0.5, 2.5
     ang = inC[3]
-    sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=7500000, δ=1.0, n=3, m=2, θ=ang))
+    sys = Swalbe.SysConst(512, 512, Swalbe.Taumucs(Tmax=500000, δ=0.5, n=3, m=2, θ=ang, hmin=0.2)) # , hcrit=0.2
     # for outerRad in [180]# [160, 180, 200]
     # for innerRad in [80]# [60, 80, 100]
     # Run the simulation
     arr = false #true
+    # More results for review
+    add_rev = true
+    # For gradient substrate
     mintheta = 1/9
     grad = (false, mintheta, ang) #true
     slips = false
+    # Translate the initial conditions in seperate values
     outerRad = inC[1]
     innerRad = inC[2]
-    fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, arrested=arr, dump=timeInterval, gradient=grad)
+    # Run the simulation
+    fluid = rivulet_run(sys, "GPU", R=outerRad, rr=innerRad, arrested=arr, dump=timeInterval, gradient=grad, ref2=add_rev) #
     df_fluid = Dict()
     nSnapshots = sys.param.Tmax ÷ timeInterval
     for t in 1:nSnapshots
@@ -158,6 +174,8 @@ for inC in [(150, 40, 1/9), (200, 80, 1/9), (150, 80, 1/18), (180, 80, 1/18), (2
         file_name = "data/Rivulets/slip_$(Int(10*deltas))_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
     elseif grad[1]
         file_name = "data/Rivulets/wet_grad_lin_$(theta_c)$(theta_o)_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
+    elseif add_rev
+        file_name = "data/Rivulets/slip_non_qube_delta_05_height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
     else
         file_name = "data/Rivulets/height_R_$(outerRad)_r_$(innerRad)_ang_$(save_ang)_kbt_$(sys.param.kbt)_nm_$(sys.param.n)-$(sys.param.m)_runDate_$(year(today()))$(month(today()))$(day(today()))$(hour(now()))$(minute(now())).jld2"
     end
