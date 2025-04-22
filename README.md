@@ -122,7 +122,7 @@ Help is always very welcome, if you want to contribute open a
 [PR](https://github.com/Zitzeronion/Swalbe.jl/pulls) or raise an
 [issue](https://github.com/Zitzeronion/Swalbe.jl/issues) with a feature request
 (and if possible with a way how to include it).  Feel free to DM me on
-[Mastodon](https://julialang.social/@Zitzero) if you have questions, I will try to
+[Bluesky](https://bsky.app/profile/zitzeronion.bsky.social) if you have questions, I will try to
 answer them all timely.
 
 ## Publications
