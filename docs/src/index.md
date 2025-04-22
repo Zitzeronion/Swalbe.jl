@@ -58,7 +58,7 @@ julia> ] add Swalbe         # If not yet added
 julia> using Swalbe
 ```
 which can take a minute or so, don't be alarmed if it takes more than ten seconds.
-Alternatively one can use [DrWatson](https://github.com/JuliaDynamics/DrWatson.jl) (super cool package to manage scientific computing with *Julia*) and use the `@quickactivate :Swalbe` macro.
+Alternatively one can use [DrWatson](https://github.com/JuliaDynamics/DrWatson.jl) (super cool package to manage scientific computing with *Julia*) and use the `@quickactivate :Swalbe` macro, have a look at the [scripts](https://github.com/Zitzeronion/Swalbe.jl/blob/master/scripts) folder for inspiration.
 
 As a picture says more than a thousand words here is a shiny use case of **Swalbe.jl** 
 ```julia
@@ -224,8 +224,11 @@ This example will be further discussed in the Tutorials section.
 ## How to **perform research**
 
 The numerical approach is quite robust for a lot of thin film simulations.
-This means in the limit of small Reynolds and Mach number simulations are usually stable, keeping in mind that for droplet like simulation the contact angle should be on smaller side (θ < π/2).
-Things I have looked into so far are
+This means in the limit of small Reynolds (Re) and Mach number (Ma) simulations are usually stable.
+As we employ the long wave approximation to derive the thin film equation we require that contact angle are small. 
+Numerically the system is stable of up to 90$^{\circ}$ but to be within the theoretical assumptions we suggest to work with contact angles θ $\ll$ 1.
+
+Things that we had a look at
 
 - [Sliding droplets](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
 - [Surface tension gradients and droplet coalescence](https://arxiv.org/abs/2208.09307)
@@ -234,14 +237,54 @@ Things I have looked into so far are
 - Dewetting thin films
 - [Dewetting of fluctuating thin films](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801)
 - [Dewetting on switchable substrates](https://arxiv.org/abs/2112.09770)
+- [Active thin films](http://dx.doi.org/10.1002/admi.202400835)
+- [Ring-rivulets](https://arxiv.org/abs/2412.10230)
+- [Multilayer films](https://arxiv.org/abs/2409.16659)
 
 Things I have not yet looked into
 
 - Non-Newtonian fluids
 - Surfactants
 - Particles
-- *Active* films
 - Multicomponent/Multiphase
+
+## Publications
+
+- [Lattice Boltzmann method for thin-liquid-film hydrodynamics](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.100.033313)
+
+In this Phys. Rev. E publication we introduce the core concepts of **Swalbe**. We therefore discuss the [lattice Boltzmann method](https://en.wikipedia.org/wiki/Lattice_Boltzmann_methods) for shallow water flows and derive a matching condition with the [thin film equation](https://en.wikipedia.org/wiki/Thin-film_equation). Based on the derived model we present benchmark simulations and show that numerical results agree well with theoretical predictions, e.g., Cox-Voinov law.     
+
+- [Lattice Boltzmann simulations of stochastic thin film dewetting](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.104.034801)
+
+In the second Phys. Rev. E publication we discusses the addition of a stochastic force term as an effective model for the stochastic thin film equation, see [Grün et al.](https://link.springer.com/article/10.1007/s10955-006-9028-8).
+This approach works surprisingly well and was validated against theory. Beyond the validation we showed how a film reacts to both a chemical pattern and thermal fluctuations. Again we were able to justify multiple findings with simple theoretical derivations.
+
+- [Swalbe.jl: A lattice Boltzmann solver for thin film hydrodynamics](https://joss.theoj.org/papers/10.21105/joss.04312)
+
+After the first two publications we cleaned up the repository and added [documentations](docs) as well as [test cases](test). During this process we became aware about the [Journal of Open Source Software](https://joss.theoj.org/) which we wholeheartly support. Scientific software is of value, however, it is often seen as byproduct and meeting the actual rigor requirement for a publication only discussing software is far from trivial. A JOSS publication was therefore a good place to show that **Swalbe.jl** is an open source tool and that it has a well definded scientific goal, namely thin liquid film solutions or the approximation of the thin film equation.   
+
+- [Controlling the dewetting morphologies of thin liquid films by switchable substrates](https://journals.aps.org/prfluids/abstract/10.1103/PhysRevFluids.8.L122001)
+
+For this letter in Phys. Rev. Fluids we investigate a dewetting thin film on a "switchable" substrate. The idea is that based on external stimuli, such as light, local surface chemistry can be altered. We build a toy model that effects the local wettability both in time and space. We found non-dimensional number that explained the morphology changes that we observe and were able to motivate further results with theoretical considerations. We also fed numerical data into blender to render simulations. 
+
+- [Active thin films](http://dx.doi.org/10.1002/admi.202400835)
+
+This model was mainly developed by Tilman Richter and deals with active components that locally influences the surface tension. 
+In contrast to a surfactant model it allows for both a surface tension increase and decrease based on model parameters.
+
+- [Instabilities of ring-rivulets: Impact of substrate wettability](https://arxiv.org/abs/2412.10230)
+
+This paper has been accpeted in April 2024.
+We study the dynamics of a ring-rivulet which is basically a liquid torus cut in half.
+This initial condition has several interesting features and it is only a transient state, because it either retracts to single droplet or breaks up and forms multiple droplets.
+Our work adds to the current understanding of this object by further considering wettability.
+We show that a wettability gradient can turn a retracting ring-rivulet into one that breaks up and vise versa. 
+
+### Preprints:
+
+- [To coalesce or not to coalesce: Droplets and surface tension gradients](https://arxiv.org/abs/2208.09307)
+- [Modeling of thin liquid films with arbitrary many layers](https://arxiv.org/abs/2409.16659)
+
 
 ## How to **support and contribute**
 
