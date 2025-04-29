@@ -244,7 +244,7 @@ function singledroplet(height::Vector, radius, θ, center; hcrit = 0.05)
 end
 
 """
-    twodroplets(sys)
+    two_droplets(sys)
 
 Generates a fluid configuration of a two droplets in the shape of spherical cap with contact angles `θ₁`, `θ₂`, sphere radius `r₁`, `r₂` and centers at `center`.
 
@@ -265,7 +265,7 @@ julia> using Swalbe, Test
 
 julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs());
 
-julia> height = Swalbe.twodroplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
+julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
 
 julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) atol=0.01 # Simple geometry
 Test Passed
