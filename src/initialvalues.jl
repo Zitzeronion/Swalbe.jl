@@ -66,7 +66,6 @@ CartesianIndex(100, 1)
 
 See also: [`singledroplet`](@ref), [`two_droplets`](@ref)
 """
-
 function rivulet(Lx, Ly, radius, θ, orientation, center, hmin=0.05; noise=0.0)
     # area = 2π * radius^2 * (1- cospi(θ))
     height = zeros(Lx, Ly)
