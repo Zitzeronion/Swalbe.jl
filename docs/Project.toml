@@ -1,3 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Swalbe = "1073fb09-a5e2-4e80-8bde-f3562efda53f"
+
+[compat]
+Documenter = "1.10"
