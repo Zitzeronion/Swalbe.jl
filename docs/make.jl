@@ -2,15 +2,16 @@ using Documenter, Swalbe
 
 # doctest(Swalbe; manual = false)
 DocMeta.setdocmeta!(Swalbe, :DocTestSetup, :(using Swalbe); recursive=true)
-makedocs(;
+makedocs(
     modules=[Swalbe],
     authors="Zitzeronion <physiknerd@gmail.com>",
     repo="https://github.com/Zitzeronion/Swalbe.jl",
-    sitename="Swalbe",
+    sitename="Swalbe.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", nothing) == "true",
         canonical="https://Ziteronion.github.io/Swalbe.jl",
         assets=String[],
+        size_threshold = nothing
     ),
     # checkdocs = :exports,
     pages=[
@@ -20,6 +21,6 @@ makedocs(;
     ],
 )
 
-deploydocs(;
+deploydocs(
     repo = "github.com/Zitzeronion/Swalbe.jl.git",
 )
