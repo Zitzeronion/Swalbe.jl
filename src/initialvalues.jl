@@ -26,14 +26,150 @@ function randinterface!(height, h₀, ϵ)
     # Used to perform the accumulate operation
     height .= 1.0
     # This we get n nice sine waves
-    randn!(hdummy)
+    Random.randn!(hdummy) 
     # Still need to use the correct undulation ϵ and initial height
     height .= h₀ .* (1.0 .+ ϵ .* hdummy)
     return nothing
 end
 
 """
-    singledroplet(T, size(θ,1), size(θ,2), radius, θ, center, device=false)
+    rivulet(sys; radius, θ, center)
+
+Generates a rivulet with contact angle `θ`, sphere radius `radius` and centered at `center`.
+
+# Arguments
+
+- `sys::SysConst{T}`: Contains size of the domain
+- `radius::AbstractFloat`: radius of the underlying sphere from which the spherical cap is cut
+- `θ::AbstractFloat`: contact angle in multiples of `π`
+- `orientation::Symbol`: extrusion direction of cap shape
+- `center::Int`: coordinate of the center of the cap
+
+# Examples
+
+```jldoctest
+julia> using Swalbe, Test
+
+julia> rad = 45; c = 100; sys = Swalbe.SysConst(Lx=200, Ly=200, param=Swalbe.Taumucs());
+
+julia> height = Swalbe.rivulet(sys, rad, :y, c);
+
+julia> @test maximum(height) == rad * (1 - cospi(sys.param.θ)) # Simple geometry
+Test Passed
+
+julia> argmax(height) # Which is constistent with the center!
+CartesianIndex(100, 1)
+
+```
+
+# References
+
+See also: [`singledroplet`](@ref), [`two_droplets`](@ref)
+"""
+
+function rivulet(Lx, Ly, radius, θ, orientation, center, hmin=0.05; noise=0.0)
+    # area = 2π * radius^2 * (1- cospi(θ))
+    height = zeros(Lx, Ly)
+    if orientation == :y
+        @inbounds for i in eachindex(height[:,begin])
+            for j in eachindex(height[begin, :])
+                circ = sqrt((i-center)^2)
+                if circ <= radius
+                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius + randn()*noise
+                else
+                    height[i,j] = hmin
+                end
+            end
+        end
+    elseif orientation == :x 
+        @inbounds for i in eachindex(height[:,begin])
+            for j in eachindex(height[begin, :])
+                circ = sqrt((j-center)^2)
+                if circ <= radius
+                    height[i,j] = (cos(asin(circ/radius)) - cospi(θ)) * radius + randn()*noise
+                else
+                    height[i,j] = hmin
+                end
+            end
+        end
+    end
+    @inbounds for i in eachindex(height[:,begin])
+        for j in eachindex(height[begin, :])
+            if height[i,j] <=  hmin
+                height[i,j] = hmin
+            end
+        end
+    end
+    return height
+end
+
+rivulet(sys::Swalbe.SysConst, radius, orientation, center) = rivulet(sys.Lx, sys.Ly, radius, sys.param.θ, 
+                                                                     orientation, center, sys.param.hcrit)
+
+"""
+    torus(lx, ly, r₁, R₂, θ, center, hmin)
+
+Generates a cut torus with contact angle `θ`, (`x`,`y`) radius `R₂` and (`x`,`z`) radius `r₁` centered at `center`.
+
+# Arguments
+
+- `lx::Int`: Size of the domain in x-direction
+- `ly::Int`: Size of the domain in y-direction
+- `r₁::AbstractFloat`: Radius in (x,z)-plane
+- `R₂::AbstractFloat`: Radius in (x,y)-plane
+- `θ::AbstractFloat`: contact angle in multiples of `π`
+- `center::Tuple{Int, Int}`: Center position of the torus  
+- `hmin::AbstractFloat`: small value above 0.0
+
+# Examples
+
+```jldoctest
+julia> using Swalbe, Test
+
+julia> rad = 45; R = 80; θ = 1/9; center = (128, 128);
+
+julia> height = Swalbe.torus(256, 256, rad, R, θ, center);
+
+julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) # Simple geometry
+Test Passed
+
+julia> argmax(height) # On the outer ring!
+CartesianIndex(128, 48)
+
+```
+
+# References
+
+See also: [`rivulet`](@ref), [`singledroplet`](@ref), [`two_droplets`](@ref)
+"""
+function torus(lx, ly, r₁, R₂, θ, center, hmin = 0.05; noise=0.0)
+	h = zeros(lx,ly)
+	for i in eachindex(h[:,1]), j in eachindex(h[1,:])
+		coord = sqrt((i-center[1])^2 + (j-center[2])^2)
+		half = (r₁)^2 - (coord - R₂)^2
+		if half <= 0.0
+			h[i,j] = hmin
+		else
+			h[i,j] = sqrt(half)
+		end
+	end
+    # Second loop to have a well defined contact angle
+    for i in eachindex(h[:,1]), j in eachindex(h[1,:])
+        # Cut the half sphere to the desired contact angle θ
+        correction = h[i,j] - r₁ * cospi(θ)
+        if correction < hmin
+            h[i,j] = hmin
+        else
+            h[i,j] = correction + randn()*noise
+        end
+    end
+	return h
+end
+
+torus(sys::SysConst, r₁, R₂, center) = torus(sys.Lx, sys.Ly, r₁, R₂, sys.param.θ, center, sys.param.hcrit)
+
+"""
+    singledroplet(height, radius, θ, center)
 
 Generates a fluid configuration of a single droplet in the shape of spherical cap with contact angle `θ`, sphere radius `radius` and centered at `center`.
 
@@ -108,7 +244,7 @@ function singledroplet(height::Vector, radius, θ, center; hcrit = 0.05)
 end
 
 """
-    two_droplets(sys)
+    twodroplets(sys)
 
 Generates a fluid configuration of a two droplets in the shape of spherical cap with contact angles `θ₁`, `θ₂`, sphere radius `r₁`, `r₂` and centers at `center`.
 
@@ -129,7 +265,7 @@ julia> using Swalbe, Test
 
 julia> rad = 45; θ = 1/4; sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs());
 
-julia> height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
+julia> height = Swalbe.twodroplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ);
 
 julia> @test maximum(height) ≈ rad * (1 - cospi(θ)) atol=0.01 # Simple geometry
 Test Passed
@@ -298,8 +434,8 @@ function boxpattern(
     ycoords =
         [center[2] - side / 2 center[2] + side / 2 center[2] - side / 2 center[2] + side / 2]
     # Check if the vertices are on the grid
-    for i = 1:length(xcoords)
-        if xcoords[i] < 1 || xcoords[i] > size(θ, 1)
+    for i in eachindex(xcoords)
+        if xcoords[i] < 1 || xcoords[i] > size(θ,1)
             xcoords[i] = 1 # If not push them to the origin
         elseif ycoords[i] < 1 || ycoords[i] > size(θ, 2)
             ycoords[i] = 1
@@ -312,7 +448,7 @@ function boxpattern(
     vertex₄ = [xcoords[4], ycoords[4]]
     # Build a posize(θ,2)gon
     P = VPolygon([vertex₁, vertex₂, vertex₃, vertex₄])
-    for i = 1:size(θ, 1), j = 1:size(θ, 2)
+    for i in eachindex(θ[:,1]), j in eachindex(θ[1,:])
         if [Float64(i), Float64(j)] ∈ P
             θ[j, i] = θ₀ + δₐ
         else
@@ -372,7 +508,7 @@ function ellipsepattern(
     shape₁ = a^(2)
     shape₂ = b^(2)
     P = Ellipsoid(mid, [shape₁ 0.0; 0.0 shape₂])
-    for i = 1:size(θ, 1), j = 1:size(θ, 2)
+    for i in eachindex(θ[:,1]), j in eachindex(θ[1,:])
         if [Float64(i), Float64(j)] ∈ P
             θ[j, i] = θ₀ + δₐ
         else
@@ -424,8 +560,8 @@ function trianglepattern(
     xcoords = [center[1] - side / 2 center[1] + side / 2 center[1]]
     ycoords = [center[2] - height / 3 center[2] - height / 3 center[2] + 2 * height / 3]
     # Check if the vertices are on the grid
-    for i = 1:length(xcoords)
-        if xcoords[i] < 1 || xcoords[i] > size(θ, 1)
+    for i in eachindex(xcoords)
+        if xcoords[i] < 1 || xcoords[i] > size(θ,1)
             xcoords[i] = 1 # If not push them to the origin
         elseif ycoords[i] < 1 || ycoords[i] > size(θ, 2)
             ycoords[i] = 1
@@ -435,7 +571,7 @@ function trianglepattern(
     vertex₂ = [xcoords[2], ycoords[2]]
     vertex₃ = [xcoords[3], ycoords[3]]
     P = VPolygon([vertex₁, vertex₂, vertex₃])
-    for i = 1:size(θ, 1), j = 1:size(θ, 2)
+    for i in eachindex(θ[:,1]), j in eachindex(θ[1,:])
         if [Float64(i), Float64(j)] ∈ P
             θ[j, i] = θ₀ + δₐ
         else

@@ -46,8 +46,8 @@ function moments!(height, velx, vely, fout)
     # Compute the height
     sum!(height, fout)
     # and the velocities (as simple as possible)
-    velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ height
-    vely .= (f2 .- f4 .+ f5 .+ f6 .- f7 .- f8) ./ height
+    velx .= @. (f1 - f3 + f5 - f6 - f7 + f8) / height
+    vely .= @. (f2 - f4 + f5 + f6 - f7 - f8) / height
     return nothing
 end
 

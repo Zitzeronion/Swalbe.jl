@@ -98,6 +98,29 @@ function slippage2!(state::LBM_state_2D, sys::SysConst)
     return nothing
 end
 
+
+"""
+    slippage_ring_riv!(slipx, slipy, height, velx, vely, δ, μ)
+
+Minor modification that disregards the δ square term in the force calculation. 
+"""
+function slippage_ring_riv!(slipx, slipy, height, velx, vely, δ, μ, hcrit)
+    @. slipx .= (6μ * height * velx) / (2 * (height)^2 + 6δ * (height + hcrit))
+    @. slipy .= (6μ * height * vely) / (2 * (height)^2 + 6δ * (height + hcrit))
+    return nothing
+end
+
+slippage_ring_riv!(state::LBM_state_2D, sys::SysConst) = slippage_ring_riv!(
+    state.slipx,
+    state.slipy,
+    state.height,
+    state.velx,
+    state.vely,
+    sys.param.δ,
+    sys.param.μ,
+    sys.param.hcrit,
+)
+
 """
     h∇p!(state)
 

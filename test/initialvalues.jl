@@ -37,10 +37,47 @@
         rad = 45
         θ = 1/4
         sys = Swalbe.SysConst_1D(L=200, param=Swalbe.Taumucs())
-        height = Swalbe.two_droplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
+        height = Swalbe.twodroplets(sys, r₁=rad, r₂=rad, θ₁=θ, θ₂=θ)
         @test isa(height, Vector{Float64})
         @test size(height) == (200,)
         @test findmax(height)[1] ≈ rad * (1 - cospi(θ)) atol=0.01
+    end
+
+    @testset "Rivulet" begin
+        rad = 45
+        θ = 1/4
+        lx, ly = 150, 200
+        c = 80
+        h = Swalbe.rivulet(lx, ly, rad, θ, :y, c, 0.05)
+        sys = Swalbe.SysConst(Lx=lx, Ly=ly, param=Swalbe.Taumucs(θ=θ))
+        height = Swalbe.rivulet(sys, rad, :y, c)
+        for i in [h, height]
+            @test isa(i, Matrix{Float64})
+            @test size(i) == (lx,ly)
+            @test findmax(i)[1] ≈ rad * (1 - cospi(θ)) atol=0.0001
+            @test sum(i[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
+        end
+        # Test with different orientation
+        height = Swalbe.rivulet(sys, rad, :x, c)
+        @test sum(height[:,c]) ≈ (rad * (1 - cospi(θ)))*sys.Lx atol=0.0001
+    end
+
+    @testset "Torus" begin
+        R = 45
+        rr = 10
+        lx, ly = 150, 200
+        c = (80, 80)
+        sys = Swalbe.SysConst(Lx=lx, Ly=ly, param=Swalbe.Taumucs())
+        height = Swalbe.torus(sys, rr, R, c)
+        @test isa(height, Matrix{Float64})
+        @test size(height) == (lx,ly)
+        @test minimum(height) == sys.param.hcrit
+        @test maximum(height) ≈ (1 - cospi(sys.param.θ))*rr
+        @test findmax(height)[2] == CartesianIndex(80, 35)
+        # @test sum(height[c,:]) ≈ (rad * (1 - cospi(θ)))*sys.Ly atol=0.0001
+        # Test with different orientation
+        # height = Swalbe.rivulet(sys, radius=rad, orientation=:x, θ=θ, center=c)
+        # @test sum(height[:,c]) ≈ (rad * (1 - cospi(θ)))*sys.Lx atol=0.0001
     end
 
     @testset "Restart height" begin

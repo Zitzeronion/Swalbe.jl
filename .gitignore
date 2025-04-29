@@ -11,8 +11,9 @@
 /images/*
 /data/*
 /figures/*
-/analyze/*
+/assets/*
 /data_cleaned
+/analyze/*
 /videos
 .vscode
 *.toml
