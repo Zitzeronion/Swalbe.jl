@@ -148,7 +148,7 @@ If you use this package please cite it as
 } 
 ```
 
-- [Stefan Zitz (main developer)](https://forskning.ruc.dk/en/persons/zitz)
+- [Stefan Zitz (main developer)](https://scholar.google.de/citations?user=vMHOxn4AAAAJ&hl=en)
 - [Tilman Richter](https://www.hi-ern.de/profile/richter_t)
 - [Manuel Zellhöfer](https://www.hi-ern.de/hi-ern/CompFlu/Team/Zellhoefer/zellhoefer.html)
 - [Andrea Scagliarini](https://www.iac.rm.cnr.it/iacsite/index.php?page=people&id=140)
