@@ -127,7 +127,7 @@ answer them all timely.
 
 ## Publications
 
-As of April 2025 this package has been used to generate 6 peer reviewed publications which can be found in the [docs](https://zitzeronion.github.io/Swalbe.jl/stable/).
+As of January 2026 this package has been used to generate 7 peer reviewed publications which can be found in the [docs](https://zitzeronion.github.io/Swalbe.jl/stable/).
 Furthermore there is a published doctoral [thesis](https://open.fau.de/items/bc35f5d4-b157-4aad-82be-9d23825cb37a/full) and one that is soon to be submitted tied to this projects, link supplied in the docs. 
 
 ## **Credit**
