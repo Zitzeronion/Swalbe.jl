@@ -294,6 +294,9 @@ This initial condition has several interesting features and it is only a transie
 Our work adds to the current understanding of this object by further considering wettability.
 We show that a wettability gradient can turn a retracting ring-rivulet into one that breaks up and vise versa. 
 
+- [Modeling of the dewetting of ultra-thin liquid films on chemically patterned substrates: Linear spectrum and deposition patterns](https://pubs.aip.org/aip/pof/article/37/7/072019/3352416/Modeling-of-the-dewetting-of-ultra-thin-liquid)
+[Tilman Richter](https://www.linkedin.com/in/tilman-richter-81a97b2a4/?originalSubdomain=de) and collaborators study the dewetting of a thin film on a chemically patterned substrate. The main focus of this work is set on the resolution of the patterning and possibility to reconstruct a height field via LSA of the patterning. To this End Richter et al. derived the dependence of the contact angle field on the linear stability analysis and found striking evidence for their approach from the numerical simulations.
+
 ### Preprints:
 
 - [To coalesce or not to coalesce: Droplets and surface tension gradients](https://arxiv.org/abs/2208.09307)
