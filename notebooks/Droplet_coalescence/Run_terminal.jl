@@ -1,5 +1,5 @@
 using Plots, Revise, DataFrames, FileIO, DataFramesMeta, StatsBase, CSV
-include("notebooks\\Droplet_coalescence\\helpers.jl")
+include("helpers.jl")
 
 
 sys_tanh = Swalbe.SysConst_1D(L=2048, param=Swalbe.Taumucs(n=9, m=3, Tmax=50000000, δ=5.0, tdump=5000))

@@ -116,7 +116,6 @@ That is like the standard model for advection difusion as seen in [Tim Krueger L
 
 See also: [`Swalbe.rho_equilibrium`](@ref)
 """
-
 function rho_moments!(state::Active_1D, sys::SysConstActive_1D)
      # Compute the density
      sum!(state.rho, state.gout)
@@ -157,7 +156,6 @@ That is like the standard model for advection difusion as seen in [Tim Krueger L
 
 See also: [`Swalbe.rho_A_equilibrium`](@ref)
 """
-
 function rho_A_moments!(state::Active_1D, sys::SysConstActive_1D)
      # Compute the density
      sum!(state.rho_A, state.hout)
@@ -197,7 +195,6 @@ where ``D_B`` is the diffusion coefficient specific to ``\\rho_B``. The model ap
 ### See Also
 - `rho_A_moments!`: A similar function for calculating moments for ``\\rho_A``.
 """
-
 function rho_B_moments!(state::Active_1D, sys::SysConstActive_1D)
      # Compute the density
      sum!(state.rho_B, state.bout)

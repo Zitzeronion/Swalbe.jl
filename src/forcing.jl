@@ -100,8 +100,6 @@ function slippage2!(state::LBM_state_2D, sys::SysConst)
     return nothing
 end
 
-
-
 """
 	function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
 
@@ -234,142 +232,6 @@ function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
     # end
     return nothing
 end
-
-
-"""
-	function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
-
-Calculates the friction force for a two layer thin film according to [Richter et al](https://arxiv.org/abs/2409.16659). There is a maple script generating the used code under `SI/multilayer_symbolics.mv`
-
-Right now no implementation of 3 layers or higher in 3D exists, in 2D we have a three layer implementation. 
-"""
-function slippage!(state::MultiLayer_2D, sys::SysConstMultiLayer)
-    # if sys.layers==2
-    #save some combinations we will need multiple times
-    state.hi[:,:,1] .= state.height[:,:,1] .+ state.height[:,:,2]
-    z_1z_2, z_iz_i = viewneighborsMultiLayer(state.dgrad)
-    z_1z_2[:,:,1] .= state.height[:,:,1] .* state.hi[:,:,1] 
-    z_iz_i[:,:,1] .= state.height[:,:,1] .* state.height[:,:,1]
-    z_iz_i[:,:,2] .= state.hi[:,:,1] .* state.hi[:,:,1]
-
-
-        state.slipx[:,:, :] .=   (
-         1 ./(
-               9*sys.delta[1]*sys.delta[1]*sys.delta[2]*sys.delta[2]*sys.mu[1]
-               .+ state.height[:,:,1] .* (
-                    18*sys.delta[1]*sys.delta[2]*sys.mu[1]*(-sys.delta[1]+sys.delta[2])
-               )
-               .+ state.hi[:,:,1] .* ( 18*sys.delta[1]*sys.delta[1]*sys.delta[2]*sys.mu[1])
-               .+ z_iz_i[:,:,1] .* (
-                    6*sys.delta[1]*sys.delta[1]*sys.mu[1]-9*sys.delta[1]*sys.delta[1]*sys.mu[2]-36*sys.delta[1]*sys.delta[2]*sys.mu[1]+6*sys.delta[2]*sys.delta[2]*sys.mu[1]
-               )
-               .+ z_1z_2[:,:,1] .* (
-                    -12*sys.delta[1]*sys.delta[1]*sys.mu[1]+9*sys.delta[1]*sys.delta[1]*sys.mu[2]+36*sys.delta[1]*sys.delta[2]*sys.mu[1]
-               )
-               .+ z_iz_i[:,:,2] .* (
-                    6*sys.delta[1]*sys.delta[1]*sys.mu[1]
-               )
-               .+ z_iz_i[:,:,1] .* state.height[:,:,1] .* (
-                12*(sys.delta[1]*sys.mu[1]-sys.delta[1]*sys.mu[2]-sys.delta[2]*sys.mu[1])
-               )
-               .+ z_iz_i[:,:,1] .* state.hi[:,:,1] .* (
-                    -24*sys.delta[1]*sys.mu[1]+12*sys.delta[1]*sys.mu[2]+12*sys.delta[2]*sys.mu[1]
-               )
-               .+ z_1z_2[:,:,1] .* state.hi[:,:,1] .* (
-                    12*sys.delta[1]*sys.mu[1]
-               )
-               .+ z_iz_i[:,:,1] .* z_iz_i[:,:,1] .* (
-                    4*sys.mu[1]-3*sys.mu[2]
-               )
-               .+ z_iz_i[:,:,1] .* z_1z_2[:,:,1] .* (
-                -8*sys.mu[1]+3*sys.mu[2]
-               )
-               .+ 4*sys.mu[1] .* z_iz_i[:,:,1] .* z_iz_i[:,:,2]
-           )
-        )
-
-        state.slipy[:,:, :].= state.slipx[:,:,:]
- 
-       
-        state.slipx[:,:,1] .*=  6*sys.mu[1] .* state.height[:,:,1].* (
-              state.velx[:,:,1] .* (
-                -3*sys.delta[2]*sys.delta[2]*sys.mu[1]
-                .- state.height[:,:,2] .* (
-                    6*sys.delta[1]*sys.mu[2]+6*sys.delta[2]*sys.mu[1]
-                )
-                .+ z_iz_i[:,:,1] .* (
-                    -2*sys.mu[1]+6*sys.mu[2]
-                )
-                .+ z_1z_2[:,:,1] .* (
-                    4*sys.mu[1]-6*sys.mu[2]
-                )
-                .+ z_iz_i[:,:,2] .* (
-                    -2*sys.mu[1]
-                )
-              )
-              .+ state.velx[:,:,2] .* (
-                state.height[:,:,2] .* (
-                    6*sys.delta[1]*sys.mu[2]
-                )
-                .+ z_iz_i[:,:,1] .* (
-                    -3*sys.mu[2]
-                )
-                .+ z_1z_2[:,:,1] .* (
-                    3*sys.mu[2]
-                )
-              )
-           ) 
-     state.slipx[:,:,2] .*=  6*sys.mu[2]*sys.mu[1] .* state.height[:,:,2] .* (
-        state.velx[:,:,1]  .* (
-                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 3 .* z_iz_i[:,:,1]  
-            ) 
-        .- state.velx[:,:,2]  .* (
-                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 2 .* z_iz_i[:,:,1]
-            ) 
-     )
-
-
-        state.slipy[:,:,1] .*=  6*sys.mu[1] .* state.height[:,:,1].* (
-              state.vely[:,:,1] .* (
-                -3*sys.delta[2]*sys.delta[2]*sys.mu[1]
-                .- state.height[:,:,2] .* (
-                    6*sys.delta[1]*sys.mu[2]+6*sys.delta[2]*sys.mu[1]
-                )
-                .+ z_iz_i[:,:,1] .* (
-                    -2*sys.mu[1]+6*sys.mu[2]
-                )
-                .+ z_1z_2[:,:,1] .* (
-                    4*sys.mu[1]-6*sys.mu[2]
-                )
-                .+ z_iz_i[:,:,2] .* (
-                    -2*sys.mu[1]
-                )
-              )
-              .+ state.vely[:,:,2] .* (
-                state.height[:,:,2] .* (
-                    6*sys.delta[1]*sys.mu[2]
-                )
-                .+ z_iz_i[:,:,1] .* (
-                    -3*sys.mu[2]
-                )
-                .+ z_1z_2[:,:,1] .* (
-                    3*sys.mu[2]
-                )
-              )
-           ) 
-     state.slipy[:,:,2] .*=  6*sys.mu[2]*sys.mu[1] .* state.height[:,:,2] .* (
-        state.vely[:,:,1]  .* (
-                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 3 .* z_iz_i[:,:,1]  
-            ) 
-        .- state.vely[:,:,2]  .* (
-                3*sys.delta[1]*sys.delta[1] .+ 6*sys.delta[1] .* state.height[:,:,1] .+ 2 .* z_iz_i[:,:,1]
-            ) 
-     )
-    # end
-    return nothing
-end
-
-
 
 """
 	function slippage_no_slip!(state::MultiLayer_2D, sys::SysConstMultiLayer)
@@ -1563,9 +1425,6 @@ function V_gamma_0!(state::Active_1D, sys::SysConstActive_1D)
     return nothing
 end
 
-
-
-
 """
     view_four()
 
@@ -1579,7 +1438,6 @@ function view_four(f)
 
     return f1, f2, f3, f4
 end
-
 
 """
     surface_tension_gradient!(state)

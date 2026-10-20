@@ -269,7 +269,6 @@ Performs a BGK collision operation with a WFM forcecorrection and a subsequent s
 
 See also: [`Swalbe.equilibrium`](@ref)
 """
-
 function BGKandStream!(state::MultiLayer_2D)
     # All distribution functions
     fe0, fe1, fe2, fe3, fe4, fe5, fe6, fe7, fe8 = viewdistsMultiLayer(state.feq)
@@ -373,48 +372,6 @@ function BGKandStream!(state::StateMultiLayer_1D)
     state.fout .= state.ftemp
     return nothing
 end
-
-"""
-BGKandStream!(state::StateMultiLayer_1D)
-
-Performs a BGK collision operation with a WFM force correction and a subsequent streaming of the resulting populations, analogous to its 2D counterpart. 
-This function operates in a 1D multilayer thin-film model, where fields include an additional layer dimension.
-
-# Arguments
-
-- `state` Multilayer 1D state containing all fields:
-# References
-
-- [Salmon](https://www.ingentaconnect.com/contentone/jmr/jmr/1999/00000057/00000003/art00005#)
-- [Dellar](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.65.036309)
-- [Peng et al.](https://onlinelibrary.wiley.com/doi/full/10.1002/fld.4726)
-- [Richter et al.](https://arxiv.org/abs/2409.16659)
-
-See also: [`Swalbe.equilibrium`](@ref)
-"""
-function BGKandStream!(state::StateMultiLayer_1D)
-    # All distribution functions
-    fe0, fe1, fe2 = viewdistsMultiLayer_1D(state.feq)
-    ft0, ft1, ft2 = viewdistsMultiLayer_1D(state.ftemp)
-    fo0, fo1, fo2 = viewdistsMultiLayer_1D(state.fout)
-
-    # Collision for the three populations
-    # Zeroth, no forcing!
-    fo0 .= fe0
-    # Straight ones, force correction is 1/3, 3*1/9
-    fo1 .= fe1 .+ 1/2 .* state.F
-    fo2 .= fe2 .- 1/2 .* state.F
-    
-    # This is the streaming step with implicite periodic boundarys
-    circshift!(ft0, fo0, 0)
-    circshift!(ft1, fo1, 1)
-    circshift!(ft2, fo2, -1)
-    
-    # Overwrite fout with ftemp
-    state.fout .= state.ftemp
-    return nothing
-end
-
 
 """
 	function BGKandStream!(state::StateMiscible_1D, sys::SysConstMiscible_1D)

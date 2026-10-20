@@ -222,7 +222,6 @@ Struct that contains all runtime constants for a 1D multilayer lattice Boltzmann
 - `smooth_weight :: T`: Weight for a centered difference used to counteract errors that accumulate in the precursor layers over time.
 - `usw :: T`: Smoothing weight factor defined as `1 - 2 * smooth_weight`.
 """
-
 Base.@kwdef struct SysConstMultiLayer_1D{T} <: Consts
     # Lattice
     L :: Int = 256
@@ -714,7 +713,6 @@ Data structure for storing all arrays required for a 1D multilayer lattice Boltz
 - `hi :: Vector{T}`: Sum of heights across layers (e.g., `h_1 + h_2`), used in multilayer calculations.
 - `grad_h :: Vector{T}`: Gradient of the height field, used in pressure and force calculations.
 """
-
 Base.@kwdef struct StateMultiLayer_1D{T} <: LBM_state_1D
     # Distribution functions
     fout :: Array{T}

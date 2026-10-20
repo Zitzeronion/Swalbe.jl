@@ -1,19 +1,4 @@
 """
-    view_four()
-
-Splits a chuck of memory in four equivalent chucks
-"""
-function view_four(f)
-    f1 = view(f, :, 1)
-    f2 = view(f, :, 2)
-    f3 = view(f, :, 3)
-    f4 = view(f, :, 4)
-    
-    return f1, f2, f3, f4
-end
-
-
-"""
     power_broad(arg, n)
 
 Computes `arg` to the power `n`.

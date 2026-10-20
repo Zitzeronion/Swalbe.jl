@@ -562,7 +562,6 @@ surface_tension_smooth!(state, sys; center_weight=0.7)
 ```
 This applies smoothing with a higher weighting on the original value.
 """
-
 function surface_tension_smooth!(state::StateMiscible_1D, sys::SysConstMiscible_1D; center_weight=0.5)
     state.gamma[:,1] .= (state.height[:,1] .* sys.gamma[1,1] .+ state.height[:,2] .* sys.gamma[1,2])./(state.height[:,1] .+ state.height[:,2])
     state.gamma[:,2] .= (state.height[:,1] .* sys.gamma[2,1] .+ state.height[:,2] .* sys.gamma[2,2])./(state.height[:,1] .+ state.height[:,2])
