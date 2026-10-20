@@ -353,6 +353,6 @@ end
 Calculates x%y for 1 base arrays, i.e. does not return 0 but y
 """
 function modified_modulo(x, y)
-	result = mod(x, y)
-	return result == 0 ? y : result
+    result = mod(x, y)
+    return result == 0 ? y : result
 end

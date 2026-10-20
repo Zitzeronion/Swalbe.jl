@@ -375,89 +375,138 @@ Calculates the film pressure of a multilayer system. For 3D simulations we curre
 """
 function filmpressure!(state::MultiLayer_2D, sys::SysConstMultiLayer)
     #disjoining pressure, Remark that \phi'(h_1+h_2) comes with a factor of 2 in front of hmin and hcrit
-    ∇f!(state.grad_hx, state.grad_hy, state.height[:,:,1], state.dgrad[:,:,1,:], 1)
+    ∇f!(state.grad_hx, state.grad_hy, state.height[:, :, 1], state.dgrad[:, :, 1, :], 1)
     state.grad_h_sq .= state.grad_hx .* state.grad_hx .+ state.grad_hy .* state.grad_hy
-      #Laplace pressure
+    #Laplace pressure
     hip, hjp, him, hjm, hipjp, himjp, himjm, hipjm = viewneighborsMultiLayer(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height, (1,0))
-    circshift!(hjp, state.height, (0,1))
-    circshift!(him, state.height, (-1,0))
-    circshift!(hjm, state.height, (0,-1))
+    circshift!(hip, state.height, (1, 0))
+    circshift!(hjp, state.height, (0, 1))
+    circshift!(him, state.height, (-1, 0))
+    circshift!(hjm, state.height, (0, -1))
     # Diagonal elements
-    circshift!(hipjp, state.height, (1,1))
-    circshift!(himjp, state.height, (-1,1))
-    circshift!(himjm, state.height, (-1,-1))
-    circshift!(hipjm, state.height, (1,-1))
-	if sys.n==9 && sys.m==3
-       # if sys.layers == 2
-       # store the one field we need twice
-       state.hi[:,:,1].=(sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)   .* Swalbe.fast_93.(sys.hmin./(state.height[:,:,2] .+ sys.hcrit)).* (1 .+ state.grad_h_sq ./2)
+    circshift!(hipjp, state.height, (1, 1))
+    circshift!(himjp, state.height, (-1, 1))
+    circshift!(himjm, state.height, (-1, -1))
+    circshift!(hipjm, state.height, (1, -1))
+    if sys.n==9 && sys.m==3
+        # if sys.layers == 2
+        # store the one field we need twice
+        state.hi[:, :, 1].=(sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4])*(sys.n-1)*(
+            sys.m-1
+        )/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_93.(
+            sys.hmin ./ (state.height[:, :, 2] .+ sys.hcrit),
+        ) .* (1 .+ state.grad_h_sq ./ 2)
         # disjoining pressure
-        state.pressure[:,:,1] .=  (
-                (sys.gamma[1,3]-sys.gamma[1,2]-sys.gamma[2,3])                  *(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)   .* Swalbe.fast_93.(sys.hmin./(state.height[:,:,1] .+ sys.hcrit))
-                .- state.hi[:,:,1]
-            )
-            state.pressure[:,:,2] .=  (
-                state.hi[:,:,1]
-                .+ (sys.gamma[2,3]+sys.gamma[1,4]-sys.gamma[2,4]-sys.gamma[1,3])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)   .* Swalbe.fast_93.(2*sys.hmin./(state.height[:,:,1] .+ state.height[:,:,2] .+ 2*sys.hcrit))
-            )
-            #Laplace pressure
-            state.pressure[:,:,1] .-= (sys.gamma[2,3] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4]) .* 1/6 .* Swalbe.wetting_potential_93.(sys.hmin./(state.height[:,:,2] .+ sys.hcrit))) .* (
-                     2/3 .* (hjp[:,:,1] .+ hip[:,:,1] .+ him[:,:,1] .+ hjm[:,:,1])
-                     .+ 1/6 .* (hipjp[:,:,1] .+ himjp[:,:,1] .+ himjm[:,:,1] .+ hipjm[:,:,1])
-                     .- 10/3 .* state.height[:,:,1]
-            )
-            state.pressure[:,:,2] .-= (
-                (
-                    (
-                        2/3 .* (hjp[:,:,1] .+ hip[:,:,1] .+ him[:,:,1] .+ hjm[:,:,1])
-                       .+ 1/6 .* (hipjp[:,:,1] .+ himjp[:,:,1] .+ himjm[:,:,1] .+ hipjm[:,:,1])
-                       .- 10/3 .* state.height[:,:,1]
-                    ).+(
-                        2/3 .* (hjp[:,:,2] .+ hip[:,:,2] .+ him[:,:,2] .+ hjm[:,:,2])
-                        .+ 1/6 .* (hipjp[:,:,2] .+ himjp[:,:,2] .+ himjm[:,:,2] .+ hipjm[:,:,2])
-                        .- 10/3 .* state.height[:,:,2]
-                    )
-                ).*  sys.gamma[3,4]
-             )
-        # end
-	elseif sys.n==3 && sys.m==2
-      # if sys.layers == 2
-      #Store what we will need twice
-      state.hi[:,:,1] .= (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)   .* Swalbe.fast_32.(sys.hmin  ./(state.height[:,:,2] .+ sys.hcrit)) .* (1 .+ state.grad_h_sq ./2)
-        # disjoining pressure
-        state.pressure[:,:,1] .=  (
-            (sys.gamma[1,3]-sys.gamma[1,2]-sys.gamma[2,3])                  *(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)   .* Swalbe.fast_32.(sys.hmin./(state.height[:,:,1] .+ sys.hcrit))
-            .- state.hi[:,:,1]
+        state.pressure[:, :, 1] .= (
+            (sys.gamma[1, 3]-sys.gamma[1, 2]-sys.gamma[2, 3]) * (sys.n-1) * (sys.m-1)/(
+                (sys.n-sys.m)*sys.hmin
+            ) .* Swalbe.fast_93.(sys.hmin ./ (state.height[:, :, 1] .+ sys.hcrit)) .-
+            state.hi[:, :, 1]
         )
-        state.pressure[:,:,2] .=  (
-            state.hi[:,:,1]
-            .+ (sys.gamma[2,3]+sys.gamma[1,4]-sys.gamma[2,4]-sys.gamma[1,3])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)   .* Swalbe.fast_32.(2*sys.hmin  ./(state.height[:,:,1] .+ state.height[:,:,2] + 2*sys.hcrit))
+        state.pressure[:, :, 2] .= (
+            state.hi[:, :, 1] .+
+            (sys.gamma[2, 3]+sys.gamma[1, 4]-sys.gamma[2, 4]-sys.gamma[1, 3])*(sys.n-1)*(
+                sys.m-1
+            )/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_93.(
+                2*sys.hmin ./
+                (state.height[:, :, 1] .+ state.height[:, :, 2] .+ 2*sys.hcrit),
+            )
         )
         #Laplace pressure
-        state.pressure[:,:,1] .-= (
-                (
-                     2/3 .* (hjp[:,:,1] .+ hip[:,:,1] .+ him[:,:,1] .+ hjm[:,:,1])
-                     .+ 1/6 .* (hipjp[:,:,1] .+ himjp[:,:,1] .+ himjm[:,:,1] .+ hipjm[:,:,1])
-                     .- 10/3 .* state.height[:,:,1]
-                ).* (sys.gamma[2,3] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4]) .* 1/6 .* Swalbe.wetting_potential_32.(sys.hmin./(state.height[:,:,2] .+ sys.hcrit)))
+        state.pressure[:, :, 1] .-=
+            (
+                sys.gamma[2, 3] .+
+                (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4]) .* 1/6 .*
+                Swalbe.wetting_potential_93.(
+                    sys.hmin ./ (state.height[:, :, 2] .+ sys.hcrit),
+                )
+            ) .* (
+                2/3 .* (hjp[:, :, 1] .+ hip[:, :, 1] .+ him[:, :, 1] .+ hjm[:, :, 1]) .+
+                1/6 .*
+                (hipjp[:, :, 1] .+ himjp[:, :, 1] .+ himjm[:, :, 1] .+ hipjm[:, :, 1]) .-
+                10/3 .* state.height[:, :, 1]
             )
-            state.pressure[:,:,2] .-= (
-                    (
-                        2/3 .* (hjp[:,:,1] .+ hip[:,:,1] .+ him[:,:,1] .+ hjm[:,:,1])
-                       .+ 1/6 .* (hipjp[:,:,1] .+ himjp[:,:,1] .+ himjm[:,:,1] .+ hipjm[:,:,1])
-                       .- 10/3 .* state.height[:,:,1]
-                    ).+(
-                        2/3 .* (hjp[:,:,2] .+ hip[:,:,2] .+ him[:,:,2] .+ hjm[:,:,2])
-                        .+ 1/6 .* (hipjp[:,:,2] .+ himjp[:,:,2] .+ himjm[:,:,2] .+ hipjm[:,:,2])
-                        .- 10/3 .* state.height[:,:,2]
-                    )
-                ).*  sys.gamma[3,4]
-    # end
-	else
-        	throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
-    	end
+        state.pressure[:, :, 2] .-= (
+            (
+                (
+                    2/3 .* (hjp[:, :, 1] .+ hip[:, :, 1] .+ him[:, :, 1] .+ hjm[:, :, 1]) .+
+                    1/6 .* (
+                        hipjp[:, :, 1] .+ himjp[:, :, 1] .+ himjm[:, :, 1] .+
+                        hipjm[:, :, 1]
+                    ) .- 10/3 .* state.height[:, :, 1]
+                ) .+ (
+                    2/3 .* (hjp[:, :, 2] .+ hip[:, :, 2] .+ him[:, :, 2] .+ hjm[:, :, 2]) .+
+                    1/6 .* (
+                        hipjp[:, :, 2] .+ himjp[:, :, 2] .+ himjm[:, :, 2] .+
+                        hipjm[:, :, 2]
+                    ) .- 10/3 .* state.height[:, :, 2]
+                )
+            ) .* sys.gamma[3, 4]
+        )
+        # end
+    elseif sys.n==3 && sys.m==2
+        # if sys.layers == 2
+        #Store what we will need twice
+        state.hi[:, :, 1] .=
+            (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4])*(sys.n-1)*(sys.m-1)/(
+                (sys.n-sys.m)*sys.hmin
+            ) .* Swalbe.fast_32.(sys.hmin ./ (state.height[:, :, 2] .+ sys.hcrit)) .*
+            (1 .+ state.grad_h_sq ./ 2)
+        # disjoining pressure
+        state.pressure[:, :, 1] .= (
+            (sys.gamma[1, 3]-sys.gamma[1, 2]-sys.gamma[2, 3]) * (sys.n-1) * (sys.m-1)/(
+                (sys.n-sys.m)*sys.hmin
+            ) .* Swalbe.fast_32.(sys.hmin ./ (state.height[:, :, 1] .+ sys.hcrit)) .-
+            state.hi[:, :, 1]
+        )
+        state.pressure[:, :, 2] .= (
+            state.hi[:, :, 1] .+
+            (sys.gamma[2, 3]+sys.gamma[1, 4]-sys.gamma[2, 4]-sys.gamma[1, 3])*(sys.n-1)*(
+                sys.m-1
+            )/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_32.(
+                2*sys.hmin ./
+                (state.height[:, :, 1] .+ state.height[:, :, 2] + 2*sys.hcrit),
+            )
+        )
+        #Laplace pressure
+        state.pressure[:, :, 1] .-= (
+            (
+                2/3 .* (hjp[:, :, 1] .+ hip[:, :, 1] .+ him[:, :, 1] .+ hjm[:, :, 1]) .+
+                1/6 .*
+                (hipjp[:, :, 1] .+ himjp[:, :, 1] .+ himjm[:, :, 1] .+ hipjm[:, :, 1]) .-
+                10/3 .* state.height[:, :, 1]
+            ) .* (
+                sys.gamma[2, 3] .+
+                (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4]) .* 1/6 .*
+                Swalbe.wetting_potential_32.(
+                    sys.hmin ./ (state.height[:, :, 2] .+ sys.hcrit),
+                )
+            )
+        )
+        state.pressure[:, :, 2] .-=
+            (
+                (
+                    2/3 .* (hjp[:, :, 1] .+ hip[:, :, 1] .+ him[:, :, 1] .+ hjm[:, :, 1]) .+
+                    1/6 .*
+                    (hipjp[:, :, 1] .+ himjp[:, :, 1] .+ himjm[:, :, 1] .+ hipjm[:, :, 1]) .-
+                    10/3 .* state.height[:, :, 1]
+                ) .+ (
+                    2/3 .* (hjp[:, :, 2] .+ hip[:, :, 2] .+ him[:, :, 2] .+ hjm[:, :, 2]) .+
+                    1/6 .*
+                    (hipjp[:, :, 2] .+ himjp[:, :, 2] .+ himjm[:, :, 2] .+ hipjm[:, :, 2]) .-
+                    10/3 .* state.height[:, :, 2]
+                )
+            ) .* sys.gamma[3, 4]
+        # end
+    else
+        throw(
+            DomainError(
+                (sys.n, sys.m),
+                "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+            ),
+        )
+    end
     return nothing
 end
 
@@ -501,9 +550,15 @@ surface_tension!(state, sys)
 After execution, `state.gamma` will hold the updated surface tension values for each spatial component.
 """
 function surface_tension!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
-    state.gamma[:,1] .= (state.height[:,1] .* sys.gamma[1,1] .+ state.height[:,2] .* sys.gamma[1,2])./(state.height[:,1] .+ state.height[:,2])
-    state.gamma[:,2] .= (state.height[:,1] .* sys.gamma[2,1] .+ state.height[:,2] .* sys.gamma[2,2])./(state.height[:,1] .+ state.height[:,2])
-    state.gamma[:,3] .= (state.height[:,1] .* sys.gamma[3,1] .+ state.height[:,2] .* sys.gamma[3,2])./(state.height[:,1] .+ state.height[:,2])
+    state.gamma[:, 1] .=
+        (state.height[:, 1] .* sys.gamma[1, 1] .+ state.height[:, 2] .* sys.gamma[1, 2]) ./
+        (state.height[:, 1] .+ state.height[:, 2])
+    state.gamma[:, 2] .=
+        (state.height[:, 1] .* sys.gamma[2, 1] .+ state.height[:, 2] .* sys.gamma[2, 2]) ./
+        (state.height[:, 1] .+ state.height[:, 2])
+    state.gamma[:, 3] .=
+        (state.height[:, 1] .* sys.gamma[3, 1] .+ state.height[:, 2] .* sys.gamma[3, 2]) ./
+        (state.height[:, 1] .+ state.height[:, 2])
 end
 
 
@@ -562,39 +617,69 @@ surface_tension_smooth!(state, sys; center_weight=0.7)
 ```
 This applies smoothing with a higher weighting on the original value.
 """
-function surface_tension_smooth!(state::StateMiscible_1D, sys::SysConstMiscible_1D; center_weight=0.5)
-    state.gamma[:,1] .= (state.height[:,1] .* sys.gamma[1,1] .+ state.height[:,2] .* sys.gamma[1,2])./(state.height[:,1] .+ state.height[:,2])
-    state.gamma[:,2] .= (state.height[:,1] .* sys.gamma[2,1] .+ state.height[:,2] .* sys.gamma[2,2])./(state.height[:,1] .+ state.height[:,2])
-    state.gamma[:,3] .= (state.height[:,1] .* sys.gamma[3,1] .+ state.height[:,2] .* sys.gamma[3,2])./(state.height[:,1] .+ state.height[:,2])
-    gip, gim = viewneighbors_1D(state.dgrad[:,:,1])
-    circshift!(gip, state.gamma[:,1], 1)
-    circshift!(gim, state.gamma[:,1],-1)
-    state.gamma[:,1] .= center_weight .* state.gamma[:,1] .+ (1-center_weight) .* (gip .+ gim)
-    circshift!(gip, state.gamma[:,2], 1)
-    circshift!(gim, state.gamma[:,2],-1)
-    state.gamma[:,2] .= center_weight .* state.gamma[:,2] .+ (1-center_weight) .* (gip .+ gim)
-    circshift!(gip, state.gamma[:,3], 1)
-    circshift!(gim, state.gamma[:,3],-1)
-    state.gamma[:,3] .= center_weight .* state.gamma[:,3] .+ (1-center_weight) .* (gip .+ gim)
+function surface_tension_smooth!(
+    state::StateMiscible_1D,
+    sys::SysConstMiscible_1D;
+    center_weight = 0.5,
+)
+    state.gamma[:, 1] .=
+        (state.height[:, 1] .* sys.gamma[1, 1] .+ state.height[:, 2] .* sys.gamma[1, 2]) ./
+        (state.height[:, 1] .+ state.height[:, 2])
+    state.gamma[:, 2] .=
+        (state.height[:, 1] .* sys.gamma[2, 1] .+ state.height[:, 2] .* sys.gamma[2, 2]) ./
+        (state.height[:, 1] .+ state.height[:, 2])
+    state.gamma[:, 3] .=
+        (state.height[:, 1] .* sys.gamma[3, 1] .+ state.height[:, 2] .* sys.gamma[3, 2]) ./
+        (state.height[:, 1] .+ state.height[:, 2])
+    gip, gim = viewneighbors_1D(state.dgrad[:, :, 1])
+    circshift!(gip, state.gamma[:, 1], 1)
+    circshift!(gim, state.gamma[:, 1], -1)
+    state.gamma[:, 1] .=
+        center_weight .* state.gamma[:, 1] .+ (1-center_weight) .* (gip .+ gim)
+    circshift!(gip, state.gamma[:, 2], 1)
+    circshift!(gim, state.gamma[:, 2], -1)
+    state.gamma[:, 2] .=
+        center_weight .* state.gamma[:, 2] .+ (1-center_weight) .* (gip .+ gim)
+    circshift!(gip, state.gamma[:, 3], 1)
+    circshift!(gim, state.gamma[:, 3], -1)
+    state.gamma[:, 3] .=
+        center_weight .* state.gamma[:, 3] .+ (1-center_weight) .* (gip .+ gim)
 end
 
 
 function filmpressure!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
-    hip, him = viewneighbors_1D(state.dgrad[:,:,1])
+    hip, him = viewneighbors_1D(state.dgrad[:, :, 1])
     # Straight elements j+1, i+1, i-1, j-1
-    circshift!(hip, state.height[:,1].+state.height[:,2], 1)
-    circshift!(him, state.height[:,1].+state.height[:,2], -1)
-	if sys.n==9 && sys.m==3
-    		state.pressure[:,1] .= (-state.gamma[:,1] .- state.gamma[:,2] .+ state.gamma[:,3]) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) .* Swalbe.fast_93.(sys.hmin./(state.height[:,1] .+ state.height[:,2] .+ 2 .* sys.hcrit))
-            state.pressure[:,2] .=state.pressure[:,1]
-            # For extra stability
-	    state.pressure .+= 0.1.* (-state.gamma[:,1] .- state.gamma[:,2] .+ state.gamma[:,3]) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin / 2) .* Swalbe.power_9.((sys.hmin/2)./(state.height .+ sys.hcrit))
-	elseif sys.n==3 && sys.m==2
-    		state.pressure .= (-state.gamma[:,1] .- state.gamma[:,2] .+ state.gamma[:,3]) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) .* Swalbe.fast_32.(sys.hmin./(state.height[:,1] .+ state.height[:,2] .+ sys.hcrit))
-	else
-        	throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
-    	end
-    state.pressure .-= state.gamma[:,1] .* (hip .- 2 .* (state.height[:,1] .+ state.height[:,2]) .+ him)
+    circshift!(hip, state.height[:, 1] .+ state.height[:, 2], 1)
+    circshift!(him, state.height[:, 1] .+ state.height[:, 2], -1)
+    if sys.n==9 && sys.m==3
+        state.pressure[:, 1] .=
+            (-state.gamma[:, 1] .- state.gamma[:, 2] .+ state.gamma[:, 3]) .* (sys.n - 1) .*
+            (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) .* Swalbe.fast_93.(
+                sys.hmin ./ (state.height[:, 1] .+ state.height[:, 2] .+ 2 .* sys.hcrit),
+            )
+        state.pressure[:, 2] .= state.pressure[:, 1]
+        # For extra stability
+        state.pressure .+=
+            0.1 .* (-state.gamma[:, 1] .- state.gamma[:, 2] .+ state.gamma[:, 3]) .*
+            (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin / 2) .*
+            Swalbe.power_9.((sys.hmin/2) ./ (state.height .+ sys.hcrit))
+    elseif sys.n==3 && sys.m==2
+        state.pressure .=
+            (-state.gamma[:, 1] .- state.gamma[:, 2] .+ state.gamma[:, 3]) .* (sys.n - 1) .*
+            (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin) .* Swalbe.fast_32.(
+                sys.hmin ./ (state.height[:, 1] .+ state.height[:, 2] .+ sys.hcrit),
+            )
+    else
+        throw(
+            DomainError(
+                (sys.n, sys.m),
+                "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+            ),
+        )
+    end
+    state.pressure .-=
+        state.gamma[:, 1] .* (hip .- 2 .* (state.height[:, 1] .+ state.height[:, 2]) .+ him)
     return nothing
 end
 
@@ -602,14 +687,24 @@ end
 function filmpressure_fast!(state::Active_1D, sys::SysConstActive_1D)
     # All moved to the function surface_tension in active.jl
     # state.γ .= sys.γ_0 .- sys.Γ .* state.rho
-    state.k .= ((-state.γ  .+ cospi.(sys.θ_0)*sys.γ_0 ) .* (sys.n - 1) .* (sys.m - 1) ./ ((sys.n - sys.m) * sys.hmin))
+    state.k .= (
+        (-state.γ .+ cospi.(sys.θ_0)*sys.γ_0) .* (sys.n - 1) .* (sys.m - 1) ./
+        ((sys.n - sys.m) * sys.hmin)
+    )
     #Π(h)
     if sys.n==9 && sys.m==3
-        state.pressure .= (state.k .* Swalbe.fast_93.(sys.hmin ./ (state.height .+ sys.hcrit)))
+        state.pressure .=
+            (state.k .* Swalbe.fast_93.(sys.hmin ./ (state.height .+ sys.hcrit)))
     elseif sys.n==3 && sys.m==2
-        state.pressure .= (state.k .* Swalbe.fast_32.(sys.hmin ./ (state.height .+ sys.hcrit)))
+        state.pressure .=
+            (state.k .* Swalbe.fast_32.(sys.hmin ./ (state.height .+ sys.hcrit)))
     else
-        throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
+        throw(
+            DomainError(
+                (sys.n, sys.m),
+                "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+            ),
+        )
     end
     hip, him = viewneighbors_1D(state.dgrad)
     # Straight elements j+1, i+1, i-1, j-1
@@ -661,10 +756,14 @@ function filmpressure!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
     # We will need some derivatives of h
     # Maybe it is possible to do this more elegant without the for loop
     if sys.layers==2
-        ∇f!(state.grad_h[:,1], state.height[:,1], state.dgrad[:,1,:])
+        ∇f!(state.grad_h[:, 1], state.height[:, 1], state.dgrad[:, 1, :])
     elseif sys.layers==3
-        ∇f!(state.grad_h[:,1], state.height[:,1], state.dgrad[:,1,:])
-        ∇f!(state.grad_h[:,2], state.height[:,1] .+ state.height[:,2], state.dgrad[:,1,:])
+        ∇f!(state.grad_h[:, 1], state.height[:, 1], state.dgrad[:, 1, :])
+        ∇f!(
+            state.grad_h[:, 2],
+            state.height[:, 1] .+ state.height[:, 2],
+            state.dgrad[:, 1, :],
+        )
     end
     # And we will need some shifted values for the Laplacian later on
     hip, him = viewneighborsMultiLayer_1D(state.dgrad)
@@ -675,68 +774,248 @@ function filmpressure!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
     #### Two layer system
     if sys.layers==2
         if sys.n==9 && sys.m==3
-             #Laplace pressure
-            state.pressure[:,1] .= - (hip[:,1] .- 2 .* state.height[:,1] .+ him[:,1])                                                .* (sys.gamma[2,3] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4]) .* 1/6 .* Swalbe.wetting_potential_93.(sys.hmin./(state.height[:,2] .+ sys.hcrit)))
-            state.pressure[:,2] .= - (hip[:,1] .+ hip[:,2] .- 2 .* (state.height[:,1] .+ state.height[:,2]) .+ him[:,1] .+ him[:,2]) .*  sys.gamma[3,4]
+            #Laplace pressure
+            state.pressure[:, 1] .=
+                - (hip[:, 1] .- 2 .* state.height[:, 1] .+ him[:, 1]) .* (
+                    sys.gamma[2, 3] .+
+                    (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4]) .* 1/6 .*
+                    Swalbe.wetting_potential_93.(
+                        sys.hmin ./ (state.height[:, 2] .+ sys.hcrit),
+                    )
+                )
+            state.pressure[:, 2] .=
+                - (
+                    hip[:, 1] .+ hip[:, 2] .-
+                    2 .* (state.height[:, 1] .+ state.height[:, 2]) .+ him[:, 1] .+
+                    him[:, 2]
+                ) .* sys.gamma[3, 4]
             # store the one field we need twice
-            state.hi[:,1].=(sys.gamma[2,3]+sys.gamma[1,4]-sys.gamma[2,4]-sys.gamma[1,3])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*2*sys.hmin)   .* Swalbe.fast_93.(2*sys.hmin./(state.height[:,1] .+ state.height[:,2] .+ 2*sys.hcrit))
+            state.hi[:, 1].=(
+                sys.gamma[2, 3]+sys.gamma[1, 4]-sys.gamma[2, 4]-sys.gamma[1, 3]
+            )*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*2*sys.hmin) .* Swalbe.fast_93.(
+                2*sys.hmin ./ (state.height[:, 1] .+ state.height[:, 2] .+ 2*sys.hcrit),
+            )
             # disjoining pressure
-            state.pressure[:,1] .+= state.pressure[:,2] .+ state.hi[:,1] .+ (sys.gamma[1,3]-sys.gamma[1,2]-sys.gamma[2,3])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_93.(sys.hmin./(state.height[:,1] .+ sys.hcrit))
-            state.pressure[:,2] .+=                        state.hi[:,1] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_93.(sys.hmin./(state.height[:,2] .+ sys.hcrit)).* (1 .+ state.grad_h[:,1] .* state.grad_h[:,1] ./2)
+            state.pressure[:, 1] .+=
+                state.pressure[:, 2] .+ state.hi[:, 1] .+
+                (sys.gamma[1, 3]-sys.gamma[1, 2]-sys.gamma[2, 3])*(sys.n-1)*(sys.m-1)/(
+                    (sys.n-sys.m)*sys.hmin
+                ) .* Swalbe.fast_93.(sys.hmin ./ (state.height[:, 1] .+ sys.hcrit))
+            state.pressure[:, 2] .+=
+                state.hi[:, 1] .+
+                (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4])*(sys.n-1)*(sys.m-1)/(
+                    (sys.n-sys.m)*sys.hmin
+                ) .* Swalbe.fast_93.(sys.hmin ./ (state.height[:, 2] .+ sys.hcrit)) .*
+                (1 .+ state.grad_h[:, 1] .* state.grad_h[:, 1] ./ 2)
         elseif sys.n==3 && sys.m==2
-           #Laplace pressure
-           state.pressure[:,1] .= - (hip[:,1] .- 2 .* state.height[:,1] .+ him[:,1])                                                .* (sys.gamma[2,3] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4]) .* Swalbe.wetting_potential_32.(sys.hmin./(state.height[:,2] .+ sys.hcrit)))
-           state.pressure[:,2] .= - (hip[:,1] .+ hip[:,2] .- 2 .* (state.height[:,1] .+ state.height[:,2]) .+ him[:,1] .+ him[:,2]) .*  sys.gamma[3,4]
-       # store the one field we need twice
-       state.hi[:,1].=(sys.gamma[2,3]+sys.gamma[1,4]-sys.gamma[2,4]-sys.gamma[1,3])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*2*sys.hmin)   .* Swalbe.fast_32.(2*sys.hmin./(state.height[:,1] .+ state.height[:,2] .+ 2*sys.hcrit))
-           # disjoining pressure
-           state.pressure[:,1] .+= state.pressure[:,2] .+ state.hi[:,1] .+ (sys.gamma[1,3]-sys.gamma[1,2]-sys.gamma[2,3])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_32.(  sys.hmin./(state.height[:,1] .+ sys.hcrit))
-           state.pressure[:,2] .+=                        state.hi[:,1] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4])*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin) .* Swalbe.fast_32.(sys.hmin./(state.height[:,2] .+ sys.hcrit)).* (1 .+ state.grad_h[:,1] .* state.grad_h[:,1] ./2)
+            #Laplace pressure
+            state.pressure[:, 1] .=
+                - (hip[:, 1] .- 2 .* state.height[:, 1] .+ him[:, 1]) .* (
+                    sys.gamma[2, 3] .+
+                    (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4]) .*
+                    Swalbe.wetting_potential_32.(
+                        sys.hmin ./ (state.height[:, 2] .+ sys.hcrit),
+                    )
+                )
+            state.pressure[:, 2] .=
+                - (
+                    hip[:, 1] .+ hip[:, 2] .-
+                    2 .* (state.height[:, 1] .+ state.height[:, 2]) .+ him[:, 1] .+
+                    him[:, 2]
+                ) .* sys.gamma[3, 4]
+            # store the one field we need twice
+            state.hi[:, 1].=(
+                sys.gamma[2, 3]+sys.gamma[1, 4]-sys.gamma[2, 4]-sys.gamma[1, 3]
+            )*(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*2*sys.hmin) .* Swalbe.fast_32.(
+                2*sys.hmin ./ (state.height[:, 1] .+ state.height[:, 2] .+ 2*sys.hcrit),
+            )
+            # disjoining pressure
+            state.pressure[:, 1] .+=
+                state.pressure[:, 2] .+ state.hi[:, 1] .+
+                (sys.gamma[1, 3]-sys.gamma[1, 2]-sys.gamma[2, 3])*(sys.n-1)*(sys.m-1)/(
+                    (sys.n-sys.m)*sys.hmin
+                ) .* Swalbe.fast_32.(sys.hmin ./ (state.height[:, 1] .+ sys.hcrit))
+            state.pressure[:, 2] .+=
+                state.hi[:, 1] .+
+                (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4])*(sys.n-1)*(sys.m-1)/(
+                    (sys.n-sys.m)*sys.hmin
+                ) .* Swalbe.fast_32.(sys.hmin ./ (state.height[:, 2] .+ sys.hcrit)) .*
+                (1 .+ state.grad_h[:, 1] .* state.grad_h[:, 1] ./ 2)
         else
-                throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
+            throw(
+                DomainError(
+                    (sys.n, sys.m),
+                    "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+                ),
+            )
         end
 
-    ##### Three layer system
+        ##### Three layer system
     elseif sys.layers==3
-            if sys.n==3 && sys.m==2
-                # Laplace pressure
-                state.pressure[:,1] .= - (hip[:,1] .- 2 .* state.height[:,1] .+ him[:,1])                                                                                             .* (sys.gamma[2,3] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4]) .* Swalbe.wetting_potential_32.(sys.hmin./(state.height[:,2] .+ sys.hcrit)) .+ (sys.gamma[1,5] + sys.gamma[3,4] - sys.gamma[2,4] - sys.gamma[3,5])  .* Swalbe.wetting_potential_32.(2*sys.hmin ./ (state.height[:,2] .+ state.height[:,3] .+ 2*sys.hcrit)))
-                state.pressure[:,2] .= - (hip[:,1] .+ hip[:,2] .- 2 .* (state.height[:,1] .+ state.height[:,2]) .+ him[:,1] .+ him[:,2])                                              .* (sys.gamma[3,4] .+ (sys.gamma[3,5]-sys.gamma[3,4]-sys.gamma[4,5]) .* Swalbe.wetting_potential_32.(sys.hmin./(state.height[:,3] .+ sys.hcrit)))
-                state.pressure[:,3] .= - (hip[:,1] .+ hip[:,2]  .+ hip[:,3].- 2 .* (state.height[:,1] .+ state.height[:,2] .+ state.height[:,3]) .+ him[:,1] .+ him[:,2] .+ him[:,3]) .*  sys.gamma[4,5]
+        if sys.n==3 && sys.m==2
+            # Laplace pressure
+            state.pressure[:, 1] .=
+                - (hip[:, 1] .- 2 .* state.height[:, 1] .+ him[:, 1]) .* (
+                    sys.gamma[2, 3] .+
+                    (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4]) .*
+                    Swalbe.wetting_potential_32.(
+                        sys.hmin ./ (state.height[:, 2] .+ sys.hcrit),
+                    ) .+
+                    (
+                        sys.gamma[1, 5] + sys.gamma[3, 4] - sys.gamma[2, 4] -
+                        sys.gamma[3, 5]
+                    ) .* Swalbe.wetting_potential_32.(
+                        2*sys.hmin ./
+                        (state.height[:, 2] .+ state.height[:, 3] .+ 2*sys.hcrit),
+                    )
+                )
+            state.pressure[:, 2] .=
+                - (
+                    hip[:, 1] .+ hip[:, 2] .-
+                    2 .* (state.height[:, 1] .+ state.height[:, 2]) .+ him[:, 1] .+
+                    him[:, 2]
+                ) .* (
+                    sys.gamma[3, 4] .+
+                    (sys.gamma[3, 5]-sys.gamma[3, 4]-sys.gamma[4, 5]) .*
+                    Swalbe.wetting_potential_32.(
+                        sys.hmin ./ (state.height[:, 3] .+ sys.hcrit),
+                    )
+                )
+            state.pressure[:, 3] .=
+                - (
+                    hip[:, 1] .+ hip[:, 2] .+ hip[:, 3] .-
+                    2 .* (state.height[:, 1] .+ state.height[:, 2] .+ state.height[:, 3]) .+
+                    him[:, 1] .+ him[:, 2] .+ him[:, 3]
+                ) .* sys.gamma[4, 5]
             # We will use this quite a lot so it cleans up a bit having it here
             prefac=(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)
             # Store things we will need multiple times
             # When going to more then 3 layers one should really think about adding an extra field to store those especially because then we could use state.hi to store the actual interface positions
-                # \phi_123'(h_2)
-                state.hi[:,1] .= (sys.gamma[1,5] + sys.gamma[2,4] - sys.gamma[1,4] - sys.gamma[2,5]) * 1/3 * prefac * Swalbe.fast_32.(3*sys.hmin ./ (state.height[:,1] .+ state.height[:,2] .+ state.height[:,3] .+ 3*sys.hcrit))
-                # \phi_{23}'(h_2+h_3)(1+(\nabla z_1)^2/2)
-                state.hi[:,2] .= (sys.gamma[2,5] + sys.gamma[3,4] - sys.gamma[2,4] -sys.gamma[3,5]) * 0.5 * prefac .* Swalbe.fast_32.( 2*sys.hmin ./ (state.height[:,2] .+ state.height[:,3] .+ 2* sys.hcrit)) .* (1 .+ state.grad_h[:,1] .* state.grad_h[:,1] ./ 2)
-                # \phi_12'(h_3)(1+ (\nabla z_2)^2/2)
-                state.hi[:,3] .=(sys.gamma[1,4] + sys.gamma[2,3] - sys.gamma[1,3] - sys.gamma[2,4]) * 0.5 * prefac * Swalbe.fast_32.(2*sys.hmin ./ (state.height[:,1] .+ state.height[:,2] .+ 2*sys.hcrit))
+            # \phi_123'(h_2)
+            state.hi[:, 1] .=
+                (sys.gamma[1, 5] + sys.gamma[2, 4] - sys.gamma[1, 4] - sys.gamma[2, 5]) * 1/3 *
+                prefac *
+                Swalbe.fast_32.(
+                    3*sys.hmin ./ (
+                        state.height[:, 1] .+ state.height[:, 2] .+ state.height[:, 3] .+
+                        3*sys.hcrit
+                    ),
+                )
+            # \phi_{23}'(h_2+h_3)(1+(\nabla z_1)^2/2)
+            state.hi[:, 2] .=
+                (sys.gamma[2, 5] + sys.gamma[3, 4] - sys.gamma[2, 4] - sys.gamma[3, 5]) *
+                0.5 *
+                prefac .* Swalbe.fast_32.(
+                    2*sys.hmin ./
+                    (state.height[:, 2] .+ state.height[:, 3] .+ 2 * sys.hcrit),
+                ) .* (1 .+ state.grad_h[:, 1] .* state.grad_h[:, 1] ./ 2)
+            # \phi_12'(h_3)(1+ (\nabla z_2)^2/2)
+            state.hi[:, 3] .=
+                (sys.gamma[1, 4] + sys.gamma[2, 3] - sys.gamma[1, 3] - sys.gamma[2, 4]) *
+                0.5 *
+                prefac *
+                Swalbe.fast_32.(
+                    2*sys.hmin ./ (state.height[:, 1] .+ state.height[:, 2] .+ 2*sys.hcrit),
+                )
             # Disjoining pressure
-                state.pressure[:,1] .+= state.pressure[:,2] .+ state.pressure[:,3] .+ state.hi[:,1]                  .+ state.hi[:,3] .+ (sys.gamma[1,3] - sys.gamma[1,2] - sys.gamma[2,3]) * prefac .* Swalbe.fast_32.(sys.hmin ./ (state.height[:,1] .+ sys.hcrit))
-                state.pressure[:,2] .+= state.pressure[:,3]                        .+ state.hi[:,1] .+ state.hi[:,2] .+ state.hi[:,3] .+ (sys.gamma[2,4] - sys.gamma[2,3] - sys.gamma[3,4]) * prefac .* Swalbe.fast_32.(sys.hmin ./ (state.height[:,2] .+ sys.hcrit)) .* (1 .+ state.grad_h[:,1] .* state.grad_h[:,1] ./ 2)
-                state.pressure[:,3] .+=                                               state.hi[:,1] .+ state.hi[:,2]                  .+ (sys.gamma[3,5] - sys.gamma[3,4] - sys.gamma[4,5]) * prefac .* Swalbe.fast_32.(sys.hmin ./ (state.height[:,3] .+ sys.hcrit)) .* (1 .+ state.grad_h[:,2] .* state.grad_h[:,2] ./ 2)
-            elseif sys.n==9 && sys.m==3
-                 # Laplace pressure
-                 state.pressure[:,1] .= - (hip[:,1] .- 2 .* state.height[:,1] .+ him[:,1])                                                                                             .* (sys.gamma[2,3] .+ (sys.gamma[2,4]-sys.gamma[2,3]-sys.gamma[3,4]) .* 1/6 .* Swalbe.wetting_potential_93.(sys.hmin./(state.height[:,2] .+ sys.hcrit)) .+ (sys.gamma[1,5] + sys.gamma[3,4] - sys.gamma[2,4] - sys.gamma[3,5]) * 1/6 .* Swalbe.wetting_potential_93.(2*sys.hmin ./ (state.height[:,2] .+ state.height[:,3] .+ 2*sys.hcrit)))
-                 state.pressure[:,2] .= - (hip[:,1] .+ hip[:,2] .- 2 .* (state.height[:,1] .+ state.height[:,2]) .+ him[:,1] .+ him[:,2])                                              .* (sys.gamma[3,4] .+ (sys.gamma[3,5]-sys.gamma[3,4]-sys.gamma[4,5]) .* 1/6 .* Swalbe.wetting_potential_93.(sys.hmin./(state.height[:,3] .+ sys.hcrit)))
-                 state.pressure[:,3] .= - (hip[:,1] .+ hip[:,2]  .+ hip[:,3].- 2 .* (state.height[:,1] .+ state.height[:,2] .+ state.height[:,3]) .+ him[:,1] .+ him[:,2] .+ him[:,3]) .*  sys.gamma[4,5]
-             # We will use this quite a lot so it cleans up a bit having it here
-             prefac=(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)
-             # Store things we will need multiple times
-             # When going to more then 3 layers one should really think about adding an extra field to store those especially because then we could use state.hi to store the actual interface positions
-                 # \phi_123'(h_2)
-                 state.hi[:,1] .= (sys.gamma[1,5] + sys.gamma[2,4] - sys.gamma[1,4] - sys.gamma[2,5]) * 1/3 * prefac *Swalbe.fast_93.(3*sys.hmin ./ (state.height[:,1] .+ state.height[:,2] .+ state.height[:,3] .+ 3*sys.hcrit))
-                 # \phi_{23}'(h_2+h_3)(1+(\nabla z_1)^2/2)
-                 state.hi[:,2] .= (sys.gamma[2,5] + sys.gamma[3,4] - sys.gamma[2,4] -sys.gamma[3,5]) * 0.5 * prefac .*Swalbe.fast_93.( 2*sys.hmin ./ (state.height[:,2] .+ state.height[:,3] .+ 2* sys.hcrit)) .* (1 .+ state.grad_h[:,1] .* state.grad_h[:,1] ./ 2)
-                 # \phi_12'(h_3)(1+ (\nabla z_2)^2/2)
-                 state.hi[:,3] .=(sys.gamma[1,4] + sys.gamma[2,3] - sys.gamma[1,3] - sys.gamma[2,4]) * 0.5 * prefac *Swalbe.fast_93.(2*sys.hmin ./ (state.height[:,1] .+ state.height[:,2] .+ 2*sys.hcrit))
-             # Disjoining pressure
-                 state.pressure[:,1] .+= state.pressure[:,2] .+ state.pressure[:,3] .+ state.hi[:,1]                  .+ state.hi[:,3] .+ (sys.gamma[1,3] - sys.gamma[1,2] - sys.gamma[2,3]) * prefac .*Swalbe.fast_93.(sys.hmin ./ (state.height[:,1] .+ sys.hcrit))
-                 state.pressure[:,2] .+= state.pressure[:,3]                        .+ state.hi[:,1] .+ state.hi[:,2] .+ state.hi[:,3] .+ (sys.gamma[2,4] - sys.gamma[2,3] - sys.gamma[3,4]) * prefac .*Swalbe.fast_93.(sys.hmin ./ (state.height[:,2] .+ sys.hcrit)) .* (1 .+ state.grad_h[:,1] .* state.grad_h[:,1] ./ 2)
+            state.pressure[:, 1] .+=
+                state.pressure[:, 2] .+ state.pressure[:, 3] .+ state.hi[:, 1] .+
+                state.hi[:, 3] .+
+                (sys.gamma[1, 3] - sys.gamma[1, 2] - sys.gamma[2, 3]) * prefac .*
+                Swalbe.fast_32.(sys.hmin ./ (state.height[:, 1] .+ sys.hcrit))
+            state.pressure[:, 2] .+=
+                state.pressure[:, 3] .+ state.hi[:, 1] .+ state.hi[:, 2] .+ state.hi[:, 3] .+
+                (sys.gamma[2, 4] - sys.gamma[2, 3] - sys.gamma[3, 4]) * prefac .*
+                Swalbe.fast_32.(sys.hmin ./ (state.height[:, 2] .+ sys.hcrit)) .*
+                (1 .+ state.grad_h[:, 1] .* state.grad_h[:, 1] ./ 2)
+            state.pressure[:, 3] .+=
+                state.hi[:, 1] .+ state.hi[:, 2] .+
+                (sys.gamma[3, 5] - sys.gamma[3, 4] - sys.gamma[4, 5]) * prefac .*
+                Swalbe.fast_32.(sys.hmin ./ (state.height[:, 3] .+ sys.hcrit)) .*
+                (1 .+ state.grad_h[:, 2] .* state.grad_h[:, 2] ./ 2)
+        elseif sys.n==9 && sys.m==3
+            # Laplace pressure
+            state.pressure[:, 1] .=
+                - (hip[:, 1] .- 2 .* state.height[:, 1] .+ him[:, 1]) .* (
+                    sys.gamma[2, 3] .+
+                    (sys.gamma[2, 4]-sys.gamma[2, 3]-sys.gamma[3, 4]) .* 1/6 .*
+                    Swalbe.wetting_potential_93.(
+                        sys.hmin ./ (state.height[:, 2] .+ sys.hcrit),
+                    ) .+
+                    (
+                        sys.gamma[1, 5] + sys.gamma[3, 4] - sys.gamma[2, 4] -
+                        sys.gamma[3, 5]
+                    ) * 1/6 .* Swalbe.wetting_potential_93.(
+                        2*sys.hmin ./
+                        (state.height[:, 2] .+ state.height[:, 3] .+ 2*sys.hcrit),
+                    )
+                )
+            state.pressure[:, 2] .=
+                - (
+                    hip[:, 1] .+ hip[:, 2] .-
+                    2 .* (state.height[:, 1] .+ state.height[:, 2]) .+ him[:, 1] .+
+                    him[:, 2]
+                ) .* (
+                    sys.gamma[3, 4] .+
+                    (sys.gamma[3, 5]-sys.gamma[3, 4]-sys.gamma[4, 5]) .* 1/6 .*
+                    Swalbe.wetting_potential_93.(
+                        sys.hmin ./ (state.height[:, 3] .+ sys.hcrit),
+                    )
+                )
+            state.pressure[:, 3] .=
+                - (
+                    hip[:, 1] .+ hip[:, 2] .+ hip[:, 3] .-
+                    2 .* (state.height[:, 1] .+ state.height[:, 2] .+ state.height[:, 3]) .+
+                    him[:, 1] .+ him[:, 2] .+ him[:, 3]
+                ) .* sys.gamma[4, 5]
+            # We will use this quite a lot so it cleans up a bit having it here
+            prefac=(sys.n-1)*(sys.m-1)/((sys.n-sys.m)*sys.hmin)
+            # Store things we will need multiple times
+            # When going to more then 3 layers one should really think about adding an extra field to store those especially because then we could use state.hi to store the actual interface positions
+            # \phi_123'(h_2)
+            state.hi[:, 1] .=
+                (sys.gamma[1, 5] + sys.gamma[2, 4] - sys.gamma[1, 4] - sys.gamma[2, 5]) * 1/3 *
+                prefac *
+                Swalbe.fast_93.(
+                    3*sys.hmin ./ (
+                        state.height[:, 1] .+ state.height[:, 2] .+ state.height[:, 3] .+
+                        3*sys.hcrit
+                    ),
+                )
+            # \phi_{23}'(h_2+h_3)(1+(\nabla z_1)^2/2)
+            state.hi[:, 2] .=
+                (sys.gamma[2, 5] + sys.gamma[3, 4] - sys.gamma[2, 4] - sys.gamma[3, 5]) *
+                0.5 *
+                prefac .* Swalbe.fast_93.(
+                    2*sys.hmin ./
+                    (state.height[:, 2] .+ state.height[:, 3] .+ 2 * sys.hcrit),
+                ) .* (1 .+ state.grad_h[:, 1] .* state.grad_h[:, 1] ./ 2)
+            # \phi_12'(h_3)(1+ (\nabla z_2)^2/2)
+            state.hi[:, 3] .=
+                (sys.gamma[1, 4] + sys.gamma[2, 3] - sys.gamma[1, 3] - sys.gamma[2, 4]) *
+                0.5 *
+                prefac *
+                Swalbe.fast_93.(
+                    2*sys.hmin ./ (state.height[:, 1] .+ state.height[:, 2] .+ 2*sys.hcrit),
+                )
+            # Disjoining pressure
+            state.pressure[:, 1] .+=
+                state.pressure[:, 2] .+ state.pressure[:, 3] .+ state.hi[:, 1] .+
+                state.hi[:, 3] .+
+                (sys.gamma[1, 3] - sys.gamma[1, 2] - sys.gamma[2, 3]) * prefac .*
+                Swalbe.fast_93.(sys.hmin ./ (state.height[:, 1] .+ sys.hcrit))
+            state.pressure[:, 2] .+=
+                state.pressure[:, 3] .+ state.hi[:, 1] .+ state.hi[:, 2] .+ state.hi[:, 3] .+
+                (sys.gamma[2, 4] - sys.gamma[2, 3] - sys.gamma[3, 4]) * prefac .*
+                Swalbe.fast_93.(sys.hmin ./ (state.height[:, 2] .+ sys.hcrit)) .*
+                (1 .+ state.grad_h[:, 1] .* state.grad_h[:, 1] ./ 2)
         else
-                throw(DomainError((sys.n,sys.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
+            throw(
+                DomainError(
+                    (sys.n, sys.m),
+                    "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+                ),
+            )
         end
     end
     return nothing
@@ -749,14 +1028,23 @@ end
 Attempt to keep the precursor films up
 """
 function extra_pressure!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
-   # And we will need some shifted values for the Laplacian later on
-   hip, him = viewneighborsMultiLayer_1D(state.dgrad)
-   # Straight elements j+1, i+1, i-1, j-1
-   circshift!(hip, state.height, 1)
-   circshift!(him, state.height, -1)
-   state.pressure[:,1] .-=  sys.gamma[2,3] .* (hip[:,1] .- 2 .* state.height[:,1] .+ him[:,1]) .* sys.extra_pressure_fac .* Swalbe.power_6.(sys.hmin ./ (state.height[:,1] .+ sys.hcrit))
-   state.pressure[:,2] .-=  sys.gamma[3,4] .* (hip[:,2] .- 2 .* state.height[:,2] .+ him[:,2]) .* sys.extra_pressure_fac .* Swalbe.power_6.(sys.hmin ./ (state.height[:,2] .+ sys.hcrit))
-   state.pressure[:,3] .-=  sys.gamma[4,5] .* (hip[:,3] .- 2 .* state.height[:,3] .+ him[:,3]) .* sys.extra_pressure_fac .* Swalbe.power_6.(sys.hmin ./ (state.height[:,3] .+ sys.hcrit))
+    # And we will need some shifted values for the Laplacian later on
+    hip, him = viewneighborsMultiLayer_1D(state.dgrad)
+    # Straight elements j+1, i+1, i-1, j-1
+    circshift!(hip, state.height, 1)
+    circshift!(him, state.height, -1)
+    state.pressure[:, 1] .-=
+        sys.gamma[2, 3] .* (hip[:, 1] .- 2 .* state.height[:, 1] .+ him[:, 1]) .*
+        sys.extra_pressure_fac .*
+        Swalbe.power_6.(sys.hmin ./ (state.height[:, 1] .+ sys.hcrit))
+    state.pressure[:, 2] .-=
+        sys.gamma[3, 4] .* (hip[:, 2] .- 2 .* state.height[:, 2] .+ him[:, 2]) .*
+        sys.extra_pressure_fac .*
+        Swalbe.power_6.(sys.hmin ./ (state.height[:, 2] .+ sys.hcrit))
+    state.pressure[:, 3] .-=
+        sys.gamma[4, 5] .* (hip[:, 3] .- 2 .* state.height[:, 3] .+ him[:, 3]) .*
+        sys.extra_pressure_fac .*
+        Swalbe.power_6.(sys.hmin ./ (state.height[:, 3] .+ sys.hcrit))
 end
 
 """
@@ -802,16 +1090,29 @@ function filmpressure_curved!(state::State_curved_1D, sys::SysConst_1D)
     # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height .+ state.substrate, 1)
     circshift!(him, state.height .+ state.substrate, -1)
-        if sys.param.n==9 && sys.param.m==3
-                state.pressure .= -(1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* sys.param.γ .* (1 .- cospi.(sys.param.θ)) .* (sys.param.n - 1) .* (sys.param.m - 1) ./ ((sys.param.n - sys.param.m) * sys.param.hmin) .* Swalbe.fast_93.(sys.param.hmin./(state.height .+ sys.param.hcrit))
-        elseif sys.param.n==3 && sys.param.m==2
-                state.pressure .= - (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* sys.param.γ .* (1 .- cospi.(sys.param.θ)) .* (sys.param.n - 1) .* (sys.param.m - 1) ./ ((sys.param.n - sys.param.m) * sys.param.hmin) .* Swalbe.fast_32.(sys.param.hmin./(state.height .+ sys.param.hcrit))
-        elseif sys.param.n==0 && sys.param.m==0
-                state.pressure .= 0.0
-        else
-                throw(DomainError((sys.param.n,sys.param.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
-        end
-        state.pressure .-= sys.param.γ .* (hip .- 2 .* (state.height .+ state.substrate) .+ him)
+    if sys.param.n==9 && sys.param.m==3
+        state.pressure .=
+            -(1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* sys.param.γ .*
+            (1 .- cospi.(sys.param.θ)) .* (sys.param.n - 1) .* (sys.param.m - 1) ./
+            ((sys.param.n - sys.param.m) * sys.param.hmin) .*
+            Swalbe.fast_93.(sys.param.hmin ./ (state.height .+ sys.param.hcrit))
+    elseif sys.param.n==3 && sys.param.m==2
+        state.pressure .=
+            - (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* sys.param.γ .*
+            (1 .- cospi.(sys.param.θ)) .* (sys.param.n - 1) .* (sys.param.m - 1) ./
+            ((sys.param.n - sys.param.m) * sys.param.hmin) .*
+            Swalbe.fast_32.(sys.param.hmin ./ (state.height .+ sys.param.hcrit))
+    elseif sys.param.n==0 && sys.param.m==0
+        state.pressure .= 0.0
+    else
+        throw(
+            DomainError(
+                (sys.param.n, sys.param.m),
+                "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+            ),
+        )
+    end
+    state.pressure .-= sys.param.γ .* (hip .- 2 .* (state.height .+ state.substrate) .+ him)
     return nothing
 end
 
@@ -849,21 +1150,35 @@ p_{\\text{cap}} = S (1 + 0.5 \\nabla s^2) \\phi'(h) - \\gamma \\nabla^2 h
 - Tilman Richter, Thin film modelling in the lubrication approximation                                                                                      - [Peschka et al.](https://www.pnas.org/content/116/19/9275)
 - [Craster and Matar](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.81.1131)
 - [Derjaguin and Churaev](https://www.sciencedirect.com/science/article/abs/pii/0021979778900565)                                                           """
-function filmpressure_curved_healing!(state::State_curved_1D, sys::SysConst_1D,S)
+function filmpressure_curved_healing!(state::State_curved_1D, sys::SysConst_1D, S)
     Swalbe.∇f!(state.grad_substrate, state.substrate, state.dgrad)
     hip, him = viewneighbors_1D(state.dgrad)
-	# Straight elements j+1, i+1, i-1, j-1
+    # Straight elements j+1, i+1, i-1, j-1
     circshift!(hip, state.height .+ state.substrate, 1)
     circshift!(him, state.height .+ state.substrate, -1)
-        if sys.param.n==9 && sys.param.m==3
-                state.pressure .= S .* (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate)* (sys.param.n - 1) .* (sys.param.m - 1) ./ ((sys.param.n - sys.param.m) * sys.param.hmin) .* Swalbe.fast_93.(sys.param.hmin./(state.height .+ sys.param.hcrit))
-        elseif sys.param.n==3 && sys.param.m==2                                                                                                                                         state.pressure .= S .* (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .* (sys.param.n - 1) .* (sys.param.m - 1) ./ ((sys.param.n - sys.param.m) * sys.param.hmin) .* Swalbe.fast_32.(sys.param.hmin./(state.height .+ sys.param.hcrit))
-        elseif sys.param.n==0 && sys.param.m==0
-                state.pressure .= 0.0
-        else
-		throw(DomainError((sys.param.n,sys.param.m), "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option."))
-	end
-	state.pressure .-= sys.param.γ .* (hip .- 2 .* (state.height .+ state.substrate) .+ him)
+    if sys.param.n==9 && sys.param.m==3
+        state.pressure .=
+            S .* (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) *
+            (sys.param.n - 1) .* (sys.param.m - 1) ./
+            ((sys.param.n - sys.param.m) * sys.param.hmin) .*
+            Swalbe.fast_93.(sys.param.hmin ./ (state.height .+ sys.param.hcrit))
+    elseif sys.param.n==3 && sys.param.m==2
+        state.pressure .=
+            S .* (1 .+ 0.5 .* state.grad_substrate .* state.grad_substrate) .*
+            (sys.param.n - 1) .* (sys.param.m - 1) ./
+            ((sys.param.n - sys.param.m) * sys.param.hmin) .*
+            Swalbe.fast_32.(sys.param.hmin ./ (state.height .+ sys.param.hcrit))
+    elseif sys.param.n==0 && sys.param.m==0
+        state.pressure .= 0.0
+    else
+        throw(
+            DomainError(
+                (sys.param.n, sys.param.m),
+                "This disjoining pressure is not implemented, Options currently are (n,m)=(9,3) or (n,m)=(3,2). Use those or implement a new option.",
+            ),
+        )
+    end
+    state.pressure .-= sys.param.γ .* (hip .- 2 .* (state.height .+ state.substrate) .+ him)
     return nothing
 end
 
@@ -882,10 +1197,9 @@ The pressure for ``\\rho`` reads
 ``p=p_1+p_2``
 """
 function rho_pressure!(state::Active_1D, sys::SysConstActive_1D)
-    state.rho_pressure .=  (
-				  .- Swalbe.power_6.(sys.hcrit ./(state.rho .+ sys.rho_crit))
-				  .+ Swalbe.power_6.(sys.hcrit ./(state.height .+ sys.hcrit2))
-			)
+    state.rho_pressure .= (
+        .- Swalbe.power_6.(sys.hcrit ./ (state.rho .+ sys.rho_crit)) .+ Swalbe.power_6.(sys.hcrit ./ (state.height .+ sys.hcrit2))
+    )
 end
 
 
@@ -912,10 +1226,9 @@ The total pressure for `\\rho_A` is given by `p = p_1 + p_2`.
 - `nothing`: Updates `state.rho_A_pressure` with the calculated artificial pressure.
 """
 function rho_A_pressure!(state::Active_1D, sys::SysConstActive_1D)
-    state.rho_A_pressure .=  (
-				  .- Swalbe.power_6.(sys.hcrit ./(state.rho_A .+ sys.b_A))
-				  .+ Swalbe.power_6.(sys.hcrit ./(state.height .+ sys.hcrit2))
-			)
+    state.rho_A_pressure .= (
+        .- Swalbe.power_6.(sys.hcrit ./ (state.rho_A .+ sys.b_A)) .+ Swalbe.power_6.(sys.hcrit ./ (state.height .+ sys.hcrit2))
+    )
 end
 
 
@@ -945,9 +1258,7 @@ The combined pressure for `\\rho_B` is `p = p_1 + p_2`.
 - `nothing`: Updates `state.rho_B_pressure` with the calculated artificial pressure.
 """
 function rho_B_pressure!(state::Active_1D, sys::SysConstActive_1D)
-    state.rho_B_pressure .=  (
-				  .- Swalbe.power_6.(sys.hcrit ./(state.rho_B .+ sys.b_B))
-				  .+ Swalbe.power_6.(sys.hcrit ./(state.height .+ sys.hcrit2))
-			)
+    state.rho_B_pressure .= (
+        .- Swalbe.power_6.(sys.hcrit ./ (state.rho_B .+ sys.b_B)) .+ Swalbe.power_6.(sys.hcrit ./ (state.height .+ sys.hcrit2))
+    )
 end
-

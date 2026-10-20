@@ -72,7 +72,8 @@ moments!(state::Expanded_2D) = moments!(
     state.basestate.fout,
 )
 
-moments!(state::Expanded_1D) = moments!(state.basestate.height, state.basestate.vel, state.basestate.fout)
+moments!(state::Expanded_1D) =
+    moments!(state.basestate.height, state.basestate.vel, state.basestate.fout)
 moments!(state::Active_1D) = moments!(state.height, state.vel, state.fout)
 
 
@@ -83,12 +84,12 @@ Same as [moments!](@ref) but for multlayer calculating all layer height
 """
 function moments!(state::MultiLayer_2D, sys::SysConstMultiLayer)
     # Get views of the populations
-    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdistsMultiLayer(state.fout) 
+    f0, f1, f2, f3, f4, f5, f6, f7, f8 = Swalbe.viewdistsMultiLayer(state.fout)
     # Compute the height
     # I guess we are loosing some efficiency here by not doing all at once
-    for i in 1:sys.layers
-        height_view=view(state.height,:,:,i)
-        sum!(height_view, state.fout[:,:,:,i])
+    for i = 1:sys.layers
+        height_view=view(state.height, :, :, i)
+        sum!(height_view, state.fout[:, :, :, i])
     end
     # and the velocities (as simple as possible)
     state.velx .= (f1 .- f3 .+ f5 .- f6 .- f7 .+ f8) ./ state.height
@@ -117,25 +118,27 @@ That is like the standard model for advection difusion as seen in [Tim Krueger L
 See also: [`Swalbe.rho_equilibrium`](@ref)
 """
 function rho_moments!(state::Active_1D, sys::SysConstActive_1D)
-     # Compute the density
-     sum!(state.rho, state.gout)
-     # calculate derivatives
-     ∇f!(state.grad_h, state.height, state.dgrad)
-     ∇f!(state.grad_rho, state.rho, state.dgrad)
-     ∇f!(state.grad_p, state.pressure, state.dgrad)
-     # and the velocities (forcefeeded by the model equations)
-     state.D .= sys.D .* ( 1 .+ sys.A_2 .* state.rho)
-     if sys.alpha != 0
-        state.rho_adv_vel .= (
-            state.∇γ ./ sys.μ .* state.V_gamma
-            .- state.grad_p ./ sys.μ .* state.V_p
-        )
-       state.rho_vel .= state.rho_adv_vel  .- state.D .* state.grad_rho ./ state.rho  .- sys.D .* state.grad_h .* state.nabla_F
-     else
-        state.rho_vel .= state.vel .- state.D .* state.grad_rho ./ state.rho .+ sys.D .* state.grad_h ./ (state.height)
-     end
-     return nothing
- end
+    # Compute the density
+    sum!(state.rho, state.gout)
+    # calculate derivatives
+    ∇f!(state.grad_h, state.height, state.dgrad)
+    ∇f!(state.grad_rho, state.rho, state.dgrad)
+    ∇f!(state.grad_p, state.pressure, state.dgrad)
+    # and the velocities (forcefeeded by the model equations)
+    state.D .= sys.D .* (1 .+ sys.A_2 .* state.rho)
+    if sys.alpha != 0
+        state.rho_adv_vel .=
+            (state.∇γ ./ sys.μ .* state.V_gamma .- state.grad_p ./ sys.μ .* state.V_p)
+        state.rho_vel .=
+            state.rho_adv_vel .- state.D .* state.grad_rho ./ state.rho .-
+            sys.D .* state.grad_h .* state.nabla_F
+    else
+        state.rho_vel .=
+            state.vel .- state.D .* state.grad_rho ./ state.rho .+
+            sys.D .* state.grad_h ./ (state.height)
+    end
+    return nothing
+end
 
 """
     rho_A_moments!(state)
@@ -157,15 +160,17 @@ That is like the standard model for advection difusion as seen in [Tim Krueger L
 See also: [`Swalbe.rho_A_equilibrium`](@ref)
 """
 function rho_A_moments!(state::Active_1D, sys::SysConstActive_1D)
-     # Compute the density
-     sum!(state.rho_A, state.hout)
-     # calculate derivatives
-     ∇f!(state.grad_h, state.height, state.dgrad)
-     ∇f!(state.grad_rho_A, state.rho_A, state.dgrad)
-     # and the velocities (forcefeeded by the model equations)
-     state.rho_A_vel .= state.vel .- sys.D_Product .* state.grad_rho_A ./ state.rho_A .+ sys.D_Product .* state.grad_h ./ (state.height)
-     return nothing
- end
+    # Compute the density
+    sum!(state.rho_A, state.hout)
+    # calculate derivatives
+    ∇f!(state.grad_h, state.height, state.dgrad)
+    ∇f!(state.grad_rho_A, state.rho_A, state.dgrad)
+    # and the velocities (forcefeeded by the model equations)
+    state.rho_A_vel .=
+        state.vel .- sys.D_Product .* state.grad_rho_A ./ state.rho_A .+
+        sys.D_Product .* state.grad_h ./ (state.height)
+    return nothing
+end
 
 
 """
@@ -196,17 +201,19 @@ where ``D_B`` is the diffusion coefficient specific to ``\\rho_B``. The model ap
 - `rho_A_moments!`: A similar function for calculating moments for ``\\rho_A``.
 """
 function rho_B_moments!(state::Active_1D, sys::SysConstActive_1D)
-     # Compute the density
-     sum!(state.rho_B, state.bout)
-     # calculate derivatives
-     ∇f!(state.grad_h, state.height, state.dgrad)
-     ∇f!(state.grad_rho_B, state.rho_B, state.dgrad)
-     # and the velocities (forcefeeded by the model equations)
-     state.rho_B_vel .= state.vel .- sys.D_B .* state.grad_rho_B ./ state.rho_B .+ sys.D_B .* state.grad_h ./ (state.height)
-     return nothing
- end
+    # Compute the density
+    sum!(state.rho_B, state.bout)
+    # calculate derivatives
+    ∇f!(state.grad_h, state.height, state.dgrad)
+    ∇f!(state.grad_rho_B, state.rho_B, state.dgrad)
+    # and the velocities (forcefeeded by the model equations)
+    state.rho_B_vel .=
+        state.vel .- sys.D_B .* state.grad_rho_B ./ state.rho_B .+
+        sys.D_B .* state.grad_h ./ (state.height)
+    return nothing
+end
 
- """
+"""
     moments!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
 
 Compute the hydrodynamic moments, including height, velocity, and diffusion effects for a miscible system in 1D.
@@ -293,9 +300,9 @@ function moments!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
     # Get views of the populations
     f0, f1, f2 = Swalbe.viewdistsMiscible_1D(state.fout)
     # Compute the height
-    for i in 1:sys.liquids
-        height_view=view(state.height,:,i)
-        sum!(height_view, state.fout[:,:,i])
+    for i = 1:sys.liquids
+        height_view=view(state.height, :, i)
+        sum!(height_view, state.fout[:, :, i])
     end
     # and the velocities (as simple as possible)
     state.vel .= (f1 .- f2) ./ state.height
@@ -303,10 +310,24 @@ function moments!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
     ∇f_Miscible!(state.grad_h, state.height, state.dgrad)
     # state.vel[:,1] .-= sys.D .* ( (state.height[:,2] .* state.grad_h[:,1] .- state.height[:,1] .* state.grad_h[:,2])./((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))./ state.height[:,1]
     # state.vel[:,1] .-= sys.D .* ( (state.height[:,2] .* state.grad_h[:,1] .- state.height[:,1] .* state.grad_h[:,2])./((state.height[:,1] .+ state.height[:,2]) ))./ state.height[:,1]
-	state.vel[:,1] .-= sys.D ./ state.height[:,1] .*( state.grad_h[:,1] ./ (state.height[:,1] .+ state.height[:,2]) .- state.height[:,1] .* (state.grad_h[:,1] .+ state.grad_h[:,2]) ./ ((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))
+    state.vel[:, 1] .-=
+        sys.D ./ state.height[:, 1] .* (
+            state.grad_h[:, 1] ./ (state.height[:, 1] .+ state.height[:, 2]) .-
+            state.height[:, 1] .* (state.grad_h[:, 1] .+ state.grad_h[:, 2]) ./ (
+                (state.height[:, 1] .+ state.height[:, 2]) .*
+                (state.height[:, 1] .+ state.height[:, 2])
+            )
+        )
     # state.vel[:,2] .-= sys.D .* ( (state.height[:,1] .* state.grad_h[:,2] .- state.height[:,2] .* state.grad_h[:,1])./((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))./ state.height[:,2]
     # state.vel[:,2] .-= sys.D .* ( (state.height[:,1] .* state.grad_h[:,2] .- state.height[:,2] .* state.grad_h[:,1])./((state.height[:,1] .+ state.height[:,2]) ))./ state.height[:,2]
-	state.vel[:,2] .-= sys.D ./ state.height[:,2] .*( state.grad_h[:,2] ./ (state.height[:,1] .+ state.height[:,2]) .- state.height[:,2] .* (state.grad_h[:,1] .+ state.grad_h[:,2]) ./ ((state.height[:,1] .+ state.height[:,2]) .* (state.height[:,1] .+ state.height[:,2])))
+    state.vel[:, 2] .-=
+        sys.D ./ state.height[:, 2] .* (
+            state.grad_h[:, 2] ./ (state.height[:, 1] .+ state.height[:, 2]) .-
+            state.height[:, 2] .* (state.grad_h[:, 1] .+ state.grad_h[:, 2]) ./ (
+                (state.height[:, 1] .+ state.height[:, 2]) .*
+                (state.height[:, 1] .+ state.height[:, 2])
+            )
+        )
     return nothing
 end
 
@@ -317,11 +338,11 @@ same as [moments!](@ref) but for multlayer systems
 """
 function moments!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
     # Get views of the populations
-    f0, f1, f2 = Swalbe.viewdistsMultiLayer_1D(state.fout) 
+    f0, f1, f2 = Swalbe.viewdistsMultiLayer_1D(state.fout)
     # Compute the height
-    for i in 1:sys.layers
-        height_view=view(state.height,:,i)
-        sum!(height_view, state.fout[:,:,i])
+    for i = 1:sys.layers
+        height_view=view(state.height, :, i)
+        sum!(height_view, state.fout[:, :, i])
     end
     # and the velocities (as simple as possible)
     state.vel .= (f1 .- f2) ./ state.height

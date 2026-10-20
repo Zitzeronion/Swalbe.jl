@@ -240,9 +240,6 @@ function ∇f_Miscible!(output, f::Array, dgrad)
     return nothing
 end
 
-
-
-
 """
     viewneighbors(f)
 
@@ -320,6 +317,7 @@ function viewneighborsMultiLayer(f)
 
     return f1, f2, f3, f4, f5, f6, f7, f8
 end
+
 """
     viewneighborsMultiLayer_1D(f)
 
@@ -342,6 +340,6 @@ See [`viewneighbour_1D`](@ref), but with two chemical species arranged in a Lx2 
 function viewneighborsMiscible_1D(f)
     f1 = view(f, :, 1, :)
     f2 = view(f, :, 2, :)
-    
+
     return f1, f2
 end

@@ -293,10 +293,12 @@ function boxpattern(
     side = 20,
 )
     # Vertex vectors
-    xcoords =
-        [center[1] - side / 2 center[1] - side / 2 center[1] + side / 2 center[1] + side / 2]
-    ycoords =
-        [center[2] - side / 2 center[2] + side / 2 center[2] - side / 2 center[2] + side / 2]
+    xcoords = [
+        center[1] - side / 2 center[1] - side / 2 center[1] + side / 2 center[1] + side / 2
+    ]
+    ycoords = [
+        center[2] - side / 2 center[2] + side / 2 center[2] - side / 2 center[2] + side / 2
+    ]
     # Check if the vertices are on the grid
     for i = 1:length(xcoords)
         if xcoords[i] < 1 || xcoords[i] > size(θ, 1)
@@ -445,16 +447,16 @@ function trianglepattern(
     return θ, P
 end
 
-function droplet_base(height::Vector, s, theta, center; precursor=0.05)
-	L=size(height)[1]
-	dummy=zeros(L)
-	r=s/(2*sinpi(theta))
-	h=r*(1-cospi(theta))
-	height .= precursor
-	for x in Int(center-s/2):Int(center+s/2)
-		dummy[x]=sqrt(r^2-(x-center)^2)-r+h
-	end
-	return dummy.=max.(dummy, precursor)
+function droplet_base(height::Vector, s, theta, center; precursor = 0.05)
+    L=size(height)[1]
+    dummy=zeros(L)
+    r=s/(2*sinpi(theta))
+    h=r*(1-cospi(theta))
+    height .= precursor
+    for x = Int(center-s/2):Int(center+s/2)
+        dummy[x]=sqrt(r^2-(x-center)^2)-r+h
+    end
+    return dummy.=max.(dummy, precursor)
 end
 
 
@@ -467,42 +469,40 @@ might be broken
 """
 function browniannoise!(height, h_0, ϵ, q_high)
     L=length(height)[1]
-	x=randn(L)
-	y=FFTW.rfft(x)
-	st=zeros(Int(L/2+1))
-	for i in 1:Int(floor(q_high))
-		st[i]=1
-	end
-	y.=y.*st
-	z=irfft(y, L)
-	height.=h_0.+(z./maximum(abs.(z))).*ϵ
+    x=randn(L)
+    y=FFTW.rfft(x)
+    st=zeros(Int(L/2+1))
+    for i = 1:Int(floor(q_high))
+        st[i]=1
+    end
+    y.=y .* st
+    z=irfft(y, L)
+    height.=h_0 .+ (z ./ maximum(abs.(z))) .* ϵ
     return nothing
 end
 
-function browniannoise2D!(y, h_0, eps,  q_high)
-	Lx,Ly=size(y)
-	x=rand(Lx,Ly).-0.5
-	fftx=FFTW.fft(x)
-	fftx .= circshift(fftx, (Lx/2, Ly/2))
-	for i in 1:Lx
-		crit=Int(floor(sqrt(abs((Lx/2-q_high)^2-(i-Lx/2)^2))))
-		for j in 1:Int(Ly/2)-crit
-			fftx[i,j]=0
-		end
-		for j in Int(Ly/2)+crit:Ly
-			fftx[i,j]=0
-		end
-	end
-	for j in 1:Ly
-		crit=Int(floor(sqrt(abs((Lx/2-q_high)^2-(j-Ly/2)^2))))
-		for i in 1:Int(Lx/2)-crit
-			fftx[i,j]=0
-		end
-		for i in Int(Lx/2)+crit:Lx
-			fftx[i,j]=0
-		end
-	end
-	return y.=h_0 .+ eps .*real(ifft(fftx))
+function browniannoise2D!(y, h_0, eps, q_high)
+    Lx, Ly=size(y)
+    x=rand(Lx, Ly) .- 0.5
+    fftx=FFTW.fft(x)
+    fftx .= circshift(fftx, (Lx/2, Ly/2))
+    for i = 1:Lx
+        crit=Int(floor(sqrt(abs((Lx/2-q_high)^2-(i-Lx/2)^2))))
+        for j = 1:(Int(Ly/2)-crit)
+            fftx[i, j]=0
+        end
+        for j = (Int(Ly/2)+crit):Ly
+            fftx[i, j]=0
+        end
+    end
+    for j = 1:Ly
+        crit=Int(floor(sqrt(abs((Lx/2-q_high)^2-(j-Ly/2)^2))))
+        for i = 1:(Int(Lx/2)-crit)
+            fftx[i, j]=0
+        end
+        for i = (Int(Lx/2)+crit):Lx
+            fftx[i, j]=0
+        end
+    end
+    return y.=h_0 .+ eps .* real(ifft(fftx))
 end
-
-

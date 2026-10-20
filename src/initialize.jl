@@ -161,27 +161,27 @@ Struct that contains all runtime constants for a multilayer lattice Boltzmann si
 """
 Base.@kwdef struct SysConstMultiLayer{T} <: Consts
     # Lattice
-    Lx :: Int = 256
-    Ly :: Int = 256
-    Tmax :: Int = 1000
-    tdump :: Int = Tmax÷10
-    layers :: Int = 2
+    Lx::Int = 256
+    Ly::Int = 256
+    Tmax::Int = 1000
+    tdump::Int = Tmax÷10
+    layers::Int = 2
     # Collision related
-    tau :: Array{T} = ones(layers)
-    cs :: T = 1/sqrt(3.0)
-    mu :: Array{T} = cs^2 .* (tau .- 0.5)
-    omeg :: Array{T} = [i==j ? 1.0-1/tau[i] : 0.0 for i in 1:layers, j in 1:layers]
-    umtau :: Array{T} = [i==j ? 1/tau[i] : 0.0 for i in 1:layers, j in 1:layers]
+    tau::Array{T} = ones(layers)
+    cs::T = 1/sqrt(3.0)
+    mu::Array{T} = cs^2 .* (tau .- 0.5)
+    omeg::Array{T} = [i==j ? 1.0-1/tau[i] : 0.0 for i = 1:layers, j = 1:layers]
+    umtau::Array{T} = [i==j ? 1/tau[i] : 0.0 for i = 1:layers, j = 1:layers]
     # Force related
-    delta :: Array{T} = ones(layers)
+    delta::Array{T} = ones(layers)
     # For test puruses
-    slip_coef :: Array{T} = ones(layers, layers)
-    kbt :: T = 0.0
-    gamma :: Matrix{T} = 0.01 .* ones(layers+2, layers+2)
-    n :: Int = 9
-    m :: Int = 3
-    hmin :: T = 0.1
-    hcrit :: T = 0.05
+    slip_coef::Array{T} = ones(layers, layers)
+    kbt::T = 0.0
+    gamma::Matrix{T} = 0.01 .* ones(layers+2, layers+2)
+    n::Int = 9
+    m::Int = 3
+    hmin::T = 0.1
+    hcrit::T = 0.05
 end
 
 
@@ -224,40 +224,40 @@ Struct that contains all runtime constants for a 1D multilayer lattice Boltzmann
 """
 Base.@kwdef struct SysConstMultiLayer_1D{T} <: Consts
     # Lattice
-    L :: Int = 256
-    Tmax :: Int = 1000
-    tdump :: Int = Tmax÷10
-    layers :: Int = 2
+    L::Int = 256
+    Tmax::Int = 1000
+    tdump::Int = Tmax÷10
+    layers::Int = 2
     # Collision related
-    tau :: Array{T} = ones(layers)
-    cs :: T = 1/sqrt(3.0)
-    mu :: Array{T} = cs^2 .* (tau .- 0.5)
-    omeg :: Array{T} = [i==j ? 1.0-1/tau[i] : 0.0 for i in 1:layers, j in 1:layers]
-    umtau :: Array{T} = [i==j ? 1/tau[i] : 0.0 for i in 1:layers, j in 1:layers]
+    tau::Array{T} = ones(layers)
+    cs::T = 1/sqrt(3.0)
+    mu::Array{T} = cs^2 .* (tau .- 0.5)
+    omeg::Array{T} = [i==j ? 1.0-1/tau[i] : 0.0 for i = 1:layers, j = 1:layers]
+    umtau::Array{T} = [i==j ? 1/tau[i] : 0.0 for i = 1:layers, j = 1:layers]
     # Force related
-    delta :: Array{T} = ones(layers)
+    delta::Array{T} = ones(layers)
     # For test puruses
-    slip_coef :: Array{T} = ones(layers, layers)
-    kbt :: T = 0.0
-    gamma :: Matrix{T} = 0.01 .* ones(layers+2, layers+2)
-    repulsive :: Matrix{T} = repulsive_values(layers, gamma)
-    n :: Int = 9
-    m :: Int = 3
-    hmin :: T = 0.1
-    hcrit :: T = 0.05
-    extra_pressure_fac :: T = 10.0
+    slip_coef::Array{T} = ones(layers, layers)
+    kbt::T = 0.0
+    gamma::Matrix{T} = 0.01 .* ones(layers+2, layers+2)
+    repulsive::Matrix{T} = repulsive_values(layers, gamma)
+    n::Int = 9
+    m::Int = 3
+    hmin::T = 0.1
+    hcrit::T = 0.05
+    extra_pressure_fac::T = 10.0
 end
 
 function repulsive_values(layers, gamma)
-    rep=zeros(layers,layers)
+    rep=zeros(layers, layers)
     if layers==2
-        rep[1,1]=(gamma[1,3]-gamma[1,2]-gamma[2,3])>0 ? -1.0 : 1.0
-        rep[2,1]=(gamma[2,4]-gamma[2,3]-gamma[3,4])>0 ? -1.0 : 1.0
-        rep[1,2]=(gamma[1,4]+gamma[2,3]-gamma[1,3]-gamma[2,4])>0 ? -1.0 : 1.0
+        rep[1, 1]=(gamma[1, 3]-gamma[1, 2]-gamma[2, 3])>0 ? -1.0 : 1.0
+        rep[2, 1]=(gamma[2, 4]-gamma[2, 3]-gamma[3, 4])>0 ? -1.0 : 1.0
+        rep[1, 2]=(gamma[1, 4]+gamma[2, 3]-gamma[1, 3]-gamma[2, 4])>0 ? -1.0 : 1.0
     elseif layers==3
-        rep[1,1]=(gamma[1,3]-gamma[1,2]-gamma[2,3])>0 ? 0.0 : 1.0
-        rep[2,1]=(gamma[2,4]-gamma[2,3]-gamma[3,4])>0 ? 0.0 : 1.0
-        rep[3,1]=(gamma[3,5]-gamma[3,4]-gamma[4,5])>0 ? 0.0 : 1.0
+        rep[1, 1]=(gamma[1, 3]-gamma[1, 2]-gamma[2, 3])>0 ? 0.0 : 1.0
+        rep[2, 1]=(gamma[2, 4]-gamma[2, 3]-gamma[3, 4])>0 ? 0.0 : 1.0
+        rep[3, 1]=(gamma[3, 5]-gamma[3, 4]-gamma[4, 5])>0 ? 0.0 : 1.0
         # rep[1,2]=(gamma[1,4]+gamma[2,3]-gamma[1,3]-gamma[2,4])>0 ? 0.0 : 1.0
         # rep[2,2]=(gamma[2,5]+gamma[3,4]-gamma[2,4]-gamma[3,5])>0 ? 0.0 : 1.0
         # rep[1,3]=(gamma[1,5]+gamma[2,4]-gamma[1,4]-gamma[2,5])>0 ? 0.0 : 1.0
@@ -296,26 +296,26 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 """
 Base.@kwdef struct SysConstMiscible_1D{T} <: Consts
     # Lattice
-    L :: Int = 256
-    Tmax :: Int = 1000
-    tdump :: Int = Tmax÷10
-    liquids :: Int =2
+    L::Int = 256
+    Tmax::Int = 1000
+    tdump::Int = Tmax÷10
+    liquids::Int = 2
     # Collision related
-    tau :: T = 1.0
-    umtau :: T = 1/tau
-    omeg :: T = 1.0-1/tau
-    cₛ :: T = 1/sqrt(3.0)
-    μ :: T =  cₛ^2 *( tau - 0.5)
+    tau::T = 1.0
+    umtau::T = 1/tau
+    omeg::T = 1.0-1/tau
+    cₛ::T = 1/sqrt(3.0)
+    μ::T = cₛ^2 * (tau - 0.5)
     # Force related
-    delta :: T = 1.0
-    kbt :: T = 0.0
-    gamma :: Array{T} = 0.01 .* ones(3,liquids)
-    n :: Int = 9
-    m :: Int = 3
-    hmin :: T = 0.1
-    hcrit :: T = 0.05
-    g :: T = 0.0
-    D :: T = 1e-4
+    delta::T = 1.0
+    kbt::T = 0.0
+    gamma::Array{T} = 0.01 .* ones(3, liquids)
+    n::Int = 9
+    m::Int = 3
+    hmin::T = 0.1
+    hcrit::T = 0.05
+    g::T = 0.0
+    D::T = 1e-4
 end
 
 """
@@ -363,45 +363,77 @@ Struct that contains all run time constants, e.g. lattice size, surface tension 
 """
 Base.@kwdef struct SysConstActive_1D{T}
     # Lattice
-    L :: Int = 256
-    Tmax :: Int = 1000
-    tdump :: Int = Tmax÷10
+    L::Int = 256
+    Tmax::Int = 1000
+    tdump::Int = Tmax÷10
     # Collision related
-    τ :: T = 1.0
-    cₛ :: T = 1/sqrt(3.0)
-    μ :: T =  cₛ^2 *( τ - 0.5)
+    τ::T = 1.0
+    cₛ::T = 1/sqrt(3.0)
+    μ::T = cₛ^2 * (τ - 0.5)
     # Force related
-    δ :: T = 1.0
-    kbt :: T = 0.0
-    γ_0 :: T = 0.01
-    n :: Int = 9
-    m :: Int = 3
-    hmin :: T = 0.1
-    hcrit :: T = 0.05
-    θ_0 :: T = 1/9
-    g :: T = 0.0
+    δ::T = 1.0
+    kbt::T = 0.0
+    γ_0::T = 0.01
+    n::Int = 9
+    m::Int = 3
+    hmin::T = 0.1
+    hcrit::T = 0.05
+    θ_0::T = 1/9
+    g::T = 0.0
     #active matter realted
-    D :: T = 0.01
-    R :: T = 0.0
-    Γ :: T = 0.0
-    rho_crit :: T = 0.05
-    rho_n :: Int = 5
-    alpha :: T = 0.0
-    A_2 :: T = 0.0
-    weight_center :: T = 1.0
-    production_rate :: T =0.1
-    sigma_A_up :: T =0.1
-    sigma_B_up :: T =0.1
-    rho_BRes_sigma_B_down :: T =0.1
-    D_Product :: T=6e-4
-    D_B :: T = D_Product
+    D::T = 0.01
+    R::T = 0.0
+    Γ::T = 0.0
+    rho_crit::T = 0.05
+    rho_n::Int = 5
+    alpha::T = 0.0
+    A_2::T = 0.0
+    weight_center::T = 1.0
+    production_rate::T = 0.1
+    sigma_A_up::T = 0.1
+    sigma_B_up::T = 0.1
+    rho_BRes_sigma_B_down::T = 0.1
+    D_Product::T=6e-4
+    D_B::T = D_Product
     #to be adopted for the four field method for both rho_A and rho_B
-   rho_BRes :: T = 0.0
-    GammaB :: T = 0.0
-    hcrit2 :: T =-0.04
-    b_B :: T = (hmin-hcrit+hcrit2 - rho_BRes_sigma_B_down/((hmin - hcrit + hcrit2-rho_crit)*production_rate+sigma_B_up/(hmin-hcrit))) <= 0.0 || isnan(hmin-hcrit+hcrit2 - rho_BRes_sigma_B_down/((hmin-hcrit+hcrit2-rho_crit)*production_rate+sigma_B_up/(hmin-hcrit))) ? 0.01 : (hmin-hcrit+hcrit2 - rho_BRes_sigma_B_down/((hmin-hcrit+hcrit2-rho_crit)*production_rate+sigma_B_up/(hmin-hcrit))) 
-    b_A :: T = (hmin-hcrit+hcrit2- production_rate*(hmin-hcrit+hcrit2-rho_crit)*(hmin-b_B)*(hmin-hcrit)^2/sigma_A_up) <=0.0 || isnan(hmin-hcrit+hcrit2- production_rate*(hmin-hcrit+hcrit2-rho_crit)*(hmin-hcrit+hcrit2-b_B)*(hmin-hcrit)^2/sigma_A_up) ? 0.01 : (hmin-hcrit+hcrit2- production_rate*(hmin-hcrit+hcrit2-rho_crit)*(hmin-hcrit+hcrit2-b_B)*(hmin-hcrit)^2/sigma_A_up)
-    prescursor_nabla_F :: T = 1/(hmin - hcrit)
+    rho_BRes::T = 0.0
+    GammaB::T = 0.0
+    hcrit2::T = -0.04
+    b_B::T =
+        (
+            hmin-hcrit+hcrit2 -
+            rho_BRes_sigma_B_down/(
+                (hmin - hcrit + hcrit2-rho_crit)*production_rate+sigma_B_up/(hmin-hcrit)
+            )
+        ) <= 0.0 || isnan(
+            hmin-hcrit+hcrit2 -
+            rho_BRes_sigma_B_down/(
+                (hmin-hcrit+hcrit2-rho_crit)*production_rate+sigma_B_up/(hmin-hcrit)
+            ),
+        ) ? 0.01 :
+        (
+            hmin-hcrit+hcrit2 -
+            rho_BRes_sigma_B_down/(
+                (hmin-hcrit+hcrit2-rho_crit)*production_rate+sigma_B_up/(hmin-hcrit)
+            )
+        )
+    b_A::T =
+        (
+            hmin-hcrit+hcrit2 -
+            production_rate*(hmin-hcrit+hcrit2-rho_crit)*(hmin-b_B)*(hmin-hcrit)^2/sigma_A_up
+        ) <= 0.0 || isnan(
+            hmin-hcrit+hcrit2 -
+            production_rate*(hmin-hcrit+hcrit2-rho_crit)*(hmin-hcrit+hcrit2-b_B)*(
+                hmin-hcrit
+            )^2/sigma_A_up,
+        ) ? 0.01 :
+        (
+            hmin-hcrit+hcrit2 -
+            production_rate*(hmin-hcrit+hcrit2-rho_crit)*(hmin-hcrit+hcrit2-b_B)*(
+                hmin-hcrit
+            )^2/sigma_A_up
+        )
+    prescursor_nabla_F::T = 1/(hmin - hcrit)
 end
 
 
@@ -663,27 +695,27 @@ Data structure for storing all arrays required in a multilayer lattice Boltzmann
 """
 Base.@kwdef struct CuStateMultiLayer{T} <: MultiLayer_2D
     # Distribution functions
-    fout :: CuArray
-    ftemp :: CuArray
-    feq :: CuArray
+    fout::CuArray
+    ftemp::CuArray
+    feq::CuArray
     # Macroscopic variables and moments 
-    height :: CuArray
-    velx :: CuArray
-    vely :: CuArray
-    vsq :: CuArray
-    pressure :: CuArray
+    height::CuArray
+    velx::CuArray
+    vely::CuArray
+    vsq::CuArray
+    pressure::CuArray
     # Forces and a dummy for the gradient
-    Fx :: CuArray
-    Fy :: CuArray
-    slipx :: CuArray
-    slipy :: CuArray
-    h∇px :: CuArray
-    h∇py :: CuArray
-    dgrad :: CuArray
-    hi :: CuArray
-    grad_hx :: CuArray
-    grad_hy :: CuArray
-    grad_h_sq :: CuArray
+    Fx::CuArray
+    Fy::CuArray
+    slipx::CuArray
+    slipy::CuArray
+    h∇px::CuArray
+    h∇py::CuArray
+    dgrad::CuArray
+    hi::CuArray
+    grad_hx::CuArray
+    grad_hy::CuArray
+    grad_h_sq::CuArray
 end
 
 """
@@ -715,20 +747,20 @@ Data structure for storing all arrays required for a 1D multilayer lattice Boltz
 """
 Base.@kwdef struct StateMultiLayer_1D{T} <: LBM_state_1D
     # Distribution functions
-    fout :: Array{T}
-    ftemp :: Array{T}
-    feq :: Array{T} 
+    fout::Array{T}
+    ftemp::Array{T}
+    feq::Array{T}
     # Macroscopic variables and moments 
-    height :: Array{T} 
-    vel :: Array{T} 
-    pressure :: Array{T} 
+    height::Array{T}
+    vel::Array{T}
+    pressure::Array{T}
     # Forces and a dummy for the gradient
-    F :: Array{T} 
-    slip :: Array{T}
-    h∇p :: Array{T}
-    dgrad :: Array{T} 
-    hi :: Array{T}
-    grad_h :: Array{T}
+    F::Array{T}
+    slip::Array{T}
+    h∇p::Array{T}
+    dgrad::Array{T}
+    hi::Array{T}
+    grad_h::Array{T}
 end
 
 
@@ -811,76 +843,76 @@ Data structure that stores all arrays for a given simulation of active 1D system
 """
 Base.@kwdef struct StateActive_1D{T} <: Active_1D
     # Distribution functions
-    fout :: Matrix{T}
-    ftemp :: Matrix{T}
-    feq :: Matrix{T}
-    gout :: Matrix{T}
-    gtemp :: Matrix{T}
-    geq :: Matrix{T}
-    hout :: Matrix{T}
-    htemp :: Matrix{T}
-    heq :: Matrix{T}
-    bout :: Matrix{T}
-    btemp :: Matrix{T}
-    beq :: Matrix{T}
-    
+    fout::Matrix{T}
+    ftemp::Matrix{T}
+    feq::Matrix{T}
+    gout::Matrix{T}
+    gtemp::Matrix{T}
+    geq::Matrix{T}
+    hout::Matrix{T}
+    htemp::Matrix{T}
+    heq::Matrix{T}
+    bout::Matrix{T}
+    btemp::Matrix{T}
+    beq::Matrix{T}
+
     # Macroscopic variables and moments 
-    height :: Vector{T}
-    vel :: Vector{T}
-    pressure :: Vector{T}
-    γ :: Vector{T}
-    ∇γ :: Vector{T}
-    
+    height::Vector{T}
+    vel::Vector{T}
+    pressure::Vector{T}
+    γ::Vector{T}
+    ∇γ::Vector{T}
+
     # Forces and a dummy for the gradient
-    F :: Vector{T}
-    rho_F :: Vector{T}
-    slip :: Vector{T}
-    h∇p :: Vector{T}
-    dgrad :: Matrix{T}
-    
+    F::Vector{T}
+    rho_F::Vector{T}
+    slip::Vector{T}
+    h∇p::Vector{T}
+    dgrad::Matrix{T}
+
     # Active matter related variables
-    rho :: Vector{T}
-    grad_rho :: Vector{T}
-    grad_h :: Vector{T}
-    grad_p :: Vector{T}
-    rho_vel :: Vector{T}
-    rho_adv_vel :: Vector{T}
-    rho_pressure :: Vector{T}
-    z :: Vector{T}
-    k :: Vector{T}
-    stress :: Vector{T}
-    ∇rho_u :: Vector{T}
-    rho∇p :: Vector{T}
-    slip_rho :: Vector{T}
-    stress_rho :: Vector{T}
-    diffusion_rho :: Vector{T}
-    V_p :: Vector{T}
-    V_gamma :: Vector{T}
-    nabla_F :: Vector{T}
-    
+    rho::Vector{T}
+    grad_rho::Vector{T}
+    grad_h::Vector{T}
+    grad_p::Vector{T}
+    rho_vel::Vector{T}
+    rho_adv_vel::Vector{T}
+    rho_pressure::Vector{T}
+    z::Vector{T}
+    k::Vector{T}
+    stress::Vector{T}
+    ∇rho_u::Vector{T}
+    rho∇p::Vector{T}
+    slip_rho::Vector{T}
+    stress_rho::Vector{T}
+    diffusion_rho::Vector{T}
+    V_p::Vector{T}
+    V_gamma::Vector{T}
+    nabla_F::Vector{T}
+
     # Diffusion and Fourier kernel fields
-    D :: Vector{Float64}
-    fourier_kernel :: Vector{Float64}
-    
+    D::Vector{Float64}
+    fourier_kernel::Vector{Float64}
+
     # Fields for product concentration
-    rho_A :: Vector{T}
-    grad_rho_A :: Vector{T}
-    rho_A_vel :: Vector{T}
-    rho_A_adv_vel :: Vector{T}
-    rho_A_pressure :: Vector{T}
-    rho_A∇p :: Vector{T}
-    rho_A_F :: Vector{T}
-    V_p_A :: Vector{T}
-    V_gamma_A :: Vector{T}
-    precursor :: Vector{T}
-    
-    rho_B :: Vector{T}
-    grad_rho_B :: Vector{T}
-    rho_B_vel :: Vector{T}
-    rho_B_adv_vel :: Vector{T}
-    rho_B_pressure :: Vector{T}
-    rho_B∇p :: Vector{T}
-    rho_B_F :: Vector{T}
+    rho_A::Vector{T}
+    grad_rho_A::Vector{T}
+    rho_A_vel::Vector{T}
+    rho_A_adv_vel::Vector{T}
+    rho_A_pressure::Vector{T}
+    rho_A∇p::Vector{T}
+    rho_A_F::Vector{T}
+    V_p_A::Vector{T}
+    V_gamma_A::Vector{T}
+    precursor::Vector{T}
+
+    rho_B::Vector{T}
+    grad_rho_B::Vector{T}
+    rho_B_vel::Vector{T}
+    rho_B_adv_vel::Vector{T}
+    rho_B_pressure::Vector{T}
+    rho_B∇p::Vector{T}
+    rho_B_F::Vector{T}
 end
 
 """
@@ -907,22 +939,22 @@ Data structure that stores all arrays for a given simulation.
 """
 Base.@kwdef struct StateMiscible_1D{T} <: LBM_state_1D
     # Distribution functions
-    fout :: Array{T}
-    ftemp :: Array{T}
-    feq :: Array{T} 
+    fout::Array{T}
+    ftemp::Array{T}
+    feq::Array{T}
     # Macroscopic variables and moments 
-    height :: Array{T} 
-    vel :: Array{T} 
-    pressure :: Array{T} 
+    height::Array{T}
+    vel::Array{T}
+    pressure::Array{T}
     # Forces and a dummy for the gradient
-    F :: Array{T} 
-    slip :: Array{T}
-    h∇p :: Array{T}
-    dgrad :: Array{T} 
-    gamma :: Array{T}
-    stress :: Array{T}
-    ∇gamma :: Vector{T}
-    grad_h :: Array{T}
+    F::Array{T}
+    slip::Array{T}
+    h∇p::Array{T}
+    dgrad::Array{T}
+    gamma::Array{T}
+    stress::Array{T}
+    ∇gamma::Vector{T}
+    grad_h::Array{T}
 end
 
 """
@@ -947,21 +979,21 @@ Data structure that stores all arrays for a given simulation.
 """
 Base.@kwdef struct State_curved_1D{T} <: LBM_state_1D
     # Distribution functions
-    fout :: Matrix{T}
-    ftemp :: Matrix{T}
-    feq :: Matrix{T} 
+    fout::Matrix{T}
+    ftemp::Matrix{T}
+    feq::Matrix{T}
     # Macroscopic variables and moments 
-    height :: Vector{T} 
-    vel :: Vector{T} 
-    pressure :: Vector{T} 
+    height::Vector{T}
+    vel::Vector{T}
+    pressure::Vector{T}
     # Forces and a dummy for the gradient
-    F :: Vector{T} 
-    slip :: Vector{T}
-    h∇p :: Vector{T}
-    dgrad :: Matrix{T} 
+    F::Vector{T}
+    slip::Vector{T}
+    h∇p::Vector{T}
+    dgrad::Matrix{T}
     #substrate field
-    substrate :: Vector{T}
-    grad_substrate :: Vector{T}
+    substrate::Vector{T}
+    grad_substrate::Vector{T}
 end
 
 
@@ -1239,99 +1271,99 @@ function Sys(sysc::Consts_1D; T = Float64, kind = "simple")
             fbound = zeros(sysc.L, 3),
         )
     elseif kind == "curved"
-	    println("preparing State_curved_1D")
-            	    dyn = State_curved_1D{T}(
-                	    fout = zeros(sysc.L, 3),
-                	    ftemp = zeros(sysc.L, 3),
-                	    feq = zeros(sysc.L, 3),
-                	    height = ones(sysc.L),
-                	    vel = zeros(sysc.L),
-                	    pressure = zeros(sysc.L),
-                	    dgrad = zeros(sysc.L, 2),
-               		    F = zeros(sysc.L),
-                	    slip = zeros(sysc.L),
-                	    h∇p = zeros(sysc.L),
-                	    substrate = zeros(sysc.L),
-                	    grad_substrate = zeros(sysc.L)
-            	    )
-            	    return dyn
+        println("preparing State_curved_1D")
+        dyn = State_curved_1D{T}(
+            fout = zeros(sysc.L, 3),
+            ftemp = zeros(sysc.L, 3),
+            feq = zeros(sysc.L, 3),
+            height = ones(sysc.L),
+            vel = zeros(sysc.L),
+            pressure = zeros(sysc.L),
+            dgrad = zeros(sysc.L, 2),
+            F = zeros(sysc.L),
+            slip = zeros(sysc.L),
+            h∇p = zeros(sysc.L),
+            substrate = zeros(sysc.L),
+            grad_substrate = zeros(sysc.L),
+        )
+        return dyn
     end
 end
 
 
-function Sys(sysc::SysConstActive_1D; T=Float64, device = "CPU")
+function Sys(sysc::SysConstActive_1D; T = Float64, device = "CPU")
     if device == "CPU"
         dyn = StateActive_1D{T}(
-        fout = zeros(sysc.L, 3),
-        ftemp = zeros(sysc.L, 3),
-        feq = zeros(sysc.L, 3),
-        gout = zeros(sysc.L, 3),
-        gtemp = zeros(sysc.L, 3),
-        geq = zeros(sysc.L, 3),
-        hout = zeros(sysc.L, 3),
-        heq = zeros(sysc.L, 3),
-        htemp = zeros(sysc.L, 3),
-        bout = zeros(sysc.L, 3),
-        beq = zeros(sysc.L, 3),
-        btemp = zeros(sysc.L, 3),
-        height = ones(sysc.L),
-        vel = zeros(sysc.L),
-        rho_vel = zeros(sysc.L),
-        pressure = zeros(sysc.L),
-        dgrad = zeros(sysc.L, 2),
-        F = zeros(sysc.L),
-        slip = zeros(sysc.L),
-        h∇p = zeros(sysc.L),
-        rho= ones(sysc.L),
-        grad_rho=zeros(sysc.L),
-        grad_h=zeros(sysc.L),
-        grad_p=zeros(sysc.L),
-        γ = ones(sysc.L) .* sysc.γ_0,
-        ∇γ = zeros(sysc.L),
-        rho_F = zeros(sysc.L),
-        rho_adv_vel=zeros(sysc.L),
-        rho_pressure=zeros(sysc.L),
-        z=zeros(sysc.L),
-        k=zeros(sysc.L),
-        stress=zeros(sysc.L),
-        ∇rho_u=zeros(sysc.L),
-        rho∇p=zeros(sysc.L),
-        slip_rho=zeros(sysc.L),
-        stress_rho=zeros(sysc.L),
-        diffusion_rho=zeros(sysc.L),
-	    V_p=zeros(sysc.L),
-	    V_gamma=zeros(sysc.L),
-	    nabla_F=zeros(sysc.L),
-        D= sysc.D .* ones(sysc.L),
-        fourier_kernel = ones(sysc.L),
-        rho_A = ones(sysc.L) ,
-        grad_rho_A = zeros(sysc.L),
-        rho_A_vel = zeros(sysc.L),
-        rho_A_adv_vel = zeros(sysc.L),
-        rho_A_pressure = zeros(sysc.L),
-        rho_A∇p = zeros(sysc.L),
-        rho_A_F = zeros(sysc.L),
-        V_p_A=zeros(sysc.L),
-	    V_gamma_A=zeros(sysc.L),
-        precursor = zeros(sysc.L),
-        rho_B = ones(sysc.L) ,
-        grad_rho_B = zeros(sysc.L),
-        rho_B_vel = zeros(sysc.L),
-        rho_B_adv_vel = zeros(sysc.L),
-        rho_B_pressure = zeros(sysc.L),
-        rho_B∇p = zeros(sysc.L),
-        rho_B_F = zeros(sysc.L),
+            fout = zeros(sysc.L, 3),
+            ftemp = zeros(sysc.L, 3),
+            feq = zeros(sysc.L, 3),
+            gout = zeros(sysc.L, 3),
+            gtemp = zeros(sysc.L, 3),
+            geq = zeros(sysc.L, 3),
+            hout = zeros(sysc.L, 3),
+            heq = zeros(sysc.L, 3),
+            htemp = zeros(sysc.L, 3),
+            bout = zeros(sysc.L, 3),
+            beq = zeros(sysc.L, 3),
+            btemp = zeros(sysc.L, 3),
+            height = ones(sysc.L),
+            vel = zeros(sysc.L),
+            rho_vel = zeros(sysc.L),
+            pressure = zeros(sysc.L),
+            dgrad = zeros(sysc.L, 2),
+            F = zeros(sysc.L),
+            slip = zeros(sysc.L),
+            h∇p = zeros(sysc.L),
+            rho = ones(sysc.L),
+            grad_rho = zeros(sysc.L),
+            grad_h = zeros(sysc.L),
+            grad_p = zeros(sysc.L),
+            γ = ones(sysc.L) .* sysc.γ_0,
+            ∇γ = zeros(sysc.L),
+            rho_F = zeros(sysc.L),
+            rho_adv_vel = zeros(sysc.L),
+            rho_pressure = zeros(sysc.L),
+            z = zeros(sysc.L),
+            k = zeros(sysc.L),
+            stress = zeros(sysc.L),
+            ∇rho_u = zeros(sysc.L),
+            rho∇p = zeros(sysc.L),
+            slip_rho = zeros(sysc.L),
+            stress_rho = zeros(sysc.L),
+            diffusion_rho = zeros(sysc.L),
+            V_p = zeros(sysc.L),
+            V_gamma = zeros(sysc.L),
+            nabla_F = zeros(sysc.L),
+            D = sysc.D .* ones(sysc.L),
+            fourier_kernel = ones(sysc.L),
+            rho_A = ones(sysc.L),
+            grad_rho_A = zeros(sysc.L),
+            rho_A_vel = zeros(sysc.L),
+            rho_A_adv_vel = zeros(sysc.L),
+            rho_A_pressure = zeros(sysc.L),
+            rho_A∇p = zeros(sysc.L),
+            rho_A_F = zeros(sysc.L),
+            V_p_A = zeros(sysc.L),
+            V_gamma_A = zeros(sysc.L),
+            precursor = zeros(sysc.L),
+            rho_B = ones(sysc.L),
+            grad_rho_B = zeros(sysc.L),
+            rho_B_vel = zeros(sysc.L),
+            rho_B_adv_vel = zeros(sysc.L),
+            rho_B_pressure = zeros(sysc.L),
+            rho_B∇p = zeros(sysc.L),
+            rho_B_F = zeros(sysc.L),
         )
         return dyn
     elseif device=="GPU"
-	    println("This device is not available")
+        println("This device is not available")
         return dyn
     end
 end
 
 
-function Sys(sysc::SysConstMultiLayer; T=Float64, device="CPU", kind="")
-    if kind ==""
+function Sys(sysc::SysConstMultiLayer; T = Float64, device = "CPU", kind = "")
+    if kind == ""
         if device=="CPU"
             dyn = StateMultiLayer{T}(
                 fout = zeros(sysc.Lx, sysc.Ly, 9, sysc.layers),
@@ -1345,39 +1377,39 @@ function Sys(sysc::SysConstMultiLayer; T=Float64, device="CPU", kind="")
                 dgrad = zeros(sysc.Lx, sysc.Ly, sysc.layers, 8),
                 Fx = zeros(sysc.Lx, sysc.Ly, sysc.layers),
                 Fy = zeros(sysc.Lx, sysc.Ly, sysc.layers),
-                slipx = zeros(sysc.Lx,sysc.Ly, sysc.layers),
-                slipy = zeros(sysc.Lx,sysc.Ly, sysc.layers),
-                h∇px = zeros(sysc.Lx,sysc.Ly, sysc.layers),
-                h∇py = zeros(sysc.Lx,sysc.Ly, sysc.layers),
-                hi = zeros(sysc.Lx,sysc.Ly, sysc.layers -1),
-                grad_hx = zeros(sysc.Lx,sysc.Ly, sysc.layers -1),
-                grad_hy = zeros(sysc.Lx,sysc.Ly, sysc.layers -1),
-                grad_h_sq = zeros(sysc.Lx,sysc.Ly, sysc.layers -1)
+                slipx = zeros(sysc.Lx, sysc.Ly, sysc.layers),
+                slipy = zeros(sysc.Lx, sysc.Ly, sysc.layers),
+                h∇px = zeros(sysc.Lx, sysc.Ly, sysc.layers),
+                h∇py = zeros(sysc.Lx, sysc.Ly, sysc.layers),
+                hi = zeros(sysc.Lx, sysc.Ly, sysc.layers - 1),
+                grad_hx = zeros(sysc.Lx, sysc.Ly, sysc.layers - 1),
+                grad_hy = zeros(sysc.Lx, sysc.Ly, sysc.layers - 1),
+                grad_h_sq = zeros(sysc.Lx, sysc.Ly, sysc.layers - 1),
             )
             return dyn
         elseif device=="GPU"
             dyn = CuStateMultiLayer{T}(
-                fout = CUDA.zeros(T,sysc.Lx, sysc.Ly, 9, sysc.layers),
-                ftemp = CUDA.zeros(T,sysc.Lx, sysc.Ly, 9, sysc.layers),
-                feq = CUDA.zeros(T,sysc.Lx, sysc.Ly, 9, sysc.layers),
-                height = CUDA.ones(T,sysc.Lx, sysc.Ly, sysc.layers),
-                velx = CUDA.zeros(T,sysc.Lx, sysc.Ly, sysc.layers),
-                vely = CUDA.zeros(T,sysc.Lx, sysc.Ly, sysc.layers),
-                vsq = CUDA.zeros(T,sysc.Lx, sysc.Ly, sysc.layers),
-                pressure = CUDA.zeros(T,sysc.Lx, sysc.Ly, sysc.layers),
-                dgrad = CUDA.zeros(T,sysc.Lx, sysc.Ly,sysc.layers,8),
-                Fx = CUDA.zeros(T,sysc.Lx, sysc.Ly, sysc.layers),
-                Fy = CUDA.zeros(T,sysc.Lx, sysc.Ly, sysc.layers),
-                slipx = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers),
-                slipy = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers),
-                h∇px = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers),
-                h∇py = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers),
-                hi = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers -1),
-                grad_hx = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers -1),
-                grad_hy = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers -1),
-                grad_h_sq = CUDA.zeros(T,sysc.Lx,sysc.Ly, sysc.layers -1)
+                fout = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9, sysc.layers),
+                ftemp = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9, sysc.layers),
+                feq = CUDA.zeros(T, sysc.Lx, sysc.Ly, 9, sysc.layers),
+                height = CUDA.ones(T, sysc.Lx, sysc.Ly, sysc.layers),
+                velx = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                vely = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                vsq = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                pressure = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                dgrad = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers, 8),
+                Fx = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                Fy = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                slipx = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                slipy = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                h∇px = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                h∇py = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers),
+                hi = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers - 1),
+                grad_hx = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers - 1),
+                grad_hy = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers - 1),
+                grad_h_sq = CUDA.zeros(T, sysc.Lx, sysc.Ly, sysc.layers - 1),
             )
-             return dyn
+            return dyn
         else
             throw(DomainError(device, "Unknown device \"$device\". returning nothing"))
         end
@@ -1387,8 +1419,8 @@ end
 
 
 
-function Sys(sysc::SysConstMiscible_1D; T=Float64, device="CPU", kind="")
-    if kind ==""
+function Sys(sysc::SysConstMiscible_1D; T = Float64, device = "CPU", kind = "")
+    if kind == ""
         if device=="CPU"
             dyn = StateMiscible_1D{T}(
                 fout = zeros(sysc.L, 3, sysc.liquids),
@@ -1404,7 +1436,7 @@ function Sys(sysc::SysConstMiscible_1D; T=Float64, device="CPU", kind="")
                 gamma = zeros(sysc.L, 3),
                 stress = zeros(sysc.L, sysc.liquids),
                 ∇gamma = zeros(sysc.L),
-                grad_h = zeros(sysc.L, sysc.liquids)
+                grad_h = zeros(sysc.L, sysc.liquids),
             )
             return dyn
         end
@@ -1413,8 +1445,8 @@ end
 
 
 
-function Sys(sysc::SysConstMultiLayer_1D; T=Float64, device="CPU", kind="")
-    if kind ==""
+function Sys(sysc::SysConstMultiLayer_1D; T = Float64, device = "CPU", kind = "")
+    if kind == ""
         if device=="CPU"
             dyn = StateMultiLayer_1D{T}(
                 fout = zeros(sysc.L, 3, sysc.layers),
@@ -1428,11 +1460,9 @@ function Sys(sysc::SysConstMultiLayer_1D; T=Float64, device="CPU", kind="")
                 slip = zeros(sysc.L, sysc.layers),
                 h∇p = zeros(sysc.L, sysc.layers),
                 hi = zeros(sysc.L, sysc.layers),
-                grad_h = zeros(sysc.L, sysc.layers -1)
+                grad_h = zeros(sysc.L, sysc.layers - 1),
             )
             return dyn
         end
     end
 end
-
-
