@@ -40,7 +40,7 @@
         @test diff[1] < diff[end]
     end
     @testset "Relaxing droplet" begin
-        rads = 35
+        rads = 35.0
         sys = Swalbe.SysConst(Lx=150, Ly=150, param=Swalbe.Taumucs(Tmax=10000, δ=3.0))
         h, A = Swalbe.run_dropletrelax(sys, "CPU", radius=rads, verbos=false)
         # Initial droplet volume
