@@ -18,6 +18,4 @@ include("obstacle.jl")
 include("logic.jl")
 include("active.jl")
 
-
-
 end

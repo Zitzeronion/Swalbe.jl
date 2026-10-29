@@ -278,7 +278,18 @@ The center of mass is computed as the weighted average position of the height fi
 
 # Example
 ```jldoctest
-julia> center_of_mass(state, sys)
+julia> using Swalbe
+
+julia> sys = Swalbe.SysConst(Lx=26, Ly=26, param=Swalbe.Taumucs(Tmax=200, tdump=100));
+
+julia> state = Swalbe.Sys(sys, "CPU");
+
+julia> state.height .= 1.0;
+
+julia> Swalbe.center_of_mass(state, sys)
+2-element Vector{Float64}:
+ 13.5
+ 13.5
 ```
 """
 function center_of_mass(state::Swalbe.State_1D, sys::Swalbe.SysConst_1D)

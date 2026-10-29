@@ -1,6 +1,6 @@
 # This tests merely if all model run error free from a numerical point of view. This does not include physical tests or unit tests of the underlying models.
 # (C) Tilman
-@testset "Fancy Models" begin 
+@testset "Models Gen 2" begin 
 	@testset "Catalytic Thin Film" begin 
 	println("Testing catalytic thin films")
 	function catalysis(;
@@ -91,6 +91,7 @@
         		end
 			return height_0, state.height
 		end
+		# Testing mass conservation
 		height_0, height_end = catalysis()
 		@test isapprox(sum(height_0), sum(height_end))
 	end
@@ -138,6 +139,7 @@
     		return height_0, state.height
 		end
 		height_0, height_end = curved()
+		# Testing mass conservation
 		@test isapprox(sum(height_0), sum(height_end))
 	end
 	@testset "Miscible liquid films" begin 
@@ -290,51 +292,53 @@
 		println("testing 2 layers in 3D")
 		println("This requires CUDA")
 		using CUDA
-		function run_multilayer3d(;
-    			h_1=2,
-    			h_2=1,
-    			eps=[0.001,0.001],
-    			Tmax=Int(1e3),
-    			dumps=10,
-    			tdump=Int(floor(Tmax/dumps)),
-    			Lx=2^8,
-    			Ly=2^8,
-    			delta=1.0,
-    			delta_2=1.0,
-    			n=9, m=3,
-    			gamma= [0 0.001 0.001 0.001 ; 0 0 0.001 0.001 ; 0 0 0 0.001; 0 0 0 0],
-    			plot=true,
-    			run=true,
-    			hmin=0.1,
-    			mu=[1/6 1/6],
-    			device="GPU",
-    			devicenumber=1,
-    			)
-    			sys = Swalbe.SysConstMultiLayer(Lx=Lx, Ly=Ly, Tmax=Tmax, tdump=tdump, gamma=gamma, delta=[delta,delta_2], n=n, m=m, hmin=hmin, mu=mu)
-    			state = Swalbe.Sys(sys, device=device)
- 			host_height=zeros(Lx,Ly,2)
-			host_height[:,:,1] .= h_1 .* ones(Lx, Ly) .+ eps[1] .* rand(Lx,Ly)
-			host_height[:,:,2] .= h_2 .* ones(Lx, Ly) .+ eps[2] .* rand(Lx,Ly)
-			CUDA.copyto!(state.height, host_height)
-    			println("Starting LBM time loop")
-    			for t in 0:sys.Tmax
-        			if t % sys.tdump == 0
-            				println("Time step t=$t")
+		if CUDA.functional()		
+			function run_multilayer3d(;
+    				h_1=2,
+    				h_2=1,
+    				eps=[0.001,0.001],
+    				Tmax=Int(1e3),
+    				dumps=10,
+    				tdump=Int(floor(Tmax/dumps)),
+    				Lx=2^8,
+    				Ly=2^8,
+    				delta=1.0,
+    				delta_2=1.0,
+    				n=9, m=3,
+    				gamma= [0 0.001 0.001 0.001 ; 0 0 0.001 0.001 ; 0 0 0 0.001; 0 0 0 0],
+    				plot=true,
+    				run=true,
+    				hmin=0.1,
+    				mu=[1/6 1/6],
+    				device="GPU",
+    				devicenumber=1,
+    				)
+    				sys = Swalbe.SysConstMultiLayer(Lx=Lx, Ly=Ly, Tmax=Tmax, tdump=tdump, gamma=gamma, delta=[delta,delta_2], n=n, m=m, hmin=hmin, mu=mu)
+    				state = Swalbe.Sys(sys, device=device)
+ 				host_height=zeros(Lx,Ly,2)
+				host_height[:,:,1] .= h_1 .* ones(Lx, Ly) .+ eps[1] .* rand(Lx,Ly)
+				host_height[:,:,2] .= h_2 .* ones(Lx, Ly) .+ eps[2] .* rand(Lx,Ly)
+				CUDA.copyto!(state.height, host_height)
+    				println("Starting LBM time loop")
+    				for t in 0:sys.Tmax
+        				if t % sys.tdump == 0
+        	    				println("Time step t=$t")
+					end
+        	    			Swalbe.filmpressure!(state, sys)
+					Swalbe.h∇p!(state,sys)
+        	    			Swalbe.slippage!(state, sys)
+        	    			state.Fx .= -state.h∇px  .+  state.slipx
+        	    			state.Fy .= -state.h∇py  .+  state.slipy
+					Swalbe.equilibrium!(state)
+        	    			Swalbe.BGKandStream!(state)
+					Swalbe.moments!(state, sys)
 				end
-            			Swalbe.filmpressure!(state, sys)
-				Swalbe.h∇p!(state,sys)
-            			Swalbe.slippage!(state, sys)
-            			state.Fx .= -state.h∇px  .+  state.slipx
-            			state.Fy .= -state.h∇py  .+  state.slipy
-				Swalbe.equilibrium!(state)
-            			Swalbe.BGKandStream!(state)
-				Swalbe.moments!(state, sys)
+				host_height_end=zeros(Lx,Ly,2)
+				CUDA.copyto!(host_height_end, state.height)
+				return host_height, host_height_end
 			end
-			host_height_end=zeros(Lx,Ly,2)
-			CUDA.copyto!(host_height_end, state.height)
-			return host_height, host_height_end
+			height_0, height_end = run_multilayer3d()
+			@test isapprox(sum(height_0), sum(height_end))
 		end
-		height_0, height_end = run_multilayer3d()
-		@test isapprox(sum(height_0), sum(height_end))
 	end
 end

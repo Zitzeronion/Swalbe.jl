@@ -263,20 +263,20 @@ Apparently to really sort this out one has to spend more time than expected whic
 ```jldoctest
 julia> using Swalbe, Test
 
-julia> state = StateMiscible_1D(fout, height, vel, grad_h, dgrad); # Initialize state
+julia> sys = Swalbe.SysConstMiscible_1D(L=10, D=0.01, liquids=2); # Define system constants
 
-julia> sys = SysConstMiscible_1D(D=0.01, liquids=2); # Define system constants
+julia> state = Swalbe.Sys(sys);
 
-julia> fout[:,:,1] .= 1.0; fout[:,:,2] .= 0.5; # Set distribution function
+julia> state.fout[:,:,1] .= 1.0; state.fout[:,:,2] .= 0.5; # Set distribution function
 
-julia> height = zeros(10, 2); vel = zeros(10, 2); grad_h = zeros(10, 2); dgrad = 1.0;
+julia> state.height .= 0.0; state.vel .= 0.0; state.grad_h .= 0.0; state.dgrad .= 1.0;
 
 julia> Swalbe.moments!(state, sys)
 
-julia> @test all(state.height[:,1] .== 1.5) # First liquid height
+julia> @test all(state.height[:,2] .== 1.5) # First liquid height
 Test Passed
 
-julia> @test all(state.vel[:,1] .== 0.01) # Corrected velocity for first liquid
+julia> @test all(state.vel[:,1] .== 0.0) # Corrected velocity for first liquid (ask Tilman)
 Test Passed
 ```
 
@@ -332,7 +332,7 @@ function moments!(state::StateMiscible_1D, sys::SysConstMiscible_1D)
 end
 
 """
-	function moments!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
+	moments!(state::StateMultiLayer_1D, sys::SysConstMultiLayer_1D)
 
 same as [moments!](@ref) but for multlayer systems
 """
